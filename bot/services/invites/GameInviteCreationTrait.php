@@ -13,7 +13,7 @@ trait GameInviteCreationTrait
     ): array {
         $this->cleanup($db);
         $userId = $this->requireUserId($user);
-        $this->assertAvailableForInvite($db, $user, 'Сначала завершите текущий поиск, матч или приглашение.');
+        $this->assertAvailableForInvite($db, $user, $this->inviteCopy('server.invite_chain.errors.finish_search_match_invite', 'Finish your current search, match, or invitation first.'));
 
         // Every shared link is an independent passive offer. Do not invalidate
         // older drafts just because the owner asks for another link: recipients
@@ -37,7 +37,7 @@ trait GameInviteCreationTrait
         $userId = $this->requireUserId($user);
         $inviteeId = $this->requireUserId($invitee);
         if ($inviteeId === $userId || str_starts_with($inviteeId, 'bot_')) {
-            throw new RuntimeException('Выберите другого игрока.');
+            throw new RuntimeException($this->inviteCopy('server.invite_chain.errors.select_other_player', 'Choose another player.'));
         }
 
         $normalizedGameType = $this->catalog->normalizeGameType($gameType);
@@ -52,11 +52,11 @@ trait GameInviteCreationTrait
                 && (int)($existing['bet'] ?? 0) === $normalizedBet
                 && (int)($existing['board_size'] ?? 0) === $normalizedBoardSize;
             if ($sameContext) return $this->publicInvite($existing, $userId);
-            throw new RuntimeException('Этому игроку уже отправлено другое приглашение.');
+            throw new RuntimeException($this->inviteCopy('server.invite_chain.errors.direct_invite_exists', 'Another invitation has already been sent to this player.'));
         }
 
-        $this->assertAvailableForInvite($db, $user, 'Сначала завершите текущий поиск, матч или приглашение.');
-        $this->assertCanReceiveInvite($db, $invitee, 'Игрок сейчас занят поиском, матчем или другим приглашением.');
+        $this->assertAvailableForInvite($db, $user, $this->inviteCopy('server.invite_chain.errors.finish_search_match_invite', 'Finish your current search, match, or invitation first.'));
+        $this->assertCanReceiveInvite($db, $invitee, $this->inviteCopy('server.invite_chain.errors.player_busy_search_match_invite', 'The player is busy with a search, match, or another invitation.'));
 
         $invite = $this->newInvite($db, $user, $normalizedGameType, $normalizedRoom, $normalizedBet, $normalizedBoardSize, 'direct', 'pending');
         $invite['invitee_id'] = $inviteeId;
@@ -75,7 +75,7 @@ trait GameInviteCreationTrait
         $invite =& $db['invites'][$index];
         $userId = $this->requireUserId($user);
         if ((string)($invite['inviter_id'] ?? '') !== $userId) {
-            throw new RuntimeException('Подтвердить отправку может только создатель приглашения.');
+            throw new RuntimeException($this->inviteCopy('server.invite_chain.errors.share_owner_only', 'Only the invitation creator can confirm sending.'));
         }
 
         $status = (string)($invite['status'] ?? '');
@@ -83,14 +83,14 @@ trait GameInviteCreationTrait
             return $this->publicInvite($invite, $userId);
         }
         if ($status !== 'draft') {
-            throw new RuntimeException('Этот черновик приглашения больше недоступен.');
+            throw new RuntimeException($this->inviteCopy('server.invite_chain.errors.draft_unavailable', 'This invitation draft is no longer available.'));
         }
 
         $this->assertAvailableForStart(
             $db,
             $user,
             (string)($invite['token'] ?? ''),
-            'Сначала завершите текущий поиск, матч или другое приглашение.'
+            $this->inviteCopy('server.invite_chain.errors.finish_search_match_other_invite', 'Finish your current search, match, or another invitation first.')
         );
 
         $now = now_iso();
@@ -108,7 +108,7 @@ trait GameInviteCreationTrait
         $invite =& $db['invites'][$index];
         $userId = $this->requireUserId($user);
         if ((string)($invite['inviter_id'] ?? '') !== $userId) {
-            throw new RuntimeException('Вы не создавали это приглашение.');
+            throw new RuntimeException($this->inviteCopy('server.invite_chain.errors.not_owner', 'You did not create this invitation.'));
         }
 
         $status = (string)($invite['status'] ?? '');
@@ -140,7 +140,7 @@ trait GameInviteCreationTrait
         $userId = $this->requireUserId($user);
         $inviterId = (string)($invite['inviter_id'] ?? '');
         if ($userId === $inviterId) {
-            throw new RuntimeException('Нельзя открыть собственное приглашение как соперник.');
+            throw new RuntimeException($this->inviteCopy('server.invite_chain.errors.self_open_forbidden', 'You cannot open your own invitation as an opponent.'));
         }
 
         $status = (string)($invite['status'] ?? '');
@@ -150,20 +150,20 @@ trait GameInviteCreationTrait
 
         $boundId = trim((string)($invite['invitee_id'] ?? ''));
         if ($boundId !== '' && $boundId !== $userId) {
-            throw new RuntimeException('Это приглашение уже предназначено другому игроку.');
+            throw new RuntimeException($this->inviteCopy('server.invite_chain.errors.already_bound_other_player', 'This invitation is already assigned to another player.'));
         }
         if ($boundId === '') {
-            $this->assertNoOpenInvite($db, $userId, (string)($invite['token'] ?? ''), 'Сначала завершите другое приглашение.');
+            $this->assertNoOpenInvite($db, $userId, (string)($invite['token'] ?? ''), $this->inviteCopy('server.invite_chain.errors.finish_other_invite', 'Finish the other invitation first.'));
         }
 
         if (!isset($db['users'][$inviterId]) || !is_array($db['users'][$inviterId])) {
-            throw new RuntimeException('Пригласивший игрок больше недоступен.');
+            throw new RuntimeException($this->inviteCopy('server.invite_chain.errors.inviter_unavailable', 'The inviting player is no longer available.'));
         }
         $this->assertNoOpenInvite(
             $db,
             $inviterId,
             (string)($invite['token'] ?? ''),
-            'Пригласивший игрок уже занят другим приглашением.'
+            $this->inviteCopy('server.invite_chain.errors.inviter_busy_other_invite', 'The inviting player is already busy with another invitation.')
         );
 
         $now = now_iso();
@@ -194,7 +194,7 @@ trait GameInviteCreationTrait
         $invite = $db['invites'][$index];
         $userId = $this->requireUserId($user);
         if (!$this->isParticipant($invite, $userId) && (string)($invite['status'] ?? '') !== 'draft') {
-            throw new RuntimeException('Это приглашение предназначено другому игроку.');
+            throw new RuntimeException($this->inviteCopy('server.invite_chain.errors.other_player', 'This invitation belongs to another player.'));
         }
         return $this->publicInvite($invite, $userId);
     }

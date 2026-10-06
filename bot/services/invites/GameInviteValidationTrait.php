@@ -113,10 +113,10 @@ trait GameInviteValidationTrait
         $bet = (int)($invite['bet'] ?? UnifiedGameZonePolicy::entryCost($this->config));
         $balanceKey = UnifiedBalanceRuntimeState::FIELD;
         if ((int)($invitee[$balanceKey] ?? 0) < $bet) {
-            throw new RuntimeException('Недостаточно коинов для принятия приглашения.');
+            throw new RuntimeException($this->inviteCopy('server.invite_chain.errors.insufficient_accept_balance', 'Not enough coins to accept the invitation.'));
         }
         if ((int)($inviter[$balanceKey] ?? 0) < $bet) {
-            throw new RuntimeException('У пригласившего игрока недостаточно коинов.');
+            throw new RuntimeException($this->inviteCopy('server.invite_chain.errors.inviter_insufficient_balance', 'The inviting player does not have enough coins.'));
         }
     }
 
@@ -195,10 +195,10 @@ trait GameInviteValidationTrait
             'can_start' => $isOwner && $status === 'accepted',
             'can_cancel' => ($isOwner && in_array($status, ['draft', 'pending', 'accepted'], true))
                 || ($isInvitee && $status === 'accepted'),
-            'inviter_name' => (string)($invite['inviter_name'] ?? 'Игрок'),
+            'inviter_name' => (string)($invite['inviter_name'] ?? $this->inviteCopy('server.invites.player_fallback', 'Player')),
             'invitee_name' => (string)($invite['invitee_name'] ?? ''),
             'game_type' => (string)($invite['game_type'] ?? 'tictactoe'),
-            'game_title' => (string)($invite['game_title'] ?? 'Игра'),
+            'game_title' => (string)($invite['game_title'] ?? $this->inviteCopy('server.invites.game_fallback', 'Game')),
             'bet' => (int)($invite['bet'] ?? 0),
             'board_size' => (int)($invite['board_size'] ?? 0),
             'board_columns' => (int)($invite['board_columns'] ?? 0),
@@ -228,14 +228,14 @@ trait GameInviteValidationTrait
     private function requireUserId(array $user): string
     {
         $userId = trim((string)($user['id'] ?? ''));
-        if ($userId === '') throw new RuntimeException('Пользователь не найден.');
+        if ($userId === '') throw new RuntimeException($this->inviteCopy('server.invites.user_not_found', 'User not found.'));
         return $userId;
     }
 
     private function requireIndex(array $db, string $token): int
     {
         $index = $this->findIndex($db, $token);
-        if ($index === null) throw new RuntimeException('Приглашение не найдено или уже недоступно.');
+        if ($index === null) throw new RuntimeException($this->inviteCopy('server.invite_chain.errors.invite_not_found', 'The invitation was not found or is no longer available.'));
         return $index;
     }
 
@@ -274,22 +274,22 @@ trait GameInviteValidationTrait
         $username = trim((string)($user['username'] ?? ''));
         if ($username !== '') return '@' . ltrim($username, '@');
         $name = trim((string)($user['first_name'] ?? '') . ' ' . (string)($user['last_name'] ?? ''));
-        return $name !== '' ? $name : 'Игрок';
+        return $name !== '' ? $name : $this->inviteCopy('server.invites.player_fallback', 'Player');
     }
 
     private function statusLabel(string $status): string
     {
         return match ($status) {
-            'draft' => 'Ссылка подготовлена',
-            'pending' => 'Ожидает ответа',
-            'accepted', 'awaiting_start' => 'Ожидает запуска',
-            'starting' => 'Матч запускается',
-            'active' => 'Матч начат',
-            'declined' => 'Отклонено',
-            'cancelled' => 'Отменено',
-            'expired' => 'Срок истёк',
-            'timed_out' => 'Время ожидания истекло',
-            default => 'Недоступно',
+            'draft' => $this->inviteCopy('server.invite_chain.status.draft', 'Link prepared'),
+            'pending' => $this->inviteCopy('server.invite_chain.status.pending', 'Waiting for response'),
+            'accepted', 'awaiting_start' => $this->inviteCopy('server.invite_chain.status.awaiting_start', 'Waiting to start'),
+            'starting' => $this->inviteCopy('server.invite_chain.status.starting', 'Match is starting'),
+            'active' => $this->inviteCopy('server.invite_chain.status.active', 'Match started'),
+            'declined' => $this->inviteCopy('server.invite_chain.status.declined', 'Declined'),
+            'cancelled' => $this->inviteCopy('server.invite_chain.status.cancelled', 'Cancelled'),
+            'expired' => $this->inviteCopy('server.invite_chain.status.expired', 'Expired'),
+            'timed_out' => $this->inviteCopy('server.invite_chain.status.timed_out', 'Waiting time expired'),
+            default => $this->inviteCopy('server.invite_chain.status.unavailable', 'Unavailable'),
         };
     }
 }

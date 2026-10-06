@@ -131,11 +131,11 @@ $assertTrue(!str_contains($siteSource, 'invitee_name'), 'Public landing must not
 $assertTrue(!str_contains($siteSource, 'inviter_id'), 'Public landing must not render inviter ID');
 $assertTrue(!str_contains($siteSource, 'invitee_id'), 'Public landing must not render accepter ID');
 $assertTrue(
-    str_contains($creationSource, 'Нельзя открыть собственное приглашение как соперник.'),
+    str_contains($creationSource, 'server.invite_chain.errors.self_open_forbidden'),
     'Authenticated open owner must retain self-invite protection'
 );
 $assertTrue(
-    str_contains($creationSource, 'Это приглашение уже предназначено другому игроку.'),
+    str_contains($creationSource, 'server.invite_chain.errors.already_bound_other_player'),
     'Authenticated open owner must retain first-accepter/reopen protection'
 );
 $assertTrue(

@@ -1,6 +1,8 @@
 <?php
 declare(strict_types=1);
 
+require_once dirname(__DIR__) . '/localization/ServerLocalization.php';
+
 final class InviteOpponentService
 {
     private const MAX_ITEMS = 10;
@@ -118,12 +120,12 @@ final class InviteOpponentService
         $lastSeen = strtotime((string)($user['last_seen_at'] ?? '')) ?: 0;
         $secondsAgo = $lastSeen > 0 ? max(0, time() - $lastSeen) : null;
 
-        if ($status === 'playing') return ['label' => 'сейчас играет', 'online' => true, 'busy' => true];
-        if ($status === 'searching') return ['label' => 'ищет соперника', 'online' => true, 'busy' => true];
-        if ($presenceOnline) return ['label' => 'онлайн', 'online' => true, 'busy' => false];
-        if ($secondsAgo !== null && $secondsAgo <= 3600) return ['label' => 'был недавно', 'online' => false, 'busy' => false];
-        if ($secondsAgo !== null && $secondsAgo <= 86400 * 7) return ['label' => 'заходил на этой неделе', 'online' => false, 'busy' => false];
-        return ['label' => 'недавний игрок', 'online' => false, 'busy' => false];
+        if ($status === 'playing') return ['label' => ServerLocalization::copy('server.invite_chain.opponents.playing', 'playing now'), 'online' => true, 'busy' => true];
+        if ($status === 'searching') return ['label' => ServerLocalization::copy('server.invite_chain.opponents.searching', 'looking for an opponent'), 'online' => true, 'busy' => true];
+        if ($presenceOnline) return ['label' => ServerLocalization::copy('server.invite_chain.opponents.online', 'online'), 'online' => true, 'busy' => false];
+        if ($secondsAgo !== null && $secondsAgo <= 3600) return ['label' => ServerLocalization::copy('server.invite_chain.opponents.recent', 'seen recently'), 'online' => false, 'busy' => false];
+        if ($secondsAgo !== null && $secondsAgo <= 86400 * 7) return ['label' => ServerLocalization::copy('server.invite_chain.opponents.week', 'seen this week'), 'online' => false, 'busy' => false];
+        return ['label' => ServerLocalization::copy('server.invite_chain.opponents.recent_player', 'recent player'), 'online' => false, 'busy' => false];
     }
 
     private function name(array $user): string
@@ -131,6 +133,6 @@ final class InviteOpponentService
         $username = trim((string)($user['username'] ?? ''));
         if ($username !== '') return '@' . ltrim($username, '@');
         $name = trim((string)($user['first_name'] ?? '') . ' ' . (string)($user['last_name'] ?? ''));
-        return $name !== '' ? $name : 'Игрок';
+        return $name !== '' ? $name : ServerLocalization::copy('server.invites.player_fallback', 'Player');
     }
 }

@@ -22,13 +22,13 @@ trait GameInviteStorageTrait
         $gameType = $this->catalog->normalizeGameType($gameType);
         $room = UnifiedGameZonePolicy::storageRoom();
         if (!$this->catalog->supportsRoom($gameType, $room)) {
-            throw new RuntimeException('Эта игра пока недоступна.');
+            throw new RuntimeException($this->inviteCopy('server.invite_chain.errors.game_unavailable', 'This game is currently unavailable.'));
         }
         $boardSize = $this->catalog->normalizeBoardSize($gameType, $boardSize);
         $bet = UnifiedGameZonePolicy::entryCost($this->config);
         $balanceKey = UnifiedBalanceRuntimeState::FIELD;
         if ((int)($user[$balanceKey] ?? 0) < $bet) {
-            throw new RuntimeException('Недостаточно коинов для выбранной ставки.');
+            throw new RuntimeException($this->inviteCopy('server.invite_chain.errors.insufficient_bet', 'Not enough coins for the selected entry cost.'));
         }
 
         $definition = $this->catalog->publicGameDefinition($gameType);
@@ -84,11 +84,11 @@ trait GameInviteStorageTrait
             $gameType = (string)($invite['game_type'] ?? 'tictactoe');
 
             $first = $this->games->startSearch($db, $inviter, $room, $bet, $boardSize, $gameType);
-            if (!empty($first['game'])) throw new RuntimeException('Пригласивший игрок уже начал другой матч.');
+            if (!empty($first['game'])) throw new RuntimeException($this->inviteCopy('server.invite_chain.errors.inviter_started_other_match', 'The inviting player has already started another match.'));
             $second = $this->games->startSearch($db, $invitee, $room, $bet, $boardSize, $gameType);
             $gameId = (string)($second['game']['id'] ?? '');
             if ($gameId === '' || !isset($db['games'][$gameId]) || !is_array($db['games'][$gameId])) {
-                throw new RuntimeException('Не удалось создать приватный матч.');
+                throw new RuntimeException($this->inviteCopy('server.invite_chain.errors.private_match_failed', 'The private match could not be created.'));
             }
 
             $db['games'][$gameId]['match_source'] = (string)($invite['source'] ?? '') === 'rematch' ? 'rematch' : 'invite';
@@ -149,10 +149,19 @@ trait GameInviteStorageTrait
             $inviteeId,
             'invite:' . (string)($invite['id'] ?? $invite['token'] ?? '') . ':received:' . $inviteeId,
             $isRematch ? 'invite_rematch_received' : 'invite_received',
-            $isRematch ? 'Вам предлагают реванш' : 'Вас пригласили сыграть',
-            (string)($invite['inviter_name'] ?? 'Игрок')
-                . ($isRematch ? ' предлагает реванш в «' : ' приглашает вас в «')
-                . (string)($invite['game_title'] ?? 'игру') . '».',
+            $isRematch
+                ? $this->inviteCopy('server.invite_chain.notifications.received_rematch_title', 'Rematch invitation')
+                : $this->inviteCopy('server.invite_chain.notifications.received_direct_title', 'Game invitation'),
+            $this->inviteCopy(
+                $isRematch
+                    ? 'server.invite_chain.notifications.received_rematch_message'
+                    : 'server.invite_chain.notifications.received_direct_message',
+                $isRematch ? '{name} offers a rematch in “{game}”.' : '{name} invites you to “{game}”.',
+                [
+                    'name'=>(string)($invite['inviter_name'] ?? $this->inviteCopy('server.invites.player_fallback', 'Player')),
+                    'game'=>(string)($invite['game_title'] ?? $this->inviteCopy('server.invites.game_lower_fallback', 'game')),
+                ]
+            ),
             'info',
             (string)($invite['token'] ?? '')
         );

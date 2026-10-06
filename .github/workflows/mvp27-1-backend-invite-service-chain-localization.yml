@@ -1,0 +1,142 @@
+name: MVP-27.1 Backend Invite Service Chain Localization
+
+on:
+  pull_request:
+    branches:
+      - agent/mvp-13-2-staging
+    paths:
+      - 'app/locales/ru.json'
+      - 'bot/services/invites/GameInviteActionTrait.php'
+      - 'bot/services/invites/GameInviteValidationTrait.php'
+      - 'bot/services/invites/GameInviteCreationTrait.php'
+      - 'bot/services/invites/GameInviteStorageTrait.php'
+      - 'bot/services/GameInviteService.php'
+      - 'bot/services/InviteOpponentService.php'
+      - 'bot/invite-opponents.php'
+      - 'bot/invite-watch.php'
+      - 'ops/checks/mvp27_1_backend_invite_service_chain_localization_contract.mjs'
+      - 'ops/checks/mvp27_1_hardcoded_text_baseline.json'
+      - '.github/workflows/mvp27-1-backend-invite-service-chain-localization.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  invite-service-chain:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout exact candidate
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          persist-credentials: false
+          fetch-depth: 0
+
+      - name: Set up PHP 8.3
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          extensions: pdo_sqlite, mbstring
+          coverage: none
+
+      - name: Syntax
+        run: |
+          set -euo pipefail
+          php -l bot/services/invites/GameInviteActionTrait.php
+          php -l bot/services/invites/GameInviteValidationTrait.php
+          php -l bot/services/invites/GameInviteCreationTrait.php
+          php -l bot/services/invites/GameInviteStorageTrait.php
+          php -l bot/services/GameInviteService.php
+          php -l bot/services/InviteOpponentService.php
+          php -l bot/invite-opponents.php
+          php -l bot/invite-watch.php
+          php -l bot/localization/ServerLocalization.php
+          php -l app/runtime/localization/LocalizationCatalog.php
+          node --check ops/checks/mvp27_1_backend_invite_service_chain_localization_contract.mjs
+          node -e "JSON.parse(require('fs').readFileSync('app/locales/ru.json','utf8'))"
+
+      - name: Exact staging Invite-chain baseline
+        if: github.event_name == 'pull_request'
+        shell: bash
+        run: |
+          set -euo pipefail
+          accepted='72935e60c50124dc46098e34f82269da3d10e64d'
+          base='${{ github.event.pull_request.base.sha }}'
+          git cat-file -e "${accepted}^{commit}"
+          git diff --exit-code "${accepted}" "${base}" -- \
+            bot/services/invites/GameInviteActionTrait.php \
+            bot/services/invites/GameInviteValidationTrait.php \
+            bot/services/invites/GameInviteCreationTrait.php \
+            bot/services/invites/GameInviteStorageTrait.php \
+            bot/services/GameInviteService.php \
+            bot/services/InviteOpponentService.php \
+            bot/invite-opponents.php \
+            bot/invite-watch.php
+
+      - name: Focused Invite service-chain localization proof
+        run: node ops/checks/mvp27_1_backend_invite_service_chain_localization_contract.mjs
+
+      - name: Preserve invite lifecycle and rematch semantics
+        run: |
+          set -euo pipefail
+          php bot/tests/Mvp18_3InviteV2ContractTest.php
+          php bot/tests/Mvp18_7FriendsInvitesRegressionContractTest.php
+          php bot/tests/RematchOptimisticUxContractTest.php
+          php bot/tests/Mvp17_5BotOpaqueRematchContractTest.php
+          php bot/tests/ProductionV110CanonicalInviteLaunchContractTest.php
+          php bot/tests/ProductionV110InviteStartSyncOwnershipContractTest.php
+          php bot/tests/ProductionV110SearchInviteLifecycleR12ContractTest.php
+          php bot/tests/ProductionV110PendingInviteNonBlockingRuntimeTest.php
+
+      - name: Preserve invite notifications and opponent ownership
+        run: |
+          set -euo pipefail
+          php bot/tests/ProductionV110LiveInviteActionContractTest.php
+          php bot/tests/ProductionV110InviteNotificationStatefulCardContractTest.php
+          php bot/tests/Mvp18_6NotificationPipelineContractTest.php
+          php bot/tests/InviteOpponentServiceTest.php
+          php bot/tests/ProductionV110InviteOpponentSourceR12ContractTest.php
+          php bot/tests/ProductionMvp14D1OpponentSourceParityTest.php
+
+      - name: Preserve invite wallet ownership
+        run: php bot/tests/Mvp26_3_12InviteSyncBalanceOwnershipContractTest.php
+
+      - name: Preserve predecessor backend localization proofs
+        run: |
+          set -euo pipefail
+          node ops/checks/mvp27_1_backend_invites_endpoint_localization_contract.mjs
+          node ops/checks/mvp27_1_backend_notifications_endpoint_localization_contract.mjs
+          node ops/checks/mvp27_1_final_active_client_localization_contract.mjs
+
+      - name: Hardcoded player text ratchet
+        run: node ops/checks/mvp27_1_hardcoded_text_audit.mjs
+
+      - name: Localization-only bounded scope
+        if: github.event_name == 'pull_request'
+        shell: bash
+        run: |
+          set -euo pipefail
+          base='${{ github.event.pull_request.base.sha }}'
+          head='${{ github.event.pull_request.head.sha }}'
+          changed="$(git diff --name-only "${base}" "${head}")"
+          allowed='^(app/locales/ru\.json|bot/services/invites/(GameInviteActionTrait|GameInviteValidationTrait|GameInviteCreationTrait|GameInviteStorageTrait)\.php|bot/services/(GameInviteService|InviteOpponentService)\.php|bot/(invite-opponents|invite-watch)\.php|bot/tests/(Mvp17_5BotOpaqueRematchContractTest|Mvp18_3InviteV2ContractTest|Mvp14r2GamesContractTest|Mvp18_4UniversalInviteLandingContractTest|ProductionV110CanonicalInviteLaunchContractTest)\.php|ops/checks/(mvp27_1_backend_invite_service_chain_localization_contract|mvp27_1_backend_account_chain_localization_contract)\.mjs|ops/checks/mvp27_1_hardcoded_text_baseline\.json|\.github/workflows/(mvp19-6-checkers-boards|mvp22-8-account-data|mvp26-6-android-product-parity|mvp27-1-backend-account-chain-localization|mvp27-1-backend-invite-service-chain-localization)\.yml)
+          bad="$(printf '%s\n' "${changed}" | grep -Ev "${allowed}" || true)"
+          test -z "${bad}" || { printf 'Unexpected Invite service-chain localization paths:\n%s\n' "${bad}" >&2; exit 1; }
+          git diff --exit-code "${base}" "${head}" -- \
+            bot/games bot/economy bot/ledger bot/tournaments bot/moderation bot/support \
+            bot/catalog bot/social bot/notifications bot/accounts android-app app/assets
+
+      - name: Tracked secret scan
+        run: node scripts/ci/check-secrets.mjs
+
+          bad="$(printf '%s\n' "${changed}" | grep -Ev "${allowed}" || true)"
+          test -z "${bad}" || { printf 'Unexpected Invite service-chain localization paths:\n%s\n' "${bad}" >&2; exit 1; }
+          git diff --exit-code "${base}" "${head}" -- \
+            bot/games bot/economy bot/ledger bot/tournaments bot/moderation bot/support \
+            bot/catalog bot/social bot/notifications bot/accounts android-app app/assets
+
+      - name: Tracked secret scan
+        run: node scripts/ci/check-secrets.mjs

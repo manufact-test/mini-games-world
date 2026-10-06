@@ -123,8 +123,8 @@ foreach (['applyCheckersAction', 'applyReversiAction', 'applyChessAction', 'appl
     $assert($contains($sources['runtime'], 'function ' . $method), 'ChessRuntimeService route changed: ' . $method);
 }
 $assert($contains($sources['invite_action'], "status'] ?? '') !== 'finished'"), 'Rematch finished-game guard changed.');
-$assert($contains($sources['invite_action'], "Реванш доступен только после завершённой партии."), 'Rematch finished-game error changed.');
-$assert($contains($sources['invite_action'], "Реванш доступен только с живым соперником."), 'Rematch bot-game guard changed.');
+$assert($contains($sources['invite_action'], "server.invite_chain.errors.rematch_finished_only"), 'Rematch finished-game localized error owner changed.');
+$assert($contains($sources['invite_action'], "server.invite_chain.errors.rematch_human_only"), 'Rematch bot-game localized guard owner changed.');
 $assert($contains($sources['invite_action'], "findOpenRematchIndex"), 'Open-rematch reuse changed.');
 
 foreach (['tictactoe', 'four_in_a_row', 'battleship', 'checkers', 'reversi', 'chess', 'go', 'domino'] as $gameType) {

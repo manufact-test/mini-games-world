@@ -10,7 +10,7 @@ trait GameInviteActionTrait
         $invite =& $db['invites'][$index];
         $userId = $this->requireUserId($user);
         if ((string)($invite['invitee_id'] ?? '') !== $userId) {
-            throw new RuntimeException('Это приглашение предназначено другому игроку.');
+            throw new RuntimeException($this->inviteCopy('server.invite_chain.errors.other_player', 'This invitation belongs to another player.'));
         }
 
         $status = (string)($invite['status'] ?? '');
@@ -22,18 +22,18 @@ trait GameInviteActionTrait
             return ['invite' => $this->publicInvite($invite, $userId), 'game' => null];
         }
         if ($status !== 'pending') {
-            throw new RuntimeException('Это приглашение больше недоступно.');
+            throw new RuntimeException($this->inviteCopy('server.invite_chain.errors.invite_unavailable', 'This invitation is no longer available.'));
         }
 
         $inviterId = (string)($invite['inviter_id'] ?? '');
         if ($inviterId === '' || !isset($db['users'][$inviterId]) || !is_array($db['users'][$inviterId])) {
-            throw new RuntimeException('Пригласивший игрок больше недоступен.');
+            throw new RuntimeException($this->inviteCopy('server.invite_chain.errors.inviter_unavailable', 'The inviting player is no longer available.'));
         }
 
         $inviter =& $db['users'][$inviterId];
         $invitee =& $db['users'][$userId];
-        $this->assertAvailableForStart($db, $invitee, $token, 'Сначала завершите текущий поиск или игру.');
-        $this->assertAvailableForStart($db, $inviter, $token, 'Пригласивший игрок сейчас занят в другой игре.');
+        $this->assertAvailableForStart($db, $invitee, $token, $this->inviteCopy('server.invite_chain.errors.finish_search_or_game', 'Finish your current search or game first.'));
+        $this->assertAvailableForStart($db, $inviter, $token, $this->inviteCopy('server.invite_chain.errors.inviter_busy_other_game', 'The inviting player is currently busy in another game.'));
         $this->assertBalances($inviter, $invitee, $invite);
 
         $now = now_iso();
@@ -48,8 +48,11 @@ trait GameInviteActionTrait
             $inviterId,
             'invite:' . (string)($invite['id'] ?? $token) . ':accepted',
             'invite_accepted',
-            'Соперник согласен',
-            (string)($invite['invitee_name'] ?? 'Игрок') . ' готов сыграть в «' . (string)($invite['game_title'] ?? 'игру') . '».',
+            $this->inviteCopy('server.invite_chain.notifications.accepted_title', 'Opponent accepted'),
+            $this->inviteCopy('server.invite_chain.notifications.accepted_message', '{name} is ready to play “{game}”.', [
+                'name'=>(string)($invite['invitee_name'] ?? $this->inviteCopy('server.invites.player_fallback', 'Player')),
+                'game'=>(string)($invite['game_title'] ?? $this->inviteCopy('server.invites.game_lower_fallback', 'game')),
+            ]),
             'success',
             (string)($invite['token'] ?? '')
         );
@@ -64,7 +67,7 @@ trait GameInviteActionTrait
         $invite =& $db['invites'][$index];
         $userId = $this->requireUserId($user);
         if ((string)($invite['inviter_id'] ?? '') !== $userId) {
-            throw new RuntimeException('Запустить матч может только пригласивший игрок.');
+            throw new RuntimeException($this->inviteCopy('server.invite_chain.errors.start_owner_only', 'Only the inviting player can start the match.'));
         }
         return $this->startInternal($db, $invite, $userId);
     }
@@ -76,7 +79,7 @@ trait GameInviteActionTrait
         $invite =& $db['invites'][$index];
         $userId = $this->requireUserId($user);
         if ((string)($invite['invitee_id'] ?? '') !== $userId) {
-            throw new RuntimeException('Это приглашение предназначено другому игроку.');
+            throw new RuntimeException($this->inviteCopy('server.invite_chain.errors.other_player', 'This invitation belongs to another player.'));
         }
         if ((string)($invite['status'] ?? '') !== 'pending') {
             return $this->publicInvite($invite, $userId);
@@ -91,8 +94,11 @@ trait GameInviteActionTrait
             (string)($invite['inviter_id'] ?? ''),
             'invite:' . (string)($invite['id'] ?? $token) . ':declined',
             'invite_declined',
-            'Приглашение отклонено',
-            (string)($invite['invitee_name'] ?? 'Игрок') . ' отказался от матча «' . (string)($invite['game_title'] ?? 'Игра') . '».',
+            $this->inviteCopy('server.notifications.invite_declined_title', 'Invitation declined'),
+            $this->inviteCopy('server.invite_chain.notifications.declined_message', '{name} declined the match “{game}”.', [
+                'name'=>(string)($invite['invitee_name'] ?? $this->inviteCopy('server.invites.player_fallback', 'Player')),
+                'game'=>(string)($invite['game_title'] ?? $this->inviteCopy('server.invites.game_fallback', 'Game')),
+            ]),
             'warning',
             (string)($invite['token'] ?? '')
         );
@@ -108,7 +114,7 @@ trait GameInviteActionTrait
         $isOwner = (string)($invite['inviter_id'] ?? '') === $userId;
         $isInvitee = (string)($invite['invitee_id'] ?? '') === $userId;
         if (!$isOwner && !$isInvitee) {
-            throw new RuntimeException('Вы не участвуете в этом приглашении.');
+            throw new RuntimeException($this->inviteCopy('server.invite_chain.errors.not_participant_invite', 'You are not a participant in this invitation.'));
         }
 
         $status = (string)($invite['status'] ?? '');
@@ -116,7 +122,7 @@ trait GameInviteActionTrait
             return $this->publicInvite($invite, $userId);
         }
         if ($status === 'pending' && $isInvitee) {
-            throw new RuntimeException('Используйте кнопку «Отклонить».');
+            throw new RuntimeException($this->inviteCopy('server.invite_chain.errors.use_decline_button', 'Use the Decline button.'));
         }
 
         $now = now_iso();
@@ -127,10 +133,16 @@ trait GameInviteActionTrait
 
         $otherId = $isOwner ? (string)($invite['invitee_id'] ?? '') : (string)($invite['inviter_id'] ?? '');
         if ($otherId !== '') {
-            $title = $isOwner ? 'Приглашение отменено' : 'Соперник отменил участие';
+            $title = $isOwner
+                ? $this->inviteCopy('server.notifications.invite_cancelled_title', 'Invitation cancelled')
+                : $this->inviteCopy('server.notifications.opponent_cancelled_title', 'Opponent cancelled');
             $message = $isOwner
-                ? 'Матч «' . (string)($invite['game_title'] ?? 'Игра') . '» не начался.'
-                : (string)($invite['invitee_name'] ?? 'Игрок') . ' отменил участие в матче.';
+                ? $this->inviteCopy('server.invite_chain.notifications.owner_cancelled_message', 'The match “{game}” did not start.', [
+                    'game'=>(string)($invite['game_title'] ?? $this->inviteCopy('server.invites.game_fallback', 'Game')),
+                ])
+                : $this->inviteCopy('server.invite_chain.notifications.invitee_cancelled_message', '{name} cancelled participation in the match.', [
+                    'name'=>(string)($invite['invitee_name'] ?? $this->inviteCopy('server.invites.player_fallback', 'Player')),
+                ]);
             $this->addNotification(
                 $db,
                 $otherId,
@@ -152,19 +164,19 @@ trait GameInviteActionTrait
         $userId = $this->requireUserId($user);
         $game = $db['games'][$gameId] ?? null;
         if (!is_array($game) || (string)($game['status'] ?? '') !== 'finished') {
-            throw new RuntimeException('Реванш доступен только после завершённой партии.');
+            throw new RuntimeException($this->inviteCopy('server.invite_chain.errors.rematch_finished_only', 'A rematch is available only after a finished game.'));
         }
         if (!empty($game['is_bot_game'])) {
-            throw new RuntimeException('Реванш доступен только с живым соперником.');
+            throw new RuntimeException($this->inviteCopy('server.invite_chain.errors.rematch_human_only', 'A rematch is available only with a human opponent.'));
         }
 
         $playerIds = array_values(array_map('strval', $game['player_ids'] ?? []));
         if (count($playerIds) !== 2 || !in_array($userId, $playerIds, true)) {
-            throw new RuntimeException('Вы не участвуете в этом матче.');
+            throw new RuntimeException($this->inviteCopy('server.invite_chain.errors.not_participant_match', 'You are not a participant in this match.'));
         }
         $opponentId = $playerIds[0] === $userId ? $playerIds[1] : $playerIds[0];
         if ($opponentId === '' || !isset($db['users'][$opponentId]) || !is_array($db['users'][$opponentId])) {
-            throw new RuntimeException('Соперник для реванша недоступен.');
+            throw new RuntimeException($this->inviteCopy('server.invite_chain.errors.rematch_opponent_unavailable', 'The rematch opponent is unavailable.'));
         }
 
         $existingIndex = $this->findOpenRematchIndex($db, $gameId, $playerIds);
@@ -190,9 +202,9 @@ trait GameInviteActionTrait
             }
         }
 
-        $this->assertAvailableForInvite($db, $user, 'Сначала завершите текущий поиск, матч или приглашение.');
+        $this->assertAvailableForInvite($db, $user, $this->inviteCopy('server.invite_chain.errors.finish_search_match_invite', 'Finish your current search, match, or invitation first.'));
         $opponent =& $db['users'][$opponentId];
-        $this->assertAvailableForInvite($db, $opponent, 'Соперник сейчас занят поиском, матчем или другим приглашением.');
+        $this->assertAvailableForInvite($db, $opponent, $this->inviteCopy('server.invite_chain.errors.opponent_busy_search_match_invite', 'The opponent is busy with a search, match, or another invitation.'));
 
         $gameType = $this->catalog->normalizeGameType((string)($game['game_type'] ?? 'tictactoe'));
         $room = UnifiedGameZonePolicy::storageRoom();
@@ -254,7 +266,7 @@ trait GameInviteActionTrait
         if ($status === 'active') return $this->resultWithGame($db, $invite, $viewerId);
         UnifiedGameZonePolicy::assertInviteWritable($invite);
         if ($status !== 'awaiting_start') {
-            throw new RuntimeException('Соперник ещё не подтвердил приглашение.');
+            throw new RuntimeException($this->inviteCopy('server.invite_chain.errors.opponent_not_confirmed', 'The opponent has not confirmed the invitation yet.'));
         }
 
         $inviterId = (string)($invite['inviter_id'] ?? '');
@@ -262,14 +274,14 @@ trait GameInviteActionTrait
         if ($inviterId === '' || $inviteeId === ''
             || !isset($db['users'][$inviterId]) || !is_array($db['users'][$inviterId])
             || !isset($db['users'][$inviteeId]) || !is_array($db['users'][$inviteeId])) {
-            throw new RuntimeException('Один из игроков больше недоступен.');
+            throw new RuntimeException($this->inviteCopy('server.invite_chain.errors.participant_unavailable', 'One of the players is no longer available.'));
         }
 
         $inviter =& $db['users'][$inviterId];
         $invitee =& $db['users'][$inviteeId];
         $token = (string)($invite['token'] ?? '');
-        $this->assertAvailableForStart($db, $inviter, $token, 'Пригласивший игрок сейчас занят в другой игре.');
-        $this->assertAvailableForStart($db, $invitee, $token, 'Приглашённый игрок сейчас занят в другой игре.');
+        $this->assertAvailableForStart($db, $inviter, $token, $this->inviteCopy('server.invite_chain.errors.inviter_busy_other_game', 'The inviting player is currently busy in another game.'));
+        $this->assertAvailableForStart($db, $invitee, $token, $this->inviteCopy('server.invite_chain.errors.invitee_busy_other_game', 'The invited player is currently busy in another game.'));
         $this->assertBalances($inviter, $invitee, $invite);
 
         $invite['status'] = 'starting';
@@ -286,7 +298,7 @@ trait GameInviteActionTrait
         if ($gameId === '') {
             $invite['status'] = 'awaiting_start';
             $invite['updated_at'] = now_iso();
-            throw new RuntimeException('Не удалось создать приватный матч.');
+            throw new RuntimeException($this->inviteCopy('server.invite_chain.errors.private_match_failed', 'The private match could not be created.'));
         }
 
         $now = now_iso();

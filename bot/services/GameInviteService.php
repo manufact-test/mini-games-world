@@ -1,6 +1,8 @@
 <?php
 declare(strict_types=1);
 
+require_once dirname(__DIR__) . '/localization/ServerLocalization.php';
+
 require_once __DIR__ . '/invites/GameInviteCreationTrait.php';
 require_once __DIR__ . '/invites/GameInviteActionTrait.php';
 require_once __DIR__ . '/invites/GameInviteStorageTrait.php';
@@ -33,7 +35,7 @@ final class GameInviteService
     {
         $game = $db['games'][$gameId] ?? null;
         if (is_array($game) && (string)($game['status'] ?? '') === 'finished' && !empty($game['is_bot_game'])) {
-            throw new RuntimeException('Реванш сейчас недоступен. Выберите «Сыграть ещё».');
+            throw new RuntimeException($this->inviteCopy('server.invite_chain.errors.rematch_bot_unavailable', 'Rematch is unavailable. Choose Play again.'));
         }
         return $this->createRematchFromTrait($db, $user, $gameId);
     }
@@ -150,16 +152,22 @@ final class GameInviteService
         $inviterId = (string)($invite['inviter_id'] ?? '');
         $inviteeId = (string)($invite['invitee_id'] ?? '');
         $cancelledBy = (string)($invite['cancelled_by'] ?? '');
-        $inviterName = trim((string)($invite['inviter_name'] ?? 'Игрок')) ?: 'Игрок';
-        $inviteeName = trim((string)($invite['invitee_name'] ?? 'Игрок')) ?: 'Игрок';
-        $gameTitle = trim((string)($invite['game_title'] ?? 'Игра')) ?: 'Игра';
+        $inviterName = trim((string)($invite['inviter_name'] ?? $this->inviteCopy('server.invites.player_fallback', 'Player'))) ?: $this->inviteCopy('server.invites.player_fallback', 'Player');
+        $inviteeName = trim((string)($invite['invitee_name'] ?? $this->inviteCopy('server.invites.player_fallback', 'Player'))) ?: $this->inviteCopy('server.invites.player_fallback', 'Player');
+        $gameTitle = trim((string)($invite['game_title'] ?? $this->inviteCopy('server.invites.game_fallback', 'Game'))) ?: $this->inviteCopy('server.invites.game_fallback', 'Game');
         $inviterCancelled = $cancelledBy !== ''
             ? $cancelledBy === $inviterId
             : $userId === $inviteeId;
 
         return $inviterCancelled
-            ? $inviterName . ' отменил приглашение сыграть в «' . $gameTitle . '».'
-            : $inviteeName . ' отменил участие в матче «' . $gameTitle . '».';
+            ? $this->inviteCopy('server.notifications.inviter_cancelled_message', '{name} cancelled the invitation to “{game}”.', [
+                'name'=>$inviterName,
+                'game'=>$gameTitle,
+            ])
+            : $this->inviteCopy('server.notifications.invitee_cancelled_message', '{name} cancelled participation in “{game}”.', [
+                'name'=>$inviteeName,
+                'game'=>$gameTitle,
+            ]);
     }
 
     private function liveInviteStatus(?array $invite): string
@@ -182,4 +190,10 @@ final class GameInviteService
         if ($status === 'awaiting_start' && $isInvitee) return ['cancel'];
         return [];
     }
+
+    private function inviteCopy(string $key, string $fallback, array $params = []): string
+    {
+        return ServerLocalization::copy($key, $fallback, $params);
+    }
+
 }
