@@ -2,6 +2,7 @@
 declare(strict_types=1);
 
 require_once __DIR__ . '/../notifications/NotificationCenterV2Policy.php';
+require_once dirname(__DIR__) . '/localization/ServerLocalization.php';
 
 final class NotificationService
 {
@@ -101,16 +102,25 @@ final class NotificationService
         }
 
         $shortId = $this->shortOrderId($orderId);
-        $prize = trim((string)(($order['prize_title'] ?? '') ?: ($order['provider'] ?? '') ?: 'Приз'));
+        $prizeFallback = ServerLocalization::copy('server.notifications.service.prize_fallback', 'Prize');
+        $prize = trim((string)(($order['prize_title'] ?? '') ?: ($order['provider'] ?? '') ?: $prizeFallback));
         $denomination = trim((string)($order['denomination_label'] ?? ''));
         if ($decision === 'done') {
-            $title = 'Заказ выполнен';
-            $message = "Заявка #{$shortId}: {$prize}" . ($denomination !== '' ? " · {$denomination}" : '') . '.';
+            $title = ServerLocalization::copy('server.notifications.service.shop_order_done_title', 'Order completed');
+            $message = ServerLocalization::copy(
+                'server.notifications.service.shop_order_done_message',
+                'Request #{id}: {prize}{denomination}.',
+                ['id'=>$shortId,'prize'=>$prize,'denomination'=>$denomination !== '' ? ' · ' . $denomination : '']
+            );
             $tone = 'success';
         } else {
             $reason = trim((string)($order['reject_reason'] ?? $order['admin_note'] ?? ''));
-            $title = 'Заказ отклонён';
-            $message = "Заявка #{$shortId}: {$prize}." . ($reason !== '' ? " Причина: {$reason}." : '');
+            $title = ServerLocalization::copy('server.notifications.service.shop_order_rejected_title', 'Order rejected');
+            $message = ServerLocalization::copy(
+                'server.notifications.service.shop_order_rejected_message',
+                'Request #{id}: {prize}.{reason}',
+                ['id'=>$shortId,'prize'=>$prize,'reason'=>$reason !== '' ? ' Reason: ' . $reason . '.' : '']
+            );
             $tone = 'danger';
         }
 
@@ -150,15 +160,21 @@ final class NotificationService
         $price = max(0, (int)($payment['price'] ?? $payment['amount_rub'] ?? 0));
         $currency = trim((string)($payment['currency'] ?? 'RUB')) ?: 'RUB';
         if ($decision === 'applied') {
-            $title = 'Пополнение подтверждено';
-            $message = "Заявка #{$shortId}: начислено +{$coins} {$room}-коинов"
-                . ($price > 0 ? " за {$price} {$currency}" : '') . '.';
+            $title = ServerLocalization::copy('server.notifications.service.payment_applied_title', 'Top-up confirmed');
+            $message = ServerLocalization::copy(
+                'server.notifications.service.payment_applied_message',
+                'Request #{id}: credited +{coins} {room} coins{price}.',
+                ['id'=>$shortId,'coins'=>$coins,'room'=>$room,'price'=>$price > 0 ? ' for ' . $price . ' ' . $currency : '']
+            );
             $tone = 'success';
         } else {
             $reason = trim((string)($payment['reject_reason'] ?? ''));
-            $title = 'Пополнение отклонено';
-            $message = "Заявка #{$shortId} на {$coins} {$room}-коинов отклонена."
-                . ($reason !== '' ? " Причина: {$reason}." : '');
+            $title = ServerLocalization::copy('server.notifications.service.payment_rejected_title', 'Top-up rejected');
+            $message = ServerLocalization::copy(
+                'server.notifications.service.payment_rejected_message',
+                'Request #{id} for {coins} {room} coins was rejected.{reason}',
+                ['id'=>$shortId,'coins'=>$coins,'room'=>$room,'reason'=>$reason !== '' ? ' Reason: ' . $reason . '.' : '']
+            );
             $tone = 'danger';
         }
 
@@ -194,13 +210,17 @@ final class NotificationService
         }
 
         $reason = trim((string)($transaction['reason'] ?? ''));
-        $message = "Начислено +{$amount} Gold." . ($reason !== '' ? " Причина: {$reason}." : '');
+        $message = ServerLocalization::copy(
+            'server.notifications.service.admin_gold_message',
+            'Credited +{amount} Gold.{reason}',
+            ['amount'=>$amount,'reason'=>$reason !== '' ? ' Reason: ' . $reason . '.' : '']
+        );
         $notification = [
             'id' => make_id('notification'),
             'event_key' => $eventKey,
             'user_id' => $userId,
             'type' => 'admin_gold_topup',
-            'title' => 'Gold начислен',
+            'title' => ServerLocalization::copy('server.notifications.service.admin_gold_title', 'Gold credited'),
             'message' => $message,
             'tone' => 'success',
             'transaction_id' => $transactionId,
@@ -228,8 +248,8 @@ final class NotificationService
             'event_key' => $eventKey,
             'user_id' => $userId,
             'type' => 'welcome_match_grant',
-            'title' => 'Добро пожаловать!',
-            'message' => "Спасибо, что заглянули в Mini Games World. Мы начислили вам +{$amount} коинов.",
+            'title' => ServerLocalization::copy('server.notifications.service.welcome_title', 'Welcome!'),
+            'message' => ServerLocalization::copy('server.notifications.service.welcome_message', 'Thanks for visiting Mini Games World. We credited you +{amount} coins.', ['amount'=>$amount]),
             'tone' => 'success',
             'created_at' => (string)($grant['created_at'] ?? now_iso()),
             'read_at' => null,
@@ -257,8 +277,8 @@ final class NotificationService
             'event_key' => $eventKey,
             'user_id' => $userId,
             'type' => 'weekly_match_bonus',
-            'title' => 'Еженедельные коины начислены',
-            'message' => "Завершено матчей: {$games}. Начислено +{$amount} коинов.",
+            'title' => ServerLocalization::copy('server.notifications.service.weekly_title', 'Weekly coins credited'),
+            'message' => ServerLocalization::copy('server.notifications.service.weekly_message', 'Completed matches: {games}. Credited +{amount} coins.', ['games'=>$games,'amount'=>$amount]),
             'tone' => 'success',
             'cycle_key' => $cycleKey,
             'created_at' => (string)($bonus['created_at'] ?? now_iso()),
@@ -287,8 +307,8 @@ final class NotificationService
             'event_key' => $eventKey,
             'user_id' => $userId,
             'type' => 'first_game_bonus',
-            'title' => 'Бонус за новую игру',
-            'message' => "Первая завершённая партия в «{$gameTitle}». Начислено +{$amount} коинов.",
+            'title' => ServerLocalization::copy('server.notifications.service.first_game_title', 'New game bonus'),
+            'message' => ServerLocalization::copy('server.notifications.service.first_game_message', 'First completed match in “{game}”. Credited +{amount} coins.', ['game'=>$gameTitle,'amount'=>$amount]),
             'tone' => 'success',
             'game_type' => $gameType,
             'amount' => $amount,
@@ -320,7 +340,7 @@ final class NotificationService
             $items[] = [
                 'id' => (string)($notification['id'] ?? ''),
                 'type' => (string)($notification['type'] ?? ''),
-                'title' => (string)($notification['title'] ?? 'Уведомление'),
+                'title' => (string)($notification['title'] ?? ServerLocalization::copy('notifications.item_fallback', 'Notification')),
                 'message' => $this->displayMessage($notification),
                 'text' => (string)($notification['text'] ?? $notification['message'] ?? ''),
                 'tone' => (string)($notification['tone'] ?? 'info'),
@@ -415,10 +435,12 @@ final class NotificationService
             'event_key' => $eventKey,
             'user_id' => $recipientUserId,
             'type' => $type,
-            'title' => $request ? 'Новая заявка в друзья' : 'Теперь вы друзья',
+            'title' => $request
+                ? ServerLocalization::copy('server.notifications.service.friend_request_title', 'New friend request')
+                : ServerLocalization::copy('server.notifications.service.friend_accepted_title', 'You are now friends'),
             'message' => $request
-                ? $actorNickname . ' хочет добавить вас в друзья. Откройте заявку, чтобы посмотреть профиль и принять или отклонить её.'
-                : 'Ваша заявка принята игроком «' . $actorNickname . '».',
+                ? ServerLocalization::copy('server.notifications.service.friend_request_message', '{name} wants to add you as a friend. Open the request to view the profile and accept or decline it.', ['name'=>$actorNickname])
+                : ServerLocalization::copy('server.notifications.service.friend_accepted_message', 'Your request was accepted by “{name}”.', ['name'=>$actorNickname]),
             'tone' => $request ? 'info' : 'success',
             'deep_link' => $request ? 'friends:requests' : '',
             'actor_mgw_id' => $actorMgwId,
@@ -477,21 +499,25 @@ final class NotificationService
         }
         if ($amount <= 0) $amount = 50;
 
-        return 'Первая завершённая партия в «' . $this->gameTitle($gameType) . '». Начислено +' . $amount . ' коинов.';
+        return ServerLocalization::copy(
+            'server.notifications.service.first_game_message',
+            'First completed match in “{game}”. Credited +{amount} coins.',
+            ['game'=>$this->gameTitle($gameType),'amount'=>$amount]
+        );
     }
 
     private function gameTitle(string $gameType): string
     {
         return match ($gameType) {
-            'tictactoe' => 'Крестики-нолики',
-            'four_in_a_row' => 'Четыре в ряд',
-            'battleship' => 'Морской бой',
-            'checkers' => 'Шашки',
-            'reversi' => 'Реверси',
-            'chess' => 'Шахматы',
-            'go' => 'Го',
-            'domino' => 'Домино',
-            default => 'Новая игра',
+            'tictactoe' => ServerLocalization::copy('game_cards.meta.tictactoe.title', 'Tic-Tac-Toe'),
+            'four_in_a_row' => ServerLocalization::copy('game_cards.meta.four_in_a_row.title', 'Four in a Row'),
+            'battleship' => ServerLocalization::copy('game_cards.meta.battleship.title', 'Battleship'),
+            'checkers' => ServerLocalization::copy('game_cards.meta.checkers.title', 'Checkers'),
+            'reversi' => ServerLocalization::copy('game_cards.meta.reversi.title', 'Reversi'),
+            'chess' => ServerLocalization::copy('game_cards.meta.chess.title', 'Chess'),
+            'go' => ServerLocalization::copy('game_cards.meta.go.title', 'Go'),
+            'domino' => ServerLocalization::copy('game_cards.meta.domino.title', 'Domino'),
+            default => ServerLocalization::copy('server.notifications.service.new_game_fallback', 'New game'),
         };
     }
 
