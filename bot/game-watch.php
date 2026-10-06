@@ -2,6 +2,7 @@
 declare(strict_types=1);
 
 require __DIR__ . '/core/bootstrap.php';
+require_once __DIR__ . '/localization/ServerLocalization.php';
 require_once __DIR__ . '/services/GameReactionService.php';
 
 header('Cache-Control: no-store, no-cache, must-revalidate, max-age=0');
@@ -30,12 +31,12 @@ function mgw_game_watch_read_json_games(array $config): array
     $dataDir = rtrim((string)($config['data_dir'] ?? (__DIR__ . '/data')), DIRECTORY_SEPARATOR);
     $path = $dataDir . DIRECTORY_SEPARATOR . 'games.json';
     $handle = @fopen($path, 'rb');
-    if ($handle === false) throw new RuntimeException('Игра не найдена.');
+    if ($handle === false) throw new RuntimeException(ServerLocalization::copy('server.game_runtime.common.game_not_found', 'Game not found.'));
 
     $locked = false;
     try {
         $locked = flock($handle, LOCK_SH | LOCK_NB);
-        if (!$locked) throw new RuntimeException('Состояние игры обновляется.');
+        if (!$locked) throw new RuntimeException(ServerLocalization::copy('server.game_runtime.common.state_updating', 'The game state is updating.'));
 
         $raw = stream_get_contents($handle);
         $decoded = json_decode(is_string($raw) && $raw !== '' ? $raw : '[]', true);
@@ -54,14 +55,14 @@ function mgw_game_watch_result_history(array $config, string $userId, string $ga
         ['users', 'games', 'transactions'],
         static function (array $data) use ($config, $userId, $gameId): array {
             $game = $data['games'][$gameId] ?? null;
-            if (!is_array($game)) throw new RuntimeException('Итог матча ещё недоступен.');
+            if (!is_array($game)) throw new RuntimeException(ServerLocalization::copy('server.game_runtime.common.result_unavailable', 'The match result is not available yet.'));
 
             $participants = array_map('strval', $game['player_ids'] ?? []);
             if (!in_array($userId, $participants, true)) {
-                throw new RuntimeException('Вы не участвуете в этой игре.');
+                throw new RuntimeException(ServerLocalization::copy('server.game_runtime.common.not_participating', 'You are not participating in this game.'));
             }
             if ((string)($game['status'] ?? '') !== 'finished') {
-                throw new RuntimeException('Матч ещё не завершён.');
+                throw new RuntimeException(ServerLocalization::copy('server.game_runtime.common.match_not_finished', 'The match has not finished yet.'));
             }
 
             $formatter = new HistoryService($config, new UserService($config));
@@ -73,10 +74,10 @@ function mgw_game_watch_result_history(array $config, string $userId, string $ga
             $matches = $formatter->matchHistory($resultSnapshot, $userId, 1);
             $match = $matches[0] ?? null;
             if (!is_array($match) || (string)($match['id'] ?? '') !== $gameId) {
-                throw new RuntimeException('Итог матча ещё недоступен.');
+                throw new RuntimeException(ServerLocalization::copy('server.game_runtime.common.result_unavailable', 'The match result is not available yet.'));
             }
             if (!is_array($match['economy'] ?? null)) {
-                throw new RuntimeException('Финансовый итог матча ещё недоступен.');
+                throw new RuntimeException(ServerLocalization::copy('server.game_runtime.common.financial_result_unavailable', 'The financial match result is not available yet.'));
             }
 
             return [
@@ -101,12 +102,12 @@ function mgw_game_watch_latest_reaction(array $config, string $gameId): ?array
 
 try {
     $payload = json_decode(file_get_contents('php://input') ?: '{}', true);
-    if (!is_array($payload)) api_error('Некорректный запрос.');
+    if (!is_array($payload)) api_error(ServerLocalization::copy('server.invites.invalid_request', 'Invalid request.'));
 
     $tgUser = (new AuthService($config))->getUserFromRequest($payload, false);
     $userId = trim((string)($tgUser['id'] ?? ''));
     $gameId = clean_string($payload['gameId'] ?? '', 80);
-    if ($userId === '' || $gameId === '') throw new RuntimeException('Игра не найдена.');
+    if ($userId === '' || $gameId === '') throw new RuntimeException(ServerLocalization::copy('server.game_runtime.common.game_not_found', 'Game not found.'));
 
     if (clean_string($payload['mode'] ?? '', 24) === 'result') {
         api_ok(mgw_game_watch_result_history($config, $userId, $gameId) + [
