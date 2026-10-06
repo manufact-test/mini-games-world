@@ -1,6 +1,8 @@
 <?php
 declare(strict_types=1);
 
+require_once dirname(__DIR__) . '/localization/ServerLocalization.php';
+
 final class TournamentRoundProgressionService
 {
     public const ROUND_BREAK_SECONDS = 180;
@@ -531,7 +533,7 @@ final class TournamentRoundProgressionService
                 if ($participantId === '') continue;
                 $players[] = [
                     'mgw_id'=>$participantId,
-                    'nickname'=>$nicknames[$participantId] ?? 'Игрок',
+                    'nickname'=>$nicknames[$participantId] ?? ServerLocalization::copy('arena.hall.player_fallback', 'Player'),
                     'self'=>$participantId === $mgwId,
                     'winner'=>$completed && $winner !== '' && $winner === $participantId,
                     'loser'=>$completed && $loser !== '' && $loser === $participantId,
@@ -986,7 +988,7 @@ final class TournamentRoundProgressionService
             if ($id === '') continue;
             $nickname = trim((string)($row['nickname'] ?? ''));
             if ($nickname === '') $nickname = trim((string)($row['display_name'] ?? ''));
-            $result[$id] = $nickname !== '' ? $nickname : 'Игрок';
+            $result[$id] = $nickname !== '' ? $nickname : ServerLocalization::copy('arena.hall.player_fallback', 'Player');
         }
         return $result;
     }
