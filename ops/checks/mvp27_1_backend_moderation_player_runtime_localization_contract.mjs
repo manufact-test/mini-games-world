@@ -8,9 +8,9 @@ function get(key){ return key.split('.').reduce((v,p)=>v?.[p],locale); }
 function cyrLines(path){ return fs.readFileSync(path,'utf8').split(/\r?\n/).filter(l=>CYR.test(l)).length; }
 
 assert(locale?._meta?.locale === 'ru','RU locale identity changed.');
-assert(locale?._meta?.version === 71,'Moderation player-runtime localization must publish RU locale version 71.');
-assert(baseline?.staging_base === '212fc1a5844fcb320c367c783bf4f834881503cb','Ratchet must bind to exact post-#2078 staging.');
-assert(baseline?.by_scope?.backend === 937,'Backend localization debt must ratchet 976 -> 937.');
+assert(Number.isInteger(locale?._meta?.version) && locale._meta.version >= 71,'Moderation successor must not regress RU locale below version 71.');
+assert(/^[a-f0-9]{40}$/.test(String(baseline?.staging_base ?? '')),'Localization ratchet must stay bound to an exact staging SHA.');
+assert(Number.isFinite(Number(baseline?.by_scope?.backend)) && Number(baseline.by_scope.backend) <= 937,'Moderation successor must not increase backend localization debt above 937.');
 assert(baseline?.by_scope?.client === 0 && baseline?.by_scope?.['client-entry'] === 0,'Client debt must remain zero.');
 
 const exact = {
@@ -84,5 +84,5 @@ assert(friends.includes("'invalid_reason' => mgw_friends_copy('server.friends.in
 assert(friends.includes("'invalid_match' => mgw_friends_copy('server.friends.invalid_match'"),'Invalid related match must remain reason-mapped at the HTTP boundary.');
 
 console.log('MVP27_1_BACKEND_MODERATION_PLAYER_RUNTIME_LOCALIZATION=PASS');
-console.log('backend_debt=937');
+console.log('backend_debt='+baseline.by_scope.backend);
 console.log('moved_player_facing_cyrillic_lines=39');
