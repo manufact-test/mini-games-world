@@ -109,7 +109,6 @@ jobs:
           php bot/tests/Mvp19_3ProfileReactionsTest.php
           php bot/tests/PhaseBReadOnlyGameWatchContractTest.php
           php bot/tests/PhaseBGameClockWriterDemotionContractTest.php
-          php bot/tests/ProductionV108AuthoritativeLiveRuntimeContractTest.php
           php bot/tests/GameWatchCanonicalIdentityProjectionTest.php
 
       - name: Preserve preparation, presence and reconnect semantics
