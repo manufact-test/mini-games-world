@@ -1,6 +1,8 @@
 <?php
 declare(strict_types=1);
 
+require_once dirname(__DIR__) . '/localization/ServerLocalization.php';
+
 /**
  * Owns presentation-only opponent identity for automated matches.
  *
@@ -86,7 +88,7 @@ final class BotProfilePolicy
 
         foreach ($public['players'] as &$player) {
             if (!is_array($player) || (string)($player['id'] ?? '') !== $botId) continue;
-            $player['name'] = (string)($profile['display_name'] ?? $player['name'] ?? 'Игрок');
+            $player['name'] = (string)($profile['display_name'] ?? $player['name'] ?? ServerLocalization::copy('server.invites.player_fallback', 'Player'));
             $player['avatar'] = is_array($profile['avatar'] ?? null) ? $profile['avatar'] : [];
             $player['cosmetics'] = is_array($profile['cosmetics'] ?? null) ? $profile['cosmetics'] : [];
             break;
