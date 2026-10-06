@@ -6,6 +6,7 @@ const baseline = JSON.parse(fs.readFileSync('ops/checks/mvp27_1_hardcoded_text_b
 const registrationSource = fs.readFileSync('bot/tournaments/TournamentRegistrationService.php','utf8');
 const successor = registrationSource.includes("ServerLocalization::copy('server.tournament_runtime.scheduling.start_required'");
 const finalBackendSuccessor = Number(baseline?.by_scope?.backend) === 0;
+const finalBackendSuccessor = Number(baseline?.by_scope?.backend) === 0;
 function assert(ok,msg){ if(!ok) throw new Error(msg); }
 function get(key){ return key.split('.').reduce((v,p)=>v?.[p],locale); }
 function cyrLines(path){ return fs.readFileSync(path,'utf8').split(/\r?\n/).filter(l=>CYR.test(l)).length; }
@@ -149,7 +150,19 @@ if(successor){
   assert(registration.includes("throw new InvalidArgumentException('Укажите дату и время начала турнира.');"),'Admin scheduling copy must remain outside predecessor player slice.');
 }
 const hall=fs.readFileSync('bot/tournaments/TournamentHallService.php','utf8');
-assert(hall.includes('entry conflicts with the canonical registration.'),'Internal Hall invariant must remain outside player copy.');
+if(finalBackendSuccessor){
+  for(const [key,value] of Object.entries({
+    'server.tournament_runtime.hall.registration_conflict':'Турнирный зал entry conflicts with the canonical registration.',
+    'server.tournament_runtime.hall.scheduled_only':'Турнирный зал is available only for the active scheduled tournament.',
+    'server.tournament_runtime.hall.participant_identity_required':'Турнирный зал requires canonical participant identity.',
+    'server.tournament_runtime.hall.participant_state_ambiguous':'Турнирный зал participant state is ambiguous.'
+  })){
+    assert(get(key)===value,'Final backend successor must preserve Hall invariant copy through canonical locale: '+key);
+  }
+  assert(hall.includes("ServerLocalization::copy('server.tournament_runtime.hall.registration_conflict'"),'Final backend successor must resolve Hall invariant copy through canonical localization.');
+}else{
+  assert(hall.includes('entry conflicts with the canonical registration.'),'Internal Hall invariant must remain outside predecessor player copy.');
+}
 const cancellation=fs.readFileSync('bot/tournaments/TournamentCancellationService.php','utf8');
 assert(cancellation.includes("throw new InvalidArgumentException('Для аварийной остановки обязательно укажите причину.');"),'Admin cancellation validation must remain outside player slice.');
 
