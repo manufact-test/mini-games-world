@@ -56,6 +56,18 @@ jobs:
               bot/helpers/validators.php \
               bot/storage/JsonDatabase.php \
               bot/social/SocialInviteGuard.php
+          elif [[ "${{ github.head_ref }}" == agent/mvp27-1-backend-support-player-runtime-localization-* ]]; then
+            current_base='${{ github.event.pull_request.base.sha }}'
+            echo 'Support localization successor: preserve every accepted Android product owner except the localized support attachment endpoint.'
+            test "${current_base}" = '58a5b6c15053c905f3cd333d42dde7310efc56b8'
+            git diff --exit-code "${current_base}" HEAD -- \
+              .well-known/assetlinks.json \
+              android-app \
+              ':(exclude)android-app/tools/verify-native-shell-settings.py' \
+              bot/android-auth.php \
+              bot/helpers/validators.php \
+              bot/storage/JsonDatabase.php \
+              bot/social/SocialInviteGuard.php
           elif [[ "${{ github.head_ref }}" == agent/mvp27-1-backend-invite-service-chain-localization-* ]]; then
             accepted='72935e60c50124dc46098e34f82269da3d10e64d'
             base='${{ github.event.pull_request.base.sha }}'
