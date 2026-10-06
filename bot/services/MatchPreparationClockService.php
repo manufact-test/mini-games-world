@@ -1,6 +1,8 @@
 <?php
 declare(strict_types=1);
 
+require_once dirname(__DIR__) . '/localization/ServerLocalization.php';
+
 final class MatchPreparationClockService
 {
     public const PREPARATION_TIMEOUT_SEC = 10;
@@ -204,21 +206,21 @@ final class MatchPreparationClockService
     {
         $phase = (string)($game['launch_phase'] ?? 'active');
         if ($phase === 'preparing') {
-            throw new RuntimeException('Матч ещё синхронизирует игроков.');
+            throw new RuntimeException(ServerLocalization::copy('server.game_runtime.match_preparation.syncing', 'The match is still synchronizing players.'));
         }
         if ($phase === 'preparation_timeout') {
-            throw new RuntimeException('Соперник не подключился. Матч отменяется.');
+            throw new RuntimeException(ServerLocalization::copy('server.game_runtime.match_preparation.opponent_no_show', 'The opponent did not connect. The match is being cancelled.'));
         }
         if ($phase === 'countdown') {
             $startsAtMs = $this->storedEpochMs($game, 'starts_epoch_ms', 'starts_at');
             if ($startsAtMs === null || $startsAtMs > $this->nowMs()) {
-                throw new RuntimeException('Матч начнётся после обратного отсчёта.');
+                throw new RuntimeException(ServerLocalization::copy('server.game_runtime.match_preparation.countdown', 'The match will start after the countdown.'));
             }
         }
         if ($phase === 'active') {
             $turnStartsAtMs = $this->storedEpochMs($game, 'turn_starts_epoch_ms', 'turn_starts_at');
             if ($turnStartsAtMs !== null && $turnStartsAtMs > $this->nowMs()) {
-                throw new RuntimeException('Ход ещё не начался.');
+                throw new RuntimeException(ServerLocalization::copy('server.game_runtime.match_preparation.turn_not_started', 'The turn has not started yet.'));
             }
         }
     }
@@ -228,7 +230,7 @@ final class MatchPreparationClockService
         if (!array_key_exists('launch_phase', $game)) return;
         if ((string)($game['launch_phase'] ?? '') === 'active') return;
 
-        throw new RuntimeException('Матч ещё не начался.');
+        throw new RuntimeException(ServerLocalization::copy('server.game_runtime.match_preparation.match_not_started', 'The match has not started yet.'));
     }
 
     public function synchronizeTurnHandoff(array &$game, string $previousTurn): void
