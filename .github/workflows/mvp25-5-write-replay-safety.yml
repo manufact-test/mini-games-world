@@ -80,7 +80,7 @@ jobs:
           changed="$(git diff --name-only "$base" "$head")"
           printf '%s\n' "$changed"
           if [[ "${{ github.head_ref }}" == agent/mvp27-1-backend-moderation-player-runtime-localization-* ]]; then
-            allowed='^(\.github/workflows/(mvp25-5-write-replay-safety|mvp18-2-friends-ui|mvp27-1-backend-moderation-player-runtime-localization)\.yml|app/locales/ru\.json|bot/(moderation\.php|moderation/ModerationService\.php|social/PlayerReportService\.php|tests/Mvp22_3ModerationContractTest\.php)|ops/checks/mvp27_1_(backend_moderation_player_runtime_localization_contract\.mjs|hardcoded_text_baseline\.json))
+            allowed='^(\.github/workflows/(mvp25-5-write-replay-safety|mvp18-2-friends-ui|mvp27-1-backend-moderation-player-runtime-localization)\.yml|app/locales/ru\.json|bot/(moderation\.php|moderation/ModerationService\.php|social/PlayerReportService\.php|tests/Mvp22_3ModerationContractTest\.php)|ops/checks/mvp27_1_(backend_(moderation_player_runtime|tournament_player_runtime)_localization_contract\.mjs|hardcoded_text_baseline\.json))
 
           else
             allowed='^(\.github/workflows/mvp25-5-write-replay-safety\.yml|bot/(support/SupportTicketService\.php|social/PlayerReportService\.php|support\.php|tests/(Mvp25_5WriteReplaySafetyTest\.php|Mvp25_5WriteReplaySafetyContractTest\.php))|docs/MVP25_5_SECURITY_RESILIENCE_AUDIT\.md)
