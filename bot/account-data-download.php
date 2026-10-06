@@ -1,6 +1,8 @@
 <?php
 declare(strict_types=1);
 
+require_once __DIR__ . '/localization/ServerLocalization.php';
+
 header('Cache-Control: no-store, private, max-age=0');
 header('Pragma: no-cache');
 header('X-Content-Type-Options: nosniff');
@@ -13,25 +15,25 @@ require_once __DIR__ . '/accounts/AccountDataLifecycleService.php';
 
 try {
     if (strtoupper((string)($_SERVER['REQUEST_METHOD'] ?? 'GET')) !== 'GET') {
-        json_response(['ok'=>false,'error'=>'Метод запроса не поддерживается.'], 405);
+        json_response(['ok'=>false,'error'=>ServerLocalization::copy('server.account_data.download.method_not_allowed', 'Request method is not supported.')], 405);
     }
 
     $requestId = trim((string)($_GET['request_id'] ?? ''));
     if (preg_match('/^adr_[a-f0-9]{32}$/', $requestId) !== 1) {
-        json_response(['ok'=>false,'error'=>'Некорректный архив.'], 400);
+        json_response(['ok'=>false,'error'=>ServerLocalization::copy('server.account_data.download.invalid_archive', 'Invalid archive.')], 400);
     }
 
     $databaseConfig = DatabaseConfig::fromApplicationConfig($config);
     $router = new RuntimeStorageRouter($config);
     if (!$databaseConfig->enabled()
         || ($router->enabled() && $router->routeFor('accounts') !== RuntimeStorageRouter::DRIVER_DATABASE)) {
-        json_response(['ok'=>false,'error'=>'Скачивание данных временно недоступно.'], 503);
+        json_response(['ok'=>false,'error'=>ServerLocalization::copy('server.account_data.download.unavailable', 'Data download is temporarily unavailable.')], 503);
     }
 
     $authenticated = AccountReauthGuard::authorize($config, []);
     $mgwId = strtoupper(trim((string)($authenticated['mgw_id'] ?? '')));
     if (!MgwIdGenerator::isValid($mgwId)) {
-        json_response(['ok'=>false,'error'=>'Профиль MGW недоступен для этой сессии.'], 401);
+        json_response(['ok'=>false,'error'=>ServerLocalization::copy('server.account_data.download.profile_unavailable', 'The MGW profile is unavailable for this session.')], 401);
     }
 
     $database = PdoConnectionFactory::create($databaseConfig);
@@ -68,5 +70,5 @@ try {
     ], $status);
 } catch (Throwable $error) {
     error_log('[MiniGamesWorld account data download] ' . $error->getMessage());
-    json_response(['ok'=>false,'error'=>'Не удалось скачать архив данных.'], 500);
+    json_response(['ok'=>false,'error'=>ServerLocalization::copy('server.account_data.download.failed', 'The data archive could not be downloaded.')], 500);
 }

@@ -1,6 +1,8 @@
 <?php
 declare(strict_types=1);
 
+require_once __DIR__ . '/localization/ServerLocalization.php';
+
 header('Cache-Control: no-store, no-cache, must-revalidate, max-age=0');
 header('Pragma: no-cache');
 header('X-Content-Type-Options: nosniff');
@@ -47,7 +49,7 @@ try {
 
     $payload = json_decode(file_get_contents('php://input') ?: '{}', true);
     if (!is_array($payload)) {
-        json_response(['ok' => false, 'error' => 'Некорректный запрос.'], 400);
+        json_response(['ok' => false, 'error' => ServerLocalization::copy('server.profile_endpoint.invalid_request', 'Invalid request.')], 400);
     }
 
     // AuthService remains the only provider authentication owner. It resolves
@@ -55,14 +57,14 @@ try {
     $authenticatedUser = (new AuthService($config))->getUserFromRequest($payload);
     $mgwId = trim((string)($authenticatedUser['mgw_id'] ?? ''));
     if (!MgwIdGenerator::isValid($mgwId)) {
-        json_response(['ok' => false, 'error' => 'Профиль MGW недоступен для этой сессии.'], 401);
+        json_response(['ok' => false, 'error' => ServerLocalization::copy('server.profile_endpoint.profile_unavailable', 'The MGW profile is unavailable for this session.')], 401);
     }
 
     $databaseConfig = DatabaseConfig::fromApplicationConfig($config);
     $router = new RuntimeStorageRouter($config);
     if (!$databaseConfig->enabled()
         || ($router->enabled() && $router->routeFor('accounts') !== RuntimeStorageRouter::DRIVER_DATABASE)) {
-        json_response(['ok' => false, 'error' => 'Профиль MGW временно недоступен.'], 503);
+        json_response(['ok' => false, 'error' => ServerLocalization::copy('server.profile_endpoint.temporarily_unavailable', 'The MGW profile is temporarily unavailable.')], 503);
     }
 
     // First-visible identity and collection must come from the same canonical DB
@@ -89,5 +91,5 @@ try {
     ]);
 } catch (Throwable $error) {
     error_log('[MiniGamesWorld MGW profile] ' . $error->getMessage());
-    json_response(['ok' => false, 'error' => 'Не удалось загрузить профиль MGW.'], 500);
+    json_response(['ok' => false, 'error' => ServerLocalization::copy('server.profile_endpoint.load_failed', 'The MGW profile could not be loaded.')], 500);
 }

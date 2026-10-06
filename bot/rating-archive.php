@@ -1,6 +1,8 @@
 <?php
 declare(strict_types=1);
 
+require_once __DIR__ . '/localization/ServerLocalization.php';
+
 header('Cache-Control: no-store, no-cache, must-revalidate, max-age=0');
 header('Pragma: no-cache');
 header('X-Content-Type-Options: nosniff');
@@ -15,14 +17,14 @@ try {
 
     $payload = json_decode(file_get_contents('php://input') ?: '{}', true);
     if (!is_array($payload)) {
-        json_response(['ok'=>false,'error'=>'Некорректный запрос.'], 400);
+        json_response(['ok'=>false,'error'=>ServerLocalization::copy('server.rating_archive_endpoint.invalid_request', 'Invalid request.')], 400);
     }
 
     $configRef = $config;
     $authenticatedUser = (new AuthService($configRef))->getUserFromRequest($payload);
     $mgwId = trim((string)($authenticatedUser['mgw_id'] ?? ''));
     if (!MgwIdGenerator::isValid($mgwId)) {
-        json_response(['ok'=>false,'error'=>'Архив рейтинга недоступен для этой сессии.'], 401);
+        json_response(['ok'=>false,'error'=>ServerLocalization::copy('server.rating_archive_endpoint.session_unavailable', 'The rating archive is unavailable for this session.')], 401);
     }
 
     $databaseConfig = DatabaseConfig::fromApplicationConfig($configRef);
@@ -30,7 +32,7 @@ try {
     if (!$databaseConfig->enabled()
         || ($router->enabled() && $router->routeFor('accounts') !== RuntimeStorageRouter::DRIVER_DATABASE)
         || ($router->enabled() && $router->routeFor('realtime') !== RuntimeStorageRouter::DRIVER_DATABASE)) {
-        json_response(['ok'=>false,'error'=>'Архив рейтинга временно недоступен.'], 503);
+        json_response(['ok'=>false,'error'=>ServerLocalization::copy('server.rating_archive_endpoint.unavailable', 'The rating archive is temporarily unavailable.')], 503);
     }
 
     $database = PdoConnectionFactory::create($databaseConfig);
@@ -55,13 +57,13 @@ try {
         ]);
     }
 
-    json_response(['ok'=>false,'error'=>'Неизвестный режим архива рейтинга.'], 422);
+    json_response(['ok'=>false,'error'=>ServerLocalization::copy('server.rating_archive_endpoint.unknown_mode', 'Unknown rating archive mode.')], 422);
 } catch (InvalidArgumentException $error) {
     json_response(['ok'=>false,'error'=>mgw_public_api_error($error->getMessage())], 422);
 } catch (Throwable $error) {
     error_log('MGW rating archive failed: ' . $error->getMessage());
 
-    $response = ['ok'=>false,'error'=>'Не удалось загрузить архив рейтинга.'];
+    $response = ['ok'=>false,'error'=>ServerLocalization::copy('server.rating_archive_endpoint.load_failed', 'The rating archive could not be loaded.')];
     if (strtolower(trim((string)($config['environment'] ?? ''))) === 'staging'
         && isset($authenticatedUser)
         && is_array($authenticatedUser)

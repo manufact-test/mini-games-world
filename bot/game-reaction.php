@@ -1,6 +1,8 @@
 <?php
 declare(strict_types=1);
 
+require_once __DIR__ . '/localization/ServerLocalization.php';
+
 header('Cache-Control: no-store, no-cache, must-revalidate, max-age=0');
 header('Pragma: no-cache');
 header('X-Content-Type-Options: nosniff');
@@ -14,18 +16,18 @@ try {
         json_response(['ok' => false, 'error' => 'Method not allowed.'], 405);
     }
     $payload = json_decode(file_get_contents('php://input') ?: '{}', true);
-    if (!is_array($payload)) json_response(['ok' => false, 'error' => 'Некорректный запрос.'], 400);
+    if (!is_array($payload)) json_response(['ok' => false, 'error' => ServerLocalization::copy('server.game_reactions_endpoint.invalid_request', 'Invalid request.')], 400);
 
     $authenticatedUser = (new AuthService($config))->getUserFromRequest($payload);
     $providerUserId = trim((string)($authenticatedUser['id'] ?? ''));
     $mgwId = trim((string)($authenticatedUser['mgw_id'] ?? ''));
     if ($providerUserId === '' || !MgwIdGenerator::isValid($mgwId)) {
-        json_response(['ok' => false, 'error' => 'Профиль MGW недоступен для этой сессии.'], 401);
+        json_response(['ok' => false, 'error' => ServerLocalization::copy('server.game_reactions_endpoint.profile_unavailable', 'The MGW profile is unavailable for this session.')], 401);
     }
 
     $databaseConfig = DatabaseConfig::fromApplicationConfig($config);
     if (!$databaseConfig->enabled()) {
-        json_response(['ok' => false, 'error' => 'Реакции временно недоступны.'], 503);
+        json_response(['ok' => false, 'error' => ServerLocalization::copy('server.game_reactions_endpoint.unavailable', 'Reactions are temporarily unavailable.')], 503);
     }
     $database = PdoConnectionFactory::create($databaseConfig);
     $inventory = new ProductInventoryService($database);
@@ -45,7 +47,7 @@ try {
                 && !empty($item['owned']);
             break;
         }
-        if (!$allowed) throw new GameReactionException(404, 'Набор реакций недоступен.');
+        if (!$allowed) throw new GameReactionException(404, ServerLocalization::copy('server.game_reactions_endpoint.set_unavailable', 'This reaction set is unavailable.'));
         $inventory->equip($mgwId, $itemId);
         json_response(['ok' => true, 'inventory' => $inventory->snapshot($mgwId)]);
     }
@@ -55,7 +57,7 @@ try {
         json_response(['ok' => true, 'inventory' => $inventory->snapshot($mgwId)]);
     }
 
-    if ($action !== 'send') throw new GameReactionException(422, 'Неизвестное действие реакций.');
+    if ($action !== 'send') throw new GameReactionException(422, ServerLocalization::copy('server.game_reactions_endpoint.unknown_action', 'Unknown reaction action.'));
 
     $gameId = clean_string($payload['gameId'] ?? '', 80);
     $code = clean_string($payload['reaction'] ?? '', 32);
@@ -65,5 +67,5 @@ try {
     json_response(['ok' => false, 'error'=>mgw_public_api_error($error->getMessage())], $error->status);
 } catch (Throwable $error) {
     error_log('[MiniGamesWorld reaction] ' . $error->getMessage());
-    json_response(['ok' => false, 'error' => 'Не удалось выполнить действие с реакцией.'], 500);
+    json_response(['ok' => false, 'error' => ServerLocalization::copy('server.game_reactions_endpoint.failed', 'The reaction action could not be completed.')], 500);
 }

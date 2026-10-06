@@ -1,6 +1,8 @@
 <?php
 declare(strict_types=1);
 
+require_once __DIR__ . '/localization/ServerLocalization.php';
+
 require __DIR__ . '/core/bootstrap.php';
 require_once __DIR__ . '/services/PresenceService.php';
 require_once __DIR__ . '/services/ReconnectLifecycleService.php';
@@ -8,11 +10,11 @@ require_once __DIR__ . '/services/TournamentReconnectTraceService.php';
 
 try {
     $payload = json_decode(file_get_contents('php://input') ?: '{}', true);
-    if (!is_array($payload)) api_error('Некорректный запрос.');
+    if (!is_array($payload)) api_error(ServerLocalization::copy('server.presence_endpoint.invalid_request', 'Invalid request.'));
 
     $action = clean_string($payload['action'] ?? 'status', 24);
     if (!in_array($action, ['status', 'ping', 'background', 'leave'], true)) {
-        throw new RuntimeException('Неизвестное действие присутствия.');
+        throw new RuntimeException(ServerLocalization::copy('server.presence_endpoint.unknown_action', 'Unknown presence action.'));
     }
 
     $sessionId = clean_string($payload['sessionId'] ?? '', 120);
@@ -24,8 +26,8 @@ try {
     // this high-frequency path.
     $tgUser = $auth->getUserFromRequest($payload, false);
     $accountId = trim((string)($tgUser['id'] ?? ''));
-    if ($accountId === '') throw new RuntimeException('Пользователь не найден.');
-    if ($sessionId === '') throw new RuntimeException('Сессия устройства не найдена.');
+    if ($accountId === '') throw new RuntimeException(ServerLocalization::copy('server.presence_endpoint.user_not_found', 'User not found.'));
+    if ($sessionId === '') throw new RuntimeException(ServerLocalization::copy('server.presence_endpoint.device_session_not_found', 'Device session not found.'));
 
     $presence = new PresenceService();
     $stats = new StatsService($presence);
