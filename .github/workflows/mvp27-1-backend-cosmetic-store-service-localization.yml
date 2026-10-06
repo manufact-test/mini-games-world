@@ -1,0 +1,102 @@
+name: MVP-27.1 Backend Cosmetic Store Service Localization
+# Exact-head CI checkpoint after bounded predecessor-contract migrations.
+# Final checkpoint also includes repaired pre-2070 Invite/Reversi CI metadata and factual v110 publication proof.
+# Successor recovery checkpoint also removes the dead Invite test call and freezes Account owners relative to PR base.
+# Final predecessor checkpoint also makes the Account-chain workflow itself successor-safe.
+# Invite notification checkpoint migrates the final stale raw-copy contract to canonical locale ownership.
+# Opponent-picker checkpoint aligns the final Invite predecessor with the accepted authoritative loading flow.
+
+on:
+  pull_request:
+    branches:
+      - agent/mvp-13-2-staging
+    paths:
+      - 'bot/catalog/CosmeticStoreService.php'
+      - 'bot/catalog/CosmeticStoreRuntimePurchaseService.php'
+      - 'bot/tests/Mvp19_5ChessCosmeticsTest.php'
+      - 'bot/tests/ProductionV110CanonicalInviteLaunchContractTest.php'
+      - 'bot/tests/ProductionV110SearchInviteLifecycleR12ContractTest.php'
+      - 'bot/tests/ProductionV110InviteNotificationStatefulCardContractTest.php'
+      - 'bot/tests/ProductionV110InviteOpponentSourceR12ContractTest.php'
+      - 'bot/tests/ProductionMvp14D1OpponentSourceParityTest.php'
+      - 'app/locales/ru.json'
+      - 'ops/checks/mvp27_1_backend_cosmetic_store_service_localization_contract.mjs'
+      - 'ops/checks/mvp27_1_hardcoded_text_baseline.json'
+      - '.github/workflows/mvp19-2-cosmetic-store.yml'
+      - '.github/workflows/mvp19-7-reversi-live-cosmetics.yml'
+      - '.github/workflows/mvp25-6-monetization-disabled-store.yml'
+      - '.github/workflows/mvp27-1-backend-invite-service-chain-localization.yml'
+      - '.github/workflows/mvp27-1-backend-cosmetic-store-service-localization.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  backend-cosmetic-store-service-localization:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - name: Checkout exact candidate
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          persist-credentials: false
+          fetch-depth: 0
+
+      - name: Syntax
+        run: |
+          set -euo pipefail
+          php -l bot/catalog/CosmeticStoreService.php
+          php -l bot/catalog/CosmeticStoreRuntimePurchaseService.php
+          php -l bot/localization/ServerLocalization.php
+          php -l bot/tests/Mvp19_5ChessCosmeticsTest.php
+          php -l bot/tests/ProductionV110CanonicalInviteLaunchContractTest.php
+          php -l bot/tests/ProductionV110SearchInviteLifecycleR12ContractTest.php
+          php -l bot/tests/ProductionV110InviteNotificationStatefulCardContractTest.php
+          php -l bot/tests/ProductionV110InviteOpponentSourceR12ContractTest.php
+          php -l bot/tests/ProductionMvp14D1OpponentSourceParityTest.php
+          node --check ops/checks/mvp27_1_backend_cosmetic_store_service_localization_contract.mjs
+          node --check ops/checks/mvp27_1_hardcoded_text_audit.mjs
+
+      - name: Focused Store service localization proof
+        run: node ops/checks/mvp27_1_backend_cosmetic_store_service_localization_contract.mjs
+
+      - name: Preserve Store product, purchase and wallet semantics
+        run: |
+          set -euo pipefail
+          php bot/tests/Mvp19_2CosmeticStoreTest.php
+          php bot/tests/Mvp19_1ProductInventoryTest.php
+          php bot/tests/Mvp19_5ChessCosmeticsTest.php
+          php bot/tests/Mvp25_6MonetizationDisabledStoreTest.php
+          php bot/tests/Mvp26_3StoreWalletOwnershipContractTest.php
+
+      - name: Preserve active endpoint localization owner
+        run: node ops/checks/mvp27_1_backend_cosmetic_store_endpoint_localization_contract.mjs
+
+      - name: Preserve canonical invite and search lifecycle predecessors
+        run: |
+          set -euo pipefail
+          php bot/tests/ProductionV110CanonicalInviteLaunchContractTest.php
+          php bot/tests/ProductionV110SearchInviteLifecycleR12ContractTest.php
+          php bot/tests/ProductionV110InviteNotificationStatefulCardContractTest.php
+          php bot/tests/ProductionV110InviteOpponentSourceR12ContractTest.php
+          php bot/tests/ProductionMvp14D1OpponentSourceParityTest.php
+
+      - name: Hardcoded player text ratchet
+        run: node ops/checks/mvp27_1_hardcoded_text_audit.mjs
+
+      - name: Bounded scope
+        if: github.event_name == 'pull_request' && startsWith(github.head_ref, 'agent/mvp27-1-backend-cosmetic-store-service-localization-')
+        shell: bash
+        run: |
+          set -euo pipefail
+          base='${{ github.event.pull_request.base.sha }}'
+          head='${{ github.event.pull_request.head.sha }}'
+          changed="$(git diff --name-only "$base" "$head")"
+          allowed='^(bot/catalog/CosmeticStoreService\.php|bot/catalog/CosmeticStoreRuntimePurchaseService\.php|bot/tests/(Mvp19_5ChessCosmeticsTest|ProductionV110CanonicalInviteLaunchContractTest|ProductionV110SearchInviteLifecycleR12ContractTest|ProductionV110InviteNotificationStatefulCardContractTest|ProductionV110InviteOpponentSourceR12ContractTest|ProductionMvp14D1OpponentSourceParityTest)\.php|app/locales/ru\.json|ops/checks/mvp27_1_backend_cosmetic_store_service_localization_contract\.mjs|ops/checks/mvp27_1_hardcoded_text_baseline\.json|\.github/workflows/(mvp19-2-cosmetic-store|mvp19-7-reversi-live-cosmetics|mvp22-8-account-data|mvp25-6-monetization-disabled-store|mvp27-1-backend-account-chain-localization|mvp27-1-backend-cosmetic-store-service-localization|mvp27-1-backend-invite-service-chain-localization)\.yml)$'
+          bad="$(printf '%s\n' "$changed" | grep -Ev "$allowed" || true)"
+          test -z "$bad" || { printf 'Unexpected Cosmetic Store service localization paths:\n%s\n' "$bad" >&2; exit 1; }
+
+      - name: Tracked secret scan
+        run: node scripts/ci/check-secrets.mjs

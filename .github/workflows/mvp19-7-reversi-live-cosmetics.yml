@@ -89,7 +89,11 @@ jobs:
             app/assets/css/screens/profile-reversi-store-parity-v1.css \
             app/assets/css/screens/profile-reversi-store-exact-v2.css \
             "${meta_exclude[@]}"
-          unexpected_catalog="$(git diff --name-only "$base" "$head" -- bot/catalog | grep -vxF 'bot/catalog/CosmeticStoreService.php' || true)"
+          if [[ '${{ github.head_ref }}' == agent/mvp27-1-backend-cosmetic-store-service-localization-* ]]; then
+            unexpected_catalog="$(git diff --name-only "$base" "$head" -- bot/catalog | grep -Ev '^bot/catalog/(CosmeticStoreService|CosmeticStoreRuntimePurchaseService)\.php$' || true)"
+          else
+            unexpected_catalog="$(git diff --name-only "$base" "$head" -- bot/catalog | grep -vxF 'bot/catalog/CosmeticStoreService.php' || true)"
+          fi
           if [ -n "$unexpected_catalog" ]; then
             echo "Unexpected frozen catalog changes:" >&2
             echo "$unexpected_catalog" >&2

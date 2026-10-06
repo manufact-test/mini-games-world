@@ -115,7 +115,12 @@ $chessCssEntrySource = (string)file_get_contents($root . '/app/assets/css/games/
 $mainCssSource = (string)file_get_contents($root . '/app/assets/css/main.css');
 $serviceSource = (string)file_get_contents($root . '/bot/catalog/CosmeticStoreService.php');
 $manifestSource = (string)file_get_contents($root . '/app/runtime/client/version-manifest.php');
-$assertTrue(str_contains($serviceSource, '$gameCatalogs') && str_contains($serviceSource, "'chess' => 'Шахматы'"), 'Store service must expose game catalogs generically instead of adding a parallel Chess store');
+$assertTrue(
+    str_contains($serviceSource, '$gameCatalogs')
+    && str_contains($serviceSource, "'chess' => 'store.games.catalog_titles.chess'")
+    && str_contains($serviceSource, "ServerLocalization::copy("),
+    'Store service must expose game catalogs generically through canonical locale ownership instead of adding a parallel Chess store'
+);
 $assertTrue(str_contains($storeSource, 'activeGameCatalog') && str_contains($storeSource, "gameType === 'chess'"), 'Store UI must use the shared Games tab with Chess selection');
 $assertTrue(str_contains($rendererSource, "game_chess_theme") && str_contains($rendererSource, "game_chess_elements") && str_contains($rendererSource, "game_chess_effect"), 'Chess renderer must consume the three canonical cosmetic slots');
 $assertTrue(str_contains($rendererSource, 'player?.game_cosmetics?.slots'), 'Chess renderer must consume public owner-specific projection');

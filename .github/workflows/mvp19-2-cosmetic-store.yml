@@ -64,7 +64,19 @@ jobs:
           set -Eeuo pipefail
           baseline='b3d0b7a703fc379821a4722fba8526174d22ea5d'
           git cat-file -e "${baseline}^{commit}"
-          if [[ "${{ github.head_ref }}" == agent/mvp27-1-backend-cosmetic-store-endpoint-localization-* ]]; then
+          if [[ "${{ github.head_ref }}" == agent/mvp27-1-backend-cosmetic-store-service-localization-* ]]; then
+            echo 'Cosmetic Store service localization successor: compare exact current PR base and exclude only the two focused copy owners.'
+            current_base='${{ github.event.pull_request.base.sha }}'
+            git diff --exit-code "${current_base}" HEAD -- \
+              bot/catalog \
+              ':(exclude)bot/catalog/CosmeticStoreService.php' \
+              ':(exclude)bot/catalog/CosmeticStoreRuntimePurchaseService.php' \
+              bot/cosmetic-store.php \
+              bot/shop \
+              bot/shop-history.php \
+              bot/economy \
+              bot/ledger
+          elif [[ "${{ github.head_ref }}" == agent/mvp27-1-backend-cosmetic-store-endpoint-localization-* ]]; then
             echo 'Cosmetic Store endpoint localization successor: preserve exact Store services/economy identity; focused localization contract owns bot/cosmetic-store.php copy migration.'
             git diff --exit-code "${baseline}" HEAD -- \
               bot/catalog \

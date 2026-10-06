@@ -2,6 +2,7 @@
 declare(strict_types=1);
 
 require_once __DIR__ . '/ProductInventoryService.php';
+require_once dirname(__DIR__) . '/localization/ServerLocalization.php';
 
 final class CosmeticStoreException extends RuntimeException
 {
@@ -29,15 +30,15 @@ final class CosmeticStoreService
     private const EXTERNAL_BILLING_AVAILABLE = false;
     private const OFFER_ID_PATTERN = '/^[a-z0-9][a-z0-9_.-]{0,63}$/';
     private const REQUEST_TOKEN_PATTERN = '/^[A-Za-z0-9][A-Za-z0-9_.:-]{7,95}$/';
-    private const GAME_TITLES = [
-        'tictactoe' => 'Крестики-нолики',
-        'chess' => 'Шахматы',
-        'checkers' => 'Шашки',
-        'reversi' => 'Реверси',
-        'go' => 'Го',
-        'domino' => 'Домино',
-        'four_in_a_row' => '4 в ряд',
-        'battleship' => 'Морской бой',
+    private const GAME_TITLE_KEYS = [
+        'tictactoe' => 'store.games.catalog_titles.tictactoe',
+        'chess' => 'store.games.catalog_titles.chess',
+        'checkers' => 'store.games.catalog_titles.checkers',
+        'reversi' => 'store.games.catalog_titles.reversi',
+        'go' => 'store.games.catalog_titles.go',
+        'domino' => 'store.games.catalog_titles.domino',
+        'four_in_a_row' => 'store.games.catalog_titles.four_in_a_row',
+        'battleship' => 'store.games.catalog_titles.battleship',
     ];
 
     private ProductInventoryService $inventory;
@@ -45,6 +46,12 @@ final class CosmeticStoreService
     public function __construct(private DatabaseConnectionInterface $database)
     {
         $this->inventory = new ProductInventoryService($database);
+    }
+
+    private function copy(string $key, string $emergencyFallback): string
+    {
+        if ($key === '') return $emergencyFallback;
+        return ServerLocalization::copy($key, $emergencyFallback);
     }
 
     public function snapshot(string $mgwId, int $balance, array $coinPackages = []): array
@@ -107,7 +114,7 @@ final class CosmeticStoreService
             if (!isset($gameCatalogs[$gameType])) {
                 $gameCatalogs[$gameType] = [
                     'game_type' => $gameType,
-                    'title' => self::GAME_TITLES[$gameType] ?? $gameType,
+                    'title' => $this->copy(self::GAME_TITLE_KEYS[$gameType] ?? '', $gameType),
                     'themes' => [],
                     'elements' => [],
                     'effects' => [],
@@ -124,20 +131,20 @@ final class CosmeticStoreService
         unset($gameCatalog);
 
         $bundleDefinitions = [
-            'tictactoe' => [self::TICTACTOE_BUNDLE_OFFER_ID, 'Неоновый комплект'],
-            'chess' => [self::CHESS_BUNDLE_OFFER_ID, 'Неоновый комплект шахмат'],
-            'checkers' => [self::CHECKERS_BUNDLE_OFFER_ID, 'Неоновый комплект шашек'],
-            'reversi' => [self::REVERSI_BUNDLE_OFFER_ID, 'Неоновый комплект Реверси'],
-            'go' => [self::GO_BUNDLE_OFFER_ID, 'Неоновый комплект Го'],
-            'domino' => [self::DOMINO_BUNDLE_OFFER_ID, 'Неоновый комплект домино'],
-            'four_in_a_row' => [self::FOUR_IN_A_ROW_BUNDLE_OFFER_ID, 'Неоновый комплект 4 в ряд'],
-            'battleship' => [self::BATTLESHIP_BUNDLE_OFFER_ID, 'Неоновый комплект Морского боя'],
+            'tictactoe' => [self::TICTACTOE_BUNDLE_OFFER_ID, 'store.bundles.presentation.tictactoe.bundle_title'],
+            'chess' => [self::CHESS_BUNDLE_OFFER_ID, 'store.bundles.presentation.chess.bundle_title'],
+            'checkers' => [self::CHECKERS_BUNDLE_OFFER_ID, 'store.bundles.presentation.checkers.bundle_title'],
+            'reversi' => [self::REVERSI_BUNDLE_OFFER_ID, 'store.bundles.presentation.reversi.bundle_title'],
+            'go' => [self::GO_BUNDLE_OFFER_ID, 'store.bundles.presentation.go.bundle_title'],
+            'domino' => [self::DOMINO_BUNDLE_OFFER_ID, 'store.bundles.presentation.domino.bundle_title'],
+            'four_in_a_row' => [self::FOUR_IN_A_ROW_BUNDLE_OFFER_ID, 'store.bundles.presentation.four_in_a_row.bundle_title'],
+            'battleship' => [self::BATTLESHIP_BUNDLE_OFFER_ID, 'store.bundles.presentation.battleship.bundle_title'],
         ];
         $gameBundlesByType = [];
-        foreach ($bundleDefinitions as $gameType => [$offerId, $displayName]) {
+        foreach ($bundleDefinitions as $gameType => [$offerId, $displayNameKey]) {
             $bundle = $offers[$offerId] ?? null;
             if (!is_array($bundle)) continue;
-            $bundle['display_name'] = $displayName;
+            $bundle['display_name'] = $this->copy($displayNameKey, 'Premium bundle');
             $bundle['preview_kind'] = $gameType . '_premium_bundle';
             $bundle['game_type'] = $gameType;
             $gameBundlesByType[$gameType] = $bundle;
@@ -207,10 +214,10 @@ final class CosmeticStoreService
             'currency' => 'mgw_coin',
             'balance' => $balance,
             'tabs' => [
-                ['id' => 'coins', 'label' => 'Коины', 'available' => $billingAvailable],
-                ['id' => 'profile', 'label' => 'Профиль', 'available' => true],
-                ['id' => 'games', 'label' => 'Игры', 'available' => true],
-                ['id' => 'bundles', 'label' => 'Наборы', 'available' => true],
+                ['id' => 'coins', 'label' => $this->copy('store.tabs.coins', 'Coins'), 'available' => $billingAvailable],
+                ['id' => 'profile', 'label' => $this->copy('store.tabs.profile', 'Profile'), 'available' => true],
+                ['id' => 'games', 'label' => $this->copy('store.tabs.games', 'Games'), 'available' => true],
+                ['id' => 'bundles', 'label' => $this->copy('store.tabs.bundles', 'Bundles'), 'available' => true],
             ],
             'coins' => [
                 'packages' => $packages,
@@ -259,12 +266,12 @@ final class CosmeticStoreService
             if (!$this->inventory->isOwned($mgwId, $itemId)) $missing[] = $itemId;
         }
         if ($missing === []) {
-            throw new CosmeticStoreException('already_owned', 'Все предметы этого предложения уже принадлежат аккаунту.');
+            throw new CosmeticStoreException('already_owned', $this->copy('server.cosmetic_store.already_owned', 'You already own this item.'));
         }
 
         $itemPrices = $this->itemOfferPrices($this->activeOffers());
         $price = $this->offerPrice($offer, $missing, $members, $itemPrices);
-        if ($price <= 0) throw new CosmeticStoreException('offer_invalid', 'Цена предложения недоступна.');
+        if ($price <= 0) throw new CosmeticStoreException('offer_invalid', $this->copy('server.cosmetic_store.prepare_failed', 'The purchase could not be prepared. Refresh the Store.'));
 
         return [
             'offer_id' => $offerId,
@@ -281,7 +288,7 @@ final class CosmeticStoreService
         $mgwId = $this->normalizeMgwId($mgwId);
         $itemId = strtolower(trim($itemId));
         if (preg_match(self::OFFER_ID_PATTERN, $itemId) !== 1) {
-            throw new CosmeticStoreException('item_unavailable', 'Игровой предмет недоступен.');
+            throw new CosmeticStoreException('item_unavailable', $this->copy('server.cosmetic_store.item_unavailable', 'This item is no longer available.'));
         }
 
         $snapshot = $this->inventory->snapshot($mgwId);
@@ -294,16 +301,16 @@ final class CosmeticStoreService
         if (!is_array($catalog)
             || (string)($catalog['item_type'] ?? '') !== 'game'
             || !str_starts_with((string)($catalog['equip_slot'] ?? ''), 'game_')) {
-            throw new CosmeticStoreException('item_unavailable', 'Игровой предмет недоступен.');
+            throw new CosmeticStoreException('item_unavailable', $this->copy('server.cosmetic_store.item_unavailable', 'This item is no longer available.'));
         }
         if (empty($catalog['owned'])) {
-            throw new CosmeticStoreException('item_not_owned', 'Сначала купите этот предмет.');
+            throw new CosmeticStoreException('item_not_owned', $this->copy('server.cosmetic_store.item_not_owned', 'Buy this item first.'));
         }
 
         try {
             return $this->inventory->equip($mgwId, $itemId);
         } catch (Throwable $error) {
-            throw new CosmeticStoreException('equip_failed', 'Не удалось выбрать игровой предмет.');
+            throw new CosmeticStoreException('equip_failed', $this->copy('server.cosmetic_store.equip_failed', 'The item could not be selected.'));
         }
     }
 
@@ -319,7 +326,7 @@ final class CosmeticStoreService
         $requestToken = $this->normalizeRequestToken((string)($intent['request_token'] ?? ''));
         $offerId = $this->normalizeOfferId((string)($intent['offer_id'] ?? ''));
         $priceCoins = (int)($intent['price_coins'] ?? 0);
-        if ($priceCoins <= 0) throw new CosmeticStoreException('intent_invalid', 'Стоимость покупки недоступна.');
+        if ($priceCoins <= 0) throw new CosmeticStoreException('intent_invalid', $this->copy('server.cosmetic_store.prepare_failed', 'The purchase could not be prepared. Refresh the Store.'));
         $itemIds = $this->normalizeItemIds($intent['item_ids'] ?? null);
 
         return $this->database->transaction(function (DatabaseConnectionInterface $database) use (
@@ -331,7 +338,7 @@ final class CosmeticStoreService
                 if ((string)$existing['offer_id'] !== $offerId
                     || (int)$existing['price_coins'] !== $priceCoins
                     || $existingItems !== $itemIds) {
-                    throw new CosmeticStoreException('request_conflict', 'Токен покупки уже использован для другого запроса.');
+                    throw new CosmeticStoreException('request_conflict', $this->copy('server.cosmetic_store.request_conflict', 'This purchase request was already used for another offer.'));
                 }
                 return $this->publicPurchase($existing, true);
             }
@@ -340,24 +347,24 @@ final class CosmeticStoreService
             $members = $this->members($offer);
             foreach ($itemIds as $itemId) {
                 if (!in_array($itemId, $members, true)) {
-                    throw new CosmeticStoreException('intent_invalid', 'Покупка содержит предмет вне предложения.');
+                    throw new CosmeticStoreException('intent_invalid', $this->copy('server.cosmetic_store.prepare_failed', 'The purchase could not be prepared. Refresh the Store.'));
                 }
             }
             $itemPrices = $this->itemOfferPrices($this->activeOffers($database));
             $expectedPrice = $this->offerPrice($offer, $itemIds, $members, $itemPrices);
             if ($expectedPrice !== $priceCoins || $expectedPrice <= 0) {
-                throw new CosmeticStoreException('price_changed', 'Цена предложения изменилась. Обновите магазин.');
+                throw new CosmeticStoreException('price_changed', $this->copy('server.cosmetic_store.price_changed', 'The offer price changed. Refresh the Store.'));
             }
 
             foreach ($itemIds as $itemId) {
                 if ($this->inventory->isOwned($mgwId, $itemId)) {
-                    throw new CosmeticStoreException('ownership_conflict', 'Один из предметов уже получен другим способом. Обновите магазин.');
+                    throw new CosmeticStoreException('ownership_conflict', $this->copy('server.cosmetic_store.ownership_conflict', 'The purchase contents changed. Refresh the Store.'));
                 }
             }
             foreach ($itemIds as $itemId) {
                 $grant = $this->inventory->grant($mgwId, $itemId, 'store_purchase', $requestToken);
                 if (empty($grant['granted'])) {
-                    throw new CosmeticStoreException('ownership_conflict', 'Не удалось зафиксировать новый предмет.');
+                    throw new CosmeticStoreException('ownership_conflict', $this->copy('server.cosmetic_store.ownership_conflict', 'The purchased item could not be recorded.'));
                 }
             }
 
@@ -477,19 +484,19 @@ final class CosmeticStoreService
         $fullPrice = (int)($offer['price_coins'] ?? 0);
         if ($type === 'item') {
             if (count($members) !== 1 || count($missing) !== 1) {
-                throw new CosmeticStoreException('offer_invalid', 'Предложение магазина повреждено.');
+                throw new CosmeticStoreException('offer_invalid', $this->copy('server.cosmetic_store.prepare_failed', 'The Store offer is invalid.'));
             }
             return $fullPrice;
         }
         if ($type !== 'bundle' || $fullPrice <= 0) {
-            throw new CosmeticStoreException('offer_invalid', 'Цена набора недоступна.');
+            throw new CosmeticStoreException('offer_invalid', $this->copy('server.cosmetic_store.prepare_failed', 'The bundle price is unavailable.'));
         }
 
         $separatePrice = 0;
         foreach ($missing as $itemId) {
             $itemPrice = (int)($itemPrices[$itemId] ?? 0);
             if ($itemPrice <= 0) {
-                throw new CosmeticStoreException('offer_invalid', 'Состав набора недоступен.');
+                throw new CosmeticStoreException('offer_invalid', $this->copy('server.cosmetic_store.prepare_failed', 'The bundle contents are unavailable.'));
             }
             $separatePrice += $itemPrice;
         }
@@ -506,14 +513,14 @@ final class CosmeticStoreService
             ['offer_id' => $offerId]
         );
         if (count($rows) !== 1 || !is_array($rows[0] ?? null)) {
-            throw new CosmeticStoreException('offer_unavailable', 'Предложение магазина недоступно.');
+            throw new CosmeticStoreException('offer_unavailable', $this->copy('server.cosmetic_store.offer_unavailable', 'This Store offer is no longer available.'));
         }
         $offer = $rows[0];
         if ($mustBeActive && (string)($offer['offer_status'] ?? '') !== 'active') {
-            throw new CosmeticStoreException('offer_unavailable', 'Предложение магазина недоступно.');
+            throw new CosmeticStoreException('offer_unavailable', $this->copy('server.cosmetic_store.offer_unavailable', 'This Store offer is no longer available.'));
         }
         if (!in_array((string)($offer['offer_type'] ?? ''), ['item', 'bundle'], true)) {
-            throw new CosmeticStoreException('offer_invalid', 'Предложение магазина повреждено.');
+            throw new CosmeticStoreException('offer_invalid', $this->copy('server.cosmetic_store.prepare_failed', 'The Store offer is invalid.'));
         }
         return $offer;
     }
@@ -524,7 +531,7 @@ final class CosmeticStoreService
         if ((string)($offer['offer_type'] ?? '') === 'item') {
             $itemId = trim((string)($offer['item_id'] ?? ''));
             if ($itemId === '' || $members !== [$itemId]) {
-                throw new CosmeticStoreException('offer_invalid', 'Состав предложения магазина поврежден.');
+                throw new CosmeticStoreException('offer_invalid', $this->copy('server.cosmetic_store.prepare_failed', 'The Store offer contents are invalid.'));
             }
         }
         return $members;
@@ -564,13 +571,13 @@ final class CosmeticStoreService
     private function normalizeItemIds(mixed $value): array
     {
         if (!is_array($value) || !array_is_list($value) || $value === []) {
-            throw new CosmeticStoreException('intent_invalid', 'Состав покупки недоступен.');
+            throw new CosmeticStoreException('intent_invalid', $this->copy('server.cosmetic_store.prepare_failed', 'The purchase contents are unavailable.'));
         }
         $result = [];
         foreach ($value as $itemId) {
             $itemId = strtolower(trim((string)$itemId));
             if (preg_match(self::OFFER_ID_PATTERN, $itemId) !== 1) {
-                throw new CosmeticStoreException('intent_invalid', 'В покупке есть неизвестный предмет.');
+                throw new CosmeticStoreException('intent_invalid', $this->copy('server.cosmetic_store.prepare_failed', 'The purchase contains an unknown item.'));
             }
             $result[$itemId] = true;
         }
@@ -584,7 +591,7 @@ final class CosmeticStoreService
         try {
             $decoded = json_decode($json, true, 32, JSON_THROW_ON_ERROR);
         } catch (JsonException $error) {
-            throw new CosmeticStoreException('offer_invalid', 'Состав предложения магазина поврежден.');
+            throw new CosmeticStoreException('offer_invalid', $this->copy('server.cosmetic_store.prepare_failed', 'The Store offer contents are invalid.'));
         }
         return $this->normalizeItemIds($decoded);
     }
@@ -593,7 +600,7 @@ final class CosmeticStoreService
     {
         $mgwId = trim($mgwId);
         if ($mgwId === '' || strlen($mgwId) > 24) {
-            throw new CosmeticStoreException('account_unavailable', 'Профиль MGW недоступен.');
+            throw new CosmeticStoreException('account_unavailable', $this->copy('server.cosmetic_store.account_unavailable', 'The MGW profile is unavailable for this session.'));
         }
         return $mgwId;
     }
@@ -602,7 +609,7 @@ final class CosmeticStoreService
     {
         $offerId = strtolower(trim($offerId));
         if (preg_match(self::OFFER_ID_PATTERN, $offerId) !== 1) {
-            throw new CosmeticStoreException('offer_unavailable', 'Предложение магазина недоступно.');
+            throw new CosmeticStoreException('offer_unavailable', $this->copy('server.cosmetic_store.offer_unavailable', 'This Store offer is no longer available.'));
         }
         return $offerId;
     }
@@ -611,7 +618,7 @@ final class CosmeticStoreService
     {
         $requestToken = trim($requestToken);
         if (preg_match(self::REQUEST_TOKEN_PATTERN, $requestToken) !== 1) {
-            throw new CosmeticStoreException('request_invalid', 'Токен покупки недоступен.');
+            throw new CosmeticStoreException('request_invalid', $this->copy('server.cosmetic_store.invalid_request', 'The purchase token is unavailable.'));
         }
         return $requestToken;
     }
@@ -620,7 +627,7 @@ final class CosmeticStoreService
     {
         $value = trim($value);
         if ($value === '' || strlen($value) > $max || preg_match('/[\x00-\x1F\x7F]/', $value)) {
-            throw new CosmeticStoreException('account_unavailable', 'MGW ' . $label . ' недоступен.');
+            throw new CosmeticStoreException('account_unavailable', $this->copy('server.cosmetic_store.account_unavailable', 'The MGW profile is unavailable for this session.'));
         }
         return $value;
     }

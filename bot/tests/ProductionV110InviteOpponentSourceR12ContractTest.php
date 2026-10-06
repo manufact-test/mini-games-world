@@ -40,10 +40,13 @@ $assert(str_contains($endpoint, 'StorageFactory::createJson(')
     'The endpoint must read the same active runtime used by direct invitation creation.');
 $assert(!str_contains($client, 'Загружаем соперников')
     && str_contains($client, 'async function openPlayerPicker(context, sourceButton = null)')
+    && str_contains($client, 'showPlayerPickerLoading(context, requestGeneration);')
     && str_contains($client, 'const result = await postJson(OPPONENTS_URL, {});')
-    && str_contains($client, 'playerPickerRequestGeneration')
-    && strpos($client, 'const result = await postJson(OPPONENTS_URL, {});') < strpos($client, 'renderPlayerPicker(items, context);')
+    && str_contains($client, 'if (requestGeneration !== playerPickerRequestGeneration) return;')
+    && str_contains($client, 'renderPlayerPicker(items, context, requestGeneration);')
+    && strpos($client, 'showPlayerPickerLoading(context, requestGeneration);') < strpos($client, 'const result = await postJson(OPPONENTS_URL, {});')
+    && strpos($client, 'const result = await postJson(OPPONENTS_URL, {});') < strpos($client, 'renderPlayerPicker(items, context, requestGeneration);')
     && !str_contains($client, 'renderPlayerPicker([], context);'),
-    'The client must keep the setup sheet visible and open the picker only from the completed authoritative response.');
+    'The client may show the picker loading state immediately, but authoritative opponent results must render only after the completed response and current generation guard.');
 
 fwrite(STDOUT, "ProductionV110InviteOpponentSourceR12ContractTest: {$assertions} assertions passed\n");
