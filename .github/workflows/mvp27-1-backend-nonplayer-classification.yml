@@ -63,6 +63,7 @@ jobs:
             'ops/checks/mvp27_1_backend_cosmetic_store_endpoint_localization_contract.mjs' \
             'ops/checks/mvp27_1_backend_notifications_endpoint_localization_contract.mjs' \
             'ops/checks/mvp27_1_backend_account_link_endpoint_localization_contract.mjs' \
+            'ops/checks/mvp27_1_final_active_client_localization_contract.mjs' \
             '.github/workflows/mvp22-8-account-data.yml' \
             '.github/workflows/mvp27-1-backend-account-chain-localization.yml')"
           bad="$(comm -23 <(printf '%s\n' "$changed") <(printf '%s\n' "$allowed" | sort) || true)"
