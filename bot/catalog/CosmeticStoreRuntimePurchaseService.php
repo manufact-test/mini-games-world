@@ -46,7 +46,7 @@ final class CosmeticStoreRuntimePurchaseService
             'amount' => -$price,
             'balance_after' => (int)$user[UnifiedBalanceRuntimeState::FIELD],
             'status' => CosmeticStoreService::PURCHASE_PENDING_STATUS,
-            'description' => 'Покупка косметики MGW',
+            'description' => ServerLocalization::copy('server.cosmetic_store.transactions.purchase_description', 'MGW cosmetic purchase'),
             'created_at' => now_iso(),
         ];
         $data['transactions'][] = $intent;
@@ -123,7 +123,7 @@ final class CosmeticStoreRuntimePurchaseService
                 'balance_after' => (int)$data['users'][$userId][UnifiedBalanceRuntimeState::FIELD],
                 'request_token' => $requestToken,
                 'offer_id' => (string)($intent['offer_id'] ?? ''),
-                'description' => 'Возврат коинов за незавершённую покупку косметики',
+                'description' => ServerLocalization::copy('server.cosmetic_store.transactions.refund_description', 'Coin refund for an unfinished cosmetic purchase'),
                 'created_at' => now_iso(),
             ];
             return true;
