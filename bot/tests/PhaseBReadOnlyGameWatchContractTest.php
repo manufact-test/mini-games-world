@@ -38,8 +38,9 @@ $assert(
     'Game-watch must still authorize the verified provider id as a game participant.'
 );
 $assert(
-    str_contains($watch, 'flock($handle, LOCK_SH)'),
-    'JSON game-watch must remain read-only under the games file shared lock.'
+    str_contains($watch, 'flock($handle, LOCK_SH | LOCK_NB)')
+        && str_contains($watch, 'flock($handle, LOCK_UN)'),
+    'JSON game-watch must remain read-only under the non-blocking games-file shared lock and release it explicitly.'
 );
 $assert(
     !str_contains($watch, 'RuntimeAccountIdentityResolver'),
