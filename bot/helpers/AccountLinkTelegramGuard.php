@@ -2,6 +2,7 @@
 declare(strict_types=1);
 
 require_once dirname(__DIR__) . '/accounts/AccountLinkService.php';
+require_once dirname(__DIR__) . '/localization/ServerLocalization.php';
 
 final class AccountLinkTelegramGuard
 {
@@ -33,23 +34,25 @@ final class AccountLinkTelegramGuard
         try {
             $claimed = $this->service()->claimTelegramToken((string)$matches[1], $fromId);
             $challengeId = (string)$claimed['challenge_id'];
-            $nickname = trim((string)($claimed['target_nickname'] ?? 'Игрок'));
-            if ($nickname === '') $nickname = 'Игрок';
+            $playerFallback = ServerLocalization::copy('server.account_chain.common.player_fallback', 'Player');
+            $nickname = trim((string)($claimed['target_nickname'] ?? $playerFallback));
+            if ($nickname === '') $nickname = $playerFallback;
 
             $this->telegram->api('sendMessage', [
                 'chat_id'=>$chatId,
-                'text'=>"🔐 Привязка Android\n\n"
-                    . "Вы подтверждаете вход Android-приложения в ваш MGW-профиль «{$nickname}»?\n\n"
-                    . "После подтверждения Android будет использовать этот же профиль, баланс, покупки, статистику и рейтинг. "
-                    . "Временные 1000 стартовых коинов Android-профиля не переносятся.",
+                'text'=>ServerLocalization::copy(
+                    'server.account_link.telegram.prompt',
+                    "Do you confirm signing the Android app into your MGW profile “{nickname}”?\n\nAfter confirmation, Android will use the same profile, balance, purchases, statistics and rating. Temporary 1000 starter coins from the Android profile are not transferred.",
+                    ['nickname'=>$nickname]
+                ),
                 'reply_markup'=>[
                     'inline_keyboard'=>[
                         [[
-                            'text'=>'✅ Подтвердить привязку',
+                            'text'=>ServerLocalization::copy('server.account_link.telegram.confirm_button', '✅ Confirm linking'),
                             'callback_data'=>'account_link:confirm:' . $challengeId,
                         ]],
                         [[
-                            'text'=>'Отмена',
+                            'text'=>ServerLocalization::copy('server.account_link.telegram.cancel_button', 'Cancel'),
                             'callback_data'=>'account_link:cancel:' . $challengeId,
                         ]],
                     ],
@@ -59,13 +62,13 @@ final class AccountLinkTelegramGuard
         } catch (AccountLinkException $error) {
             $this->telegram->api('sendMessage', [
                 'chat_id'=>$chatId,
-                'text'=>'Не удалось начать привязку: ' . $this->publicMessage($error),
+                'text'=>ServerLocalization::copy('server.account_link.telegram.start_failed_prefix', 'Could not start linking: {message}', ['message'=>$this->publicMessage($error)]),
             ]);
         } catch (Throwable $error) {
             error_log('[MiniGamesWorld account link Telegram] ' . $error::class . ': ' . $error->getMessage());
             $this->telegram->api('sendMessage', [
                 'chat_id'=>$chatId,
-                'text'=>'Не удалось начать привязку. Вернитесь в Android и создайте новую попытку.',
+                'text'=>ServerLocalization::copy('server.account_link.telegram.start_failed_retry', 'Could not start linking. Return to Android and create a new attempt.'),
             ]);
         }
 
@@ -89,12 +92,12 @@ final class AccountLinkTelegramGuard
         try {
             if ($action === 'confirm') {
                 $this->service()->confirmTelegramChallenge($challengeId, $fromId);
-                $text = "✅ Привязка подтверждена.\n\nВернитесь в Android-приложение и завершите привязку.";
-                $answer = 'Подтверждено';
+                $text = ServerLocalization::copy('server.account_link.telegram.confirmed_text', "✅ Linking confirmed.\n\nReturn to the Android app and finish linking.");
+                $answer = ServerLocalization::copy('server.account_link.telegram.confirmed_answer', 'Confirmed');
             } else {
                 $this->service()->cancelTelegramChallenge($challengeId, $fromId);
-                $text = "Привязка отменена.\n\nЕсли передумаете, начните новую попытку из Android-приложения.";
-                $answer = 'Отменено';
+                $text = ServerLocalization::copy('server.account_link.telegram.cancelled_text', "Linking cancelled.\n\nIf you change your mind, start a new attempt from the Android app.");
+                $answer = ServerLocalization::copy('server.account_link.telegram.cancelled_answer', 'Cancelled');
             }
 
             if ($callbackId !== '') {
@@ -133,7 +136,7 @@ final class AccountLinkTelegramGuard
             if ($callbackId !== '') {
                 $this->telegram->api('answerCallbackQuery', [
                     'callback_query_id'=>$callbackId,
-                    'text'=>'Не удалось подтвердить привязку. Попробуйте ещё раз.',
+                    'text'=>ServerLocalization::copy('server.account_link.telegram.confirm_failed', 'Could not confirm linking. Try again.'),
                     'show_alert'=>true,
                 ]);
             }
@@ -152,7 +155,7 @@ final class AccountLinkTelegramGuard
             || $router->routeFor('economy') !== RuntimeStorageRouter::DRIVER_DATABASE) {
             throw new AccountLinkException(
                 'linking_unavailable',
-                'Привязка аккаунта сейчас недоступна.',
+                ServerLocalization::copy('server.account_chain.link.unavailable', 'Account linking is currently unavailable.'),
                 503
             );
         }
@@ -167,10 +170,10 @@ final class AccountLinkTelegramGuard
     private function publicMessage(AccountLinkException $error): string
     {
         return match ($error->reason) {
-            'challenge_expired' => 'Ссылка устарела. Создайте новую попытку в Android.',
-            'telegram_account_missing' => 'Сначала откройте MINI GAMES WORLD в Telegram, затем повторите привязку.',
-            'target_android_conflict' => 'Этот профиль уже привязан к другому Android-устройству.',
-            'challenge_claimed' => 'Эта попытка уже используется другим Telegram-профилем.',
+            'challenge_expired' => ServerLocalization::copy('server.account_link.telegram.challenge_expired', 'The link has expired. Create a new attempt in Android.'),
+            'telegram_account_missing' => ServerLocalization::copy('server.account_link.telegram.telegram_account_missing', 'Open MINI GAMES WORLD in Telegram first, then retry linking.'),
+            'target_android_conflict' => ServerLocalization::copy('server.account_link.telegram.target_android_conflict', 'This profile is already linked to another Android device.'),
+            'challenge_claimed' => ServerLocalization::copy('server.account_link.telegram.challenge_claimed', 'This attempt is already being used by another Telegram profile.'),
             default => $error->getMessage(),
         };
     }
