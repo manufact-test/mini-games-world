@@ -26,11 +26,19 @@ assert(audit.includes(CLASSIFICATION),'Audit must consume exact classification e
 
 let total=0;
 for(const [file,entry] of Object.entries(cfg.files||{})){
-  const lines=fs.readFileSync(file,'utf8').split(/\r?\n/).map(line=>line.trim());
+  const rawLines=fs.readFileSync(file,'utf8').split(/\r?\n/);
+  const scoped=[];
+  let currentFunction='';
+  for(const raw of rawLines){
+    const functionMatch=raw.match(/\bfunction\s+([A-Za-z_][A-Za-z0-9_]*)\s*\(/);
+    if(functionMatch) currentFunction=functionMatch[1];
+    scoped.push({text:raw.trim(),function:currentFunction});
+  }
   let fileTotal=0;
   for(const occurrence of entry.occurrences||[]){
-    const actual=lines.filter(line=>line===occurrence.text).length;
-    assert(actual===occurrence.count,`Fingerprint drift in ${file}: expected ${occurrence.count}, got ${actual}: ${occurrence.text}`);
+    const expectedFunction=String(occurrence.function||'');
+    const actual=scoped.filter(line=>line.text===occurrence.text && (expectedFunction==='' || line.function===expectedFunction)).length;
+    assert(actual===occurrence.count,`Fingerprint drift in ${file}: expected ${occurrence.count}, got ${actual}: ${expectedFunction} :: ${occurrence.text}`);
     assert(/[\u0400-\u04FF]/.test(occurrence.text),`Classified fingerprint must contain Cyrillic: ${file}`);
     fileTotal+=actual;
   }
