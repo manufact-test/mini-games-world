@@ -79,48 +79,41 @@ jobs:
           head='${{ github.event.pull_request.head.sha }}'
           changed="$(git diff --name-only "$base" "$head")"
           printf '%s\n' "$changed"
+
           if [[ "${{ github.head_ref }}" == agent/mvp27-1-backend-moderation-player-runtime-localization-* ]]; then
-            bad=''
+            bad=()
             while IFS= read -r file; do
               case "$file" in
                 .github/workflows/mvp18-2-friends-ui.yml|.github/workflows/mvp25-5-write-replay-safety.yml|.github/workflows/mvp27-1-backend-moderation-player-runtime-localization.yml|app/locales/ru.json|bot/moderation.php|bot/moderation/ModerationService.php|bot/social/PlayerReportService.php|bot/tests/Mvp22_3ModerationContractTest.php|ops/checks/mvp27_1_backend_moderation_player_runtime_localization_contract.mjs|ops/checks/mvp27_1_backend_tournament_player_runtime_localization_contract.mjs|ops/checks/mvp27_1_hardcoded_text_baseline.json)
                   ;;
                 *)
-                  bad="${bad}${file}"$'\\n'
+                  bad+=("$file")
                   ;;
               esac
             done <<< "$changed"
-            bad="${bad%
-            bad="$(printf '%s\n' "$changed" | grep -Ev "$allowed" || true)"
-          fi
-          test -z "$bad" || { printf 'Unexpected MVP-25.5 replay-safety paths:\n%s\n' "$bad" >&2; exit 1; }
-\\n'}"
+            if (("${#bad[@]}" > 0)); then
+              printf 'Unexpected MVP-25.5 replay-safety paths:\n' >&2
+              printf '%s\n' "${bad[@]}" >&2
+              exit 1
+            fi
           elif [[ "${{ github.head_ref }}" == agent/mvp27-1-backend-support-player-runtime-localization-* ]]; then
-            bad=''
+            bad=()
             while IFS= read -r file; do
               case "$file" in
                 .github/workflows/mvp25-5-write-replay-safety.yml|.github/workflows/mvp27-1-backend-support-player-runtime-localization.yml|app/locales/ru.json|bot/support.php|bot/support-attachment-download.php|bot/support/SupportNotificationBridge.php|bot/support/SupportTicketService.php|ops/checks/mvp27_1_backend_moderation_player_runtime_localization_contract.mjs|ops/checks/mvp27_1_backend_support_player_runtime_localization_contract.mjs|ops/checks/mvp27_1_hardcoded_text_baseline.json)
                   ;;
                 *)
-                  bad="${bad}${file}"
-            bad="$(printf '%s\n' "$changed" | grep -Ev "$allowed" || true)"
-          fi
-          test -z "$bad" || { printf 'Unexpected MVP-25.5 replay-safety paths:\n%s\n' "$bad" >&2; exit 1; }
-\\n'
+                  bad+=("$file")
                   ;;
               esac
             done <<< "$changed"
-            bad="${bad%
-            bad="$(printf '%s\n' "$changed" | grep -Ev "$allowed" || true)"
-          fi
-          test -z "$bad" || { printf 'Unexpected MVP-25.5 replay-safety paths:\n%s\n' "$bad" >&2; exit 1; }
-\\n'}"
+            if (("${#bad[@]}" > 0)); then
+              printf 'Unexpected MVP-25.5 replay-safety paths:\n' >&2
+              printf '%s\n' "${bad[@]}" >&2
+              exit 1
+            fi
           else
-            allowed='^(\.github/workflows/mvp25-5-write-replay-safety\.yml|bot/(support/SupportTicketService\.php|social/PlayerReportService\.php|support\.php|tests/(Mvp25_5WriteReplaySafetyTest\.php|Mvp25_5WriteReplaySafetyContractTest\.php))|docs/MVP25_5_SECURITY_RESILIENCE_AUDIT\.md)
+            allowed='^(\.github/workflows/mvp25-5-write-replay-safety\.yml|bot/(support/SupportTicketService\.php|social/PlayerReportService\.php|support\.php|tests/(Mvp25_5WriteReplaySafetyTest\.php|Mvp25_5WriteReplaySafetyContractTest\.php))|docs/MVP25_5_SECURITY_RESILIENCE_AUDIT\.md)$'
             bad="$(printf '%s\n' "$changed" | grep -Ev "$allowed" || true)"
+            test -z "$bad" || { printf 'Unexpected MVP-25.5 replay-safety paths:\n%s\n' "$bad" >&2; exit 1; }
           fi
-          test -z "$bad" || { printf 'Unexpected MVP-25.5 replay-safety paths:\n%s\n' "$bad" >&2; exit 1; }
-
-            bad="$(printf '%s\n' "$changed" | grep -Ev "$allowed" || true)"
-          fi
-          test -z "$bad" || { printf 'Unexpected MVP-25.5 replay-safety paths:\n%s\n' "$bad" >&2; exit 1; }
