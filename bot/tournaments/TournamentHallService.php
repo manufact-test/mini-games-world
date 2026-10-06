@@ -1,6 +1,8 @@
 <?php
 declare(strict_types=1);
 
+require_once dirname(__DIR__) . '/localization/ServerLocalization.php';
+
 final class TournamentHallService
 {
     public const HALL_OPEN_BEFORE_SECONDS = 900;
@@ -43,7 +45,7 @@ final class TournamentHallService
         $opensAt = $start->modify('-' . self::HALL_OPEN_BEFORE_SECONDS . ' seconds');
 
         if ($moment < $opensAt) {
-            throw new RuntimeException('Турнирный зал откроется за 15 минут до старта.');
+            throw new RuntimeException(ServerLocalization::copy('server.tournament_runtime.hall.opens_15', 'Tournament Hall request is unavailable.'));
         }
 
         // A late participant can still open the participant Hall, but must never
@@ -116,7 +118,7 @@ final class TournamentHallService
 
         $entry = $this->hallEntry((string)$participant['tournament_id'], $mgwId);
         if ($entry === null) {
-            throw new RuntimeException('Сначала войдите в Турнирный зал.');
+            throw new RuntimeException(ServerLocalization::copy('server.tournament_runtime.hall.enter_first', 'Tournament Hall request is unavailable.'));
         }
 
         $boundaryFrom = $start->modify('-' . self::HALL_PRESENCE_FRESHNESS_SECONDS . ' seconds');
@@ -408,7 +410,7 @@ final class TournamentHallService
         return [
             'tournament'=>[
                 'tournament_id'=>$tournamentId,
-                'title'=>(string)($participant['title'] ?? 'Официальный турнир'),
+                'title'=>(string)($participant['title'] ?? ServerLocalization::copy('arena.official_title', 'Official tournament')),
                 'game_type'=>(string)($participant['game_type'] ?? ''),
                 'capacity'=>(int)($participant['capacity'] ?? 0),
                 'scheduled_start_at_utc'=>$this->utc($start),
@@ -508,10 +510,10 @@ final class TournamentHallService
             ]
         );
         if (count($rows) !== 1 || !is_array($rows[0])) {
-            throw new RuntimeException('Турнирный зал доступен только зарегистрированным участникам.');
+            throw new RuntimeException(ServerLocalization::copy('server.tournament_runtime.hall.registered_only', 'Tournament Hall request is unavailable.'));
         }
         if ((string)($rows[0]['tournament_state'] ?? '') !== TournamentRegistrationService::STATE_SCHEDULED) {
-            throw new RuntimeException('Турнирный зал откроется после назначения даты турнира.');
+            throw new RuntimeException(ServerLocalization::copy('server.tournament_runtime.hall.after_schedule', 'Tournament Hall request is unavailable.'));
         }
         $this->scheduledStart($rows[0]);
         return $rows[0];
@@ -535,7 +537,7 @@ final class TournamentHallService
     private function scheduledStart(array $row): DateTimeImmutable
     {
         $raw = trim((string)($row['scheduled_start_at_utc'] ?? ''));
-        if ($raw === '') throw new RuntimeException('Дата старта турнира не назначена.');
+        if ($raw === '') throw new RuntimeException(ServerLocalization::copy('server.tournament_runtime.hall.date_not_set', 'Tournament Hall request is unavailable.'));
         return $this->parseUtc($raw);
     }
 
@@ -544,7 +546,7 @@ final class TournamentHallService
         $name = trim((string)($row['nickname'] ?? ''));
         if ($name === '') $name = trim((string)($row['display_name'] ?? ''));
         if ($name === '') $name = trim((string)($row['mgw_id'] ?? ''));
-        return $name !== '' ? $name : 'Игрок';
+        return $name !== '' ? $name : ServerLocalization::copy('arena.hall.player_fallback', 'Player');
     }
 
     private function avatar(array $row): string
