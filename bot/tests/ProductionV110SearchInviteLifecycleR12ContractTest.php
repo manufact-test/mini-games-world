@@ -66,10 +66,10 @@ $assert(
         && str_contains($reconnect, "main-v110.js?v=1139")
         && str_contains($bootstrapCore, "await import('@mgw/main');")
         && str_contains($manifest, "'@mgw/main' => './assets/js/main-v110-reconnect-v174.js?v=2'")
-        && str_contains($entry, "$manifestPath = __DIR__ . '/runtime/client/version-manifest.php';")
-        && str_contains($entry, "$versionManifest = require $manifestPath;")
-        && str_contains($entry, "$bootstrapTarget = $assets['bootstrap'];")
-        && str_contains($entry, "'main_v110' => $imports['@mgw/main']"),
+        && str_contains($entry, "\$manifestPath = __DIR__ . '/runtime/client/version-manifest.php';")
+        && str_contains($entry, "\$versionManifest = require \$manifestPath;")
+        && str_contains($entry, "\$bootstrapTarget = \$assets['bootstrap'];")
+        && str_contains($entry, "'main_v110' => \$imports['@mgw/main']"),
     'The active v110 publication graph must deliver the unchanged search lifecycle through the canonical manifest-owned bootstrap and reconnect chain.'
 );
 
