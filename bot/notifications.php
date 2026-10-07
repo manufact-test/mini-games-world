@@ -2,11 +2,33 @@
 declare(strict_types=1);
 
 require __DIR__ . '/core/bootstrap.php';
-require_once __DIR__ . '/localization/ServerLocalization.php';
+require_once dirname(__DIR__) . '/app/runtime/localization/LocalizationCatalog.php';
 
 function mgw_notification_copy(string $key, array $params = [], string $emergencyFallback = ''): string
 {
-    return ServerLocalization::copy($key, $emergencyFallback, $params);
+    try {
+        static $catalog = null;
+        if (!$catalog instanceof LocalizationCatalog) {
+            $catalog = new LocalizationCatalog(dirname(__DIR__) . '/app/locales');
+        }
+        return $catalog->translate($key, $params, mgw_notification_request_locale($catalog));
+    } catch (Throwable $error) {
+        error_log('[MiniGamesWorld notification localization] ' . $error->getMessage());
+        $fallback = $emergencyFallback;
+        foreach ($params as $name => $value) {
+            $fallback = str_replace('{' . $name . '}', (string)$value, $fallback);
+        }
+        return $fallback;
+    }
+}
+
+function mgw_notification_request_locale(LocalizationCatalog $catalog): ?string
+{
+    $raw = strtolower(trim((string)($_SERVER['HTTP_X_MGW_LOCALE'] ?? '')));
+    if ($raw === '') return null;
+    $normalized = str_replace('_', '-', $raw);
+    $locale = explode('-', $normalized, 2)[0] ?? '';
+    return in_array($locale, $catalog->supportedLocales(), true) ? $locale : null;
 }
 require_once __DIR__ . '/services/NotificationService.php';
 require_once __DIR__ . '/services/GameInviteService.php';
