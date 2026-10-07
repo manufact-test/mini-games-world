@@ -1,7 +1,7 @@
 {
   "_meta": {
     "locale": "en",
-    "version": 12,
+    "version": 13,
     "status": "draft"
   },
   "common": {
@@ -459,6 +459,137 @@
       "telegram": "Telegram",
       "google": "Google",
       "apple": "Apple"
+    },
+    "entry_effects": {
+      "title": "Entry effects",
+      "effect_label": "Entry effect",
+      "names": {
+        "entry_01": "Entry Effect I",
+        "entry_02": "Entry Effect II",
+        "entry_03": "Entry Effect III",
+        "fallback": "Entry effect"
+      },
+      "tiers": {
+        "tier_1": "Tier I",
+        "tier_2": "Tier II",
+        "tier_3": "Tier III",
+        "fallback": "Entry effect"
+      },
+      "status": {
+        "selected": "Selected",
+        "owned": "In collection"
+      },
+      "actions": {
+        "remove": "Remove",
+        "select": "Select",
+        "buy": "Buy"
+      },
+      "purchase": {
+        "title": "Confirm purchase",
+        "effect_with_tier": "Entry effect · {tier}",
+        "to_pay": "To pay",
+        "remaining": "Remaining",
+        "coins_value": "{count} coins",
+        "missing": "Missing {count}",
+        "buy_for": "Buy for {count}"
+      },
+      "toast": {
+        "purchased": "Entry effect added to your collection.",
+        "selected": "Entry effect selected.",
+        "removed": "Entry effect removed."
+      },
+      "errors": {
+        "purchase": "Could not buy the entry effect.",
+        "remove": "Could not remove the entry effect.",
+        "select": "Could not select the entry effect."
+      },
+      "live": {
+        "player_fallback": "Player {number}",
+        "skip": "Skip",
+        "entering": "is entering the game"
+      }
+    },
+    "victory_effects": {
+      "title": "Victory effects",
+      "effect_label": "Victory effect",
+      "preview_aria": "Preview animation",
+      "names": {
+        "spark_burst": "Spark Burst",
+        "firework_salvo": "Winner’s Fireworks",
+        "victory_nova": "Victory Nova",
+        "fallback": "Victory effect"
+      },
+      "tiers": {
+        "tier_1": "Tier I",
+        "tier_2": "Tier II",
+        "tier_3": "Tier III",
+        "fallback": "Victory effect"
+      },
+      "status": {
+        "selected": "Selected",
+        "owned": "In collection"
+      },
+      "actions": {
+        "remove": "Remove",
+        "select": "Select",
+        "buy": "Buy"
+      },
+      "purchase": {
+        "title": "Confirm purchase",
+        "to_pay": "To pay",
+        "coins_value": "{count} coins",
+        "remaining": "Remaining",
+        "missing": "Missing {count}",
+        "buy_for": "Buy for {count}"
+      },
+      "toast": {
+        "purchased": "Victory effect added to your collection."
+      },
+      "errors": {
+        "purchase": "Could not buy the victory effect.",
+        "remove": "Could not remove the victory effect.",
+        "select": "Could not select the victory effect."
+      },
+      "live": {
+        "player_fallback": "Player {number}",
+        "skip": "Skip",
+        "skip_aria": "Skip victory effect"
+      }
+    },
+    "badges": {
+      "title": "Badges",
+      "type": "Badge",
+      "fallback_name": "Badge",
+      "selected_aria": "Selected",
+      "tiers": {
+        "normal": "Standard",
+        "rare": "Rare",
+        "animated": "Animated",
+        "fallback": "Badge"
+      },
+      "actions": {
+        "remove": "Remove",
+        "select": "Select",
+        "buy": "Buy"
+      },
+      "purchase": {
+        "title": "Confirm purchase",
+        "to_pay": "To pay",
+        "coins_value": "{count} coins",
+        "remaining": "Remaining",
+        "missing": "Missing {count}",
+        "buy_for": "Buy for {count}"
+      },
+      "toast": {
+        "purchased": "Badge added to your collection.",
+        "removed": "Badge removed.",
+        "selected": "Badge selected."
+      },
+      "errors": {
+        "purchase": "Could not buy the badge.",
+        "remove": "Could not remove the badge.",
+        "select": "Could not select the badge."
+      }
     }
   },
   "acceptance_runtime": {
