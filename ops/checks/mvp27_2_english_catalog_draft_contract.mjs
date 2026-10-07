@@ -92,6 +92,10 @@ const completeScopes = [
   'games.four_in_a_row',
   'rules.tictactoe',
   'rules.four_in_a_row',
+  'games.reversi',
+  'games.go',
+  'rules.reversi',
+  'rules.go',
 ];
 
 for (const scope of completeScopes) {
