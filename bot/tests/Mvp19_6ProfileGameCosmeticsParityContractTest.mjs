@@ -3,7 +3,6 @@ import fs from 'node:fs';
 const checkers = fs.readFileSync('app/assets/js/profile/mgw-profile-checkers-parity.js', 'utf8');
 const layout = fs.readFileSync('app/assets/js/profile/mgw-profile-chess-layout-v2.js', 'utf8');
 const activeProfile = fs.readFileSync('app/assets/js/screens/profile-screen-v110.js', 'utf8');
-const activeProfileCss = fs.readFileSync('app/assets/css/screens/profile-game-tabs-active-v1.css', 'utf8');
 const hardSquare = fs.readFileSync('app/assets/js/profile/mgw-profile-checkers-hard-square-v1.js', 'utf8');
 const chess = fs.readFileSync('app/assets/js/profile/mgw-profile-chess-parity.js', 'utf8');
 const api = fs.readFileSync('app/assets/js/api/client.js', 'utf8');
@@ -99,18 +98,19 @@ expect(checkers.includes('keepProfileGameTabVisible(gameTab, false)'), 'tab sele
 expect(!checkers.includes('scrollIntoView'), 'Profile tab selection must never reintroduce full-page jump behavior');
 expect(manualRepairCss.includes('scroll-behavior:auto!important'), 'final Profile rail owner must disable CSS smooth-scroll lag');
 
-// Factual Telegram v110 imports profile-screen-v110.js?v=1109, so manual scroll UX must live in that direct owner.
-expect(activeProfile.includes('function ensureProfileGameTabStyles()') && activeProfile.includes('profile-game-tabs-active-v1.css?v=1&manual_acceptance=active-scroll-owner-v1'), 'Active direct Profile owner must load its scoped game-tab stylesheet');
-expect(activeProfile.includes('function initProfileGameTabScroller()'), 'Active direct Profile owner must install the game-tab scroller');
-expect(activeProfile.includes("screen.dataset.profileGameTabsScrollOwner = 'active-profile-v1'"), 'Active direct Profile owner must expose one scroll ownership marker');
-expect(activeProfile.includes('PROFILE_GAME_TAB_DRAG_THRESHOLD') && activeProfile.includes('drag.strip.setPointerCapture?.(event.pointerId)'), 'Mouse drag must capture only after movement crosses the threshold');
-expect(activeProfile.includes("data-profile-game-tabs-scroll") && activeProfile.includes("addEventListener('wheel'"), 'Active Profile owner must expose arrows and desktop wheel translation');
-expect(activeProfile.includes('MutationObserver(scheduleProfileGameTabControls)'), 'Active Profile owner must restore controls after Profile DOM rerenders');
-expect(activeProfile.includes('keepProfileGameTabVisible(gameTab)') && !activeProfile.includes('scrollIntoView'), 'Active Profile selection must move only the horizontal rail');
-expect(!activeProfile.includes('profile-v2-game-tabs-shell'), 'Active Profile rail must not reparent tabs into the inactive wrapper shell');
-expect(activeProfileCss.includes('.profile-v2-game-tabs-arrow') && activeProfileCss.includes('.profile-v2-game-tab:active{transform:none!important}'), 'Active Profile CSS must expose arrows without press-scale distortion');
-expect(manifest.includes("'./assets/js/screens/profile-screen-v110.js?v=1109' => './assets/js/screens/profile-screen-v110.js?v=1144")
-  && manifest.includes('profile_tabs=active-scroll-owner-v1'), 'Manifest must publish the active v1109 Profile rail successor');
+// Factual Telegram v110 direct Profile owner must preserve the accepted native rail without visible corrective controls.
+expect(activeProfile.includes('class="profile-v2-game-tabs"'), 'Active direct Profile owner must keep the native horizontal game-tab rail');
+expect(!activeProfile.includes('function ensureProfileGameTabStyles()')
+  && !activeProfile.includes('function initProfileGameTabScroller()')
+  && !activeProfile.includes('data-profile-game-tabs-scroll')
+  && !activeProfile.includes('profile-v2-game-tabs-arrow'), 'Active Profile must not inject visible arrows or a competing rail owner');
+expect(!fs.existsSync('app/assets/css/screens/profile-game-tabs-active-v1.css'), 'Rejected PR2096 arrow stylesheet must be removed');
+expect(activeProfile.includes('id="mgwProfileAvatarEquip"')
+  && activeProfile.includes('data-profile-avatar-equip="1"')
+  && !activeProfile.includes('id="mgwAvatarEquip"'), 'Active Profile avatar action must not collide with the global Store avatar delegate');
+expect(activeProfile.includes("if (currentScreen() === 'profile') toast(error.message || t('profile.avatar_save_error'));"), 'Delayed Profile avatar feedback must not leak onto Home after navigation');
+expect(manifest.includes("'./assets/js/screens/profile-screen-v110.js?v=1109' => './assets/js/screens/profile-screen-v110.js?v=1145")
+  && manifest.includes('profile_tabs=native-scroll-restored-v1'), 'Manifest must publish the native-scroll Profile corrective');
 
 // Tic-Tac-Toe must keep exactly one accepted graphical X/O owner; no text glyph may sit on top of it.
 expect(manualRepairCss.includes('flex:0 0 27px!important') && manualRepairCss.includes('width:27px!important'), 'Tic-Tac-Toe tab must restore the accepted optical box');

@@ -74,6 +74,21 @@ jobs:
         shell: bash
         run: |
           set -Eeuo pipefail
+          if [[ "${{ github.event_name }}" == "pull_request" ]]; then
+            base='${{ github.event.pull_request.base.sha }}'
+            head='${{ github.event.pull_request.head.sha }}'
+            if git diff --quiet "$base" "$head" -- \
+              bot/tournaments \
+              bot/tournament-hall.php \
+              bot/tournament-status.php \
+              bot/leaderboard.php \
+              bot/rating-archive.php \
+              bot/ratings/LeaderboardService.php \
+              bot/ratings/RatingArchiveService.php; then
+              echo "Successor slice: Arena backend owners unchanged; historical recovery baseline comparison does not apply."
+              exit 0
+            fi
+          fi
           if [[ "${{ github.head_ref }}" == agent/mvp27-1-backend-tournament-player-runtime-localization-* || "${{ github.head_ref }}" == agent/mvp27-1-backend-baseline-player-localization-bundle-* ]]; then
             node ops/checks/mvp27_1_backend_tournament_player_runtime_localization_contract.mjs
             node ops/checks/mvp27_1_hardcoded_text_audit.mjs

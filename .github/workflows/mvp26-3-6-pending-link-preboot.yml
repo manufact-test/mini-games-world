@@ -66,7 +66,7 @@ jobs:
           head='${{ github.event.pull_request.head.sha }}'
           changed="$(git diff --name-only "$base" "$head")"
           printf '%s\n' "$changed"
-          if [[ "${{ github.head_ref }}" == agent/mvp27-1-profile-games-title-corrective-* || "${{ github.head_ref }}" == agent/mvp27-1-manual-profile-presence-corrective-* ]]; then
+          if [[ "${{ github.head_ref }}" == agent/mvp27-1-profile-games-title-corrective-* || "${{ github.head_ref }}" == agent/mvp27-1-manual-profile-presence-corrective-* || "${{ github.head_ref }}" == agent/mvp27-1-profile-manual-corrective-* ]]; then
             git diff --exit-code "$base" "$head" -- \
               app/assets/js/profile/mgw-account-link-ui.js \
               app/assets/js/main-v110-handoff-shell.js \

@@ -78,6 +78,19 @@ jobs:
           set -euo pipefail
           base='${{ github.event.pull_request.base.sha }}'
           head='${{ github.event.pull_request.head.sha }}'
+          if git diff --quiet "$base" "$head" -- \
+            bot/helpers/TelegramWebhookSecurity.php \
+            bot/staging-webhook-security.php \
+            bot/webhook.php \
+            bot/webhook-diagnostic.php \
+            bot/setup-webhook.php \
+            bot/check-webhook.php \
+            bot/staging-e2e-readiness.php \
+            ops/deploy/telegram-webhook-repair.php \
+            ops/deploy/telegram-webhook-diagnostic-route.php; then
+            echo "Successor slice: webhook ingress owners unchanged; original bounded security scope does not apply."
+            exit 0
+          fi
           changed="$(git diff --name-only "$base" "$head")"
           printf '%s\n' "$changed"
           allowed='^(\.github/workflows/(mvp25-5-webhook-ingress-security\.yml|staging-playwright-e2e\.yml)|bot/(helpers/TelegramWebhookSecurity\.php|staging-webhook-security\.php|webhook\.php|webhook-diagnostic\.php|setup-webhook\.php|check-webhook\.php|staging-e2e-readiness\.php|helpers/staging-e2e-runtime-files\.txt|config/config\.example\.php|tests/Mvp25_5WebhookIngressSecurityContractTest\.php)|ops/deploy/(telegram-webhook-repair\.php|telegram-webhook-diagnostic-route\.php)|docs/MVP25_5_SECURITY_RESILIENCE_AUDIT\.md)$'

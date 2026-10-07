@@ -28,7 +28,7 @@ $assert(!str_contains($entry, 'initV109ShareSpeed')
     'The active v110 graph must not retain legacy share or picker layers.');
 $assert(str_contains($invites, "document.querySelector('[data-open-player-picker]')?.addEventListener")
     && str_contains($invites, "document.querySelector('[data-create-link-invite]')?.addEventListener")
-    && str_contains($invites, "inviteRequest('create_link_draft'")
+    && preg_match("/inviteRequest\\(\\s*'create_link_draft'/s", $invites) === 1
     && str_contains($invites, "postJson(OPPONENTS_URL"),
     'The canonical invitation module must own both setup actions.');
 
