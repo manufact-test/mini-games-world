@@ -80,6 +80,7 @@ const completeScopes = [
   'shell',
   'runtime_status',
   'settings',
+  'account_data',
   'weekly_match',
   'game_cards',
   'acceptance_runtime',
