@@ -1,7 +1,7 @@
 {
   "_meta": {
     "locale": "en",
-    "version": 4,
+    "version": 5,
     "status": "draft"
   },
   "common": {
@@ -158,6 +158,46 @@
       "timer_title": "Timer",
       "timer_text": "You have 60 seconds per turn. Leaving an active game or running out of time results in a technical loss.",
       "diagram_label": "Example Go rule on a {size}×{size} board"
+    },
+    "checkers": {
+      "title": "Russian Checkers",
+      "subtitle": "Capture all of your opponent’s pieces or leave them with no legal move.",
+      "board_title": "Board and pieces",
+      "board_text": "The game is played on an 8×8 board. Each player starts with 12 pieces. Moves are made only on dark squares.",
+      "move_title": "Regular move",
+      "move_text": "A regular piece moves one empty square diagonally forward.",
+      "capture_title": "Captures are mandatory",
+      "capture_text": "If an opponent’s piece can be captured, you cannot make a regular move. A regular piece may capture both forward and backward.",
+      "chain_title": "Multiple captures",
+      "chain_text": "If the same piece can capture again after the first capture, you must continue with that piece. If several capture paths are available, you may choose any of them.",
+      "king_title": "King",
+      "king_text": "A piece becomes a king when it reaches the last row. A king can move any number of empty squares diagonally. When capturing, it jumps over an opponent’s piece and may land on any legal empty square farther along the diagonal.",
+      "promotion_title": "Promotion during a capture",
+      "promotion_text": "If a piece reaches the last row during a capture sequence, it becomes a king immediately and continues the same sequence as a king.",
+      "win_title": "How to win",
+      "win_text": "Capture all of your opponent’s pieces or leave them with no legal move. Repeatedly returning to the same position may result in a draw."
+    },
+    "chess": {
+      "title": "Chess",
+      "subtitle": "Checkmate your opponent’s king.",
+      "start_title": "Starting position",
+      "start_text": "The classic 8×8 board is used. Sides are assigned at random, and White moves first.",
+      "pawn_title": "Pawn",
+      "pawn_text": "Moves one square forward, or two from its starting position. Captures diagonally. En passant is available.",
+      "lines_title": "Rook, bishop, and queen",
+      "lines_text": "The rook moves along ranks and files, the bishop moves diagonally, and the queen combines both. They cannot jump over pieces.",
+      "knight_title": "Knight",
+      "knight_text": "Moves in an L shape and is the only piece that can jump over other pieces.",
+      "check_title": "Check and checkmate",
+      "check_text": "The king cannot be left under attack. If the king is in check and there are no legal moves to escape it, that is checkmate.",
+      "castle_title": "Castling",
+      "castle_text": "The king and rook may move together if neither has moved, the squares between them are empty, and the king does not move through an attacked square.",
+      "promotion_title": "Pawn promotion",
+      "promotion_text": "When a pawn reaches the last rank, it promotes to a queen, rook, bishop, or knight. The player chooses the piece.",
+      "draw_title": "Draw",
+      "draw_text": "A draw can result from stalemate, insufficient material, threefold repetition, or 50 moves by each player without a pawn move or capture.",
+      "timer_title": "Timer",
+      "timer_text": "You have 60 seconds per turn. Leaving an active game or running out of time results in a technical loss."
     }
   },
   "home": {
@@ -696,6 +736,110 @@
           "white": "white stone",
           "empty": "empty",
           "label": "Row {row}, column {column}: {state}"
+        }
+      }
+    },
+    "checkers": {
+      "name": "Russian Checkers",
+      "ui": {
+        "game_fallback": "Game",
+        "meta": "{room} · {bet} coins · 8×8",
+        "score": {
+          "you": "You",
+          "opponent": "Opponent"
+        },
+        "legend": {
+          "selected": "selected",
+          "move": "move",
+          "capture": "capture",
+          "king": "king"
+        },
+        "errors": {
+          "capture_required": "A capture is required — choose a highlighted piece."
+        },
+        "player": {
+          "white": "○ white",
+          "black": "● black"
+        },
+        "status": {
+          "finished": "Game over",
+          "opponent_turn": "Opponent’s turn",
+          "continue_capture": "Continue capturing",
+          "capture_required": "Capture required",
+          "your_turn": "Your turn"
+        },
+        "event": {
+          "finished": "Game over",
+          "opponent_turn": "Opponent’s turn — watch the board",
+          "continue_capture": "Continue capturing with the same piece",
+          "capture_required": "Capture required — choose a highlighted piece",
+          "your_turn": "Your turn — choose a piece"
+        },
+        "cell": {
+          "capture_target": "capture a piece",
+          "move_target": "make a move",
+          "white_piece": "white piece",
+          "white_king": "white king",
+          "black_piece": "black piece",
+          "black_king": "black king"
+        }
+      }
+    },
+    "chess": {
+      "name": "Chess",
+      "ui": {
+        "errors": {
+          "no_moves": "This piece has no legal moves right now.",
+          "choose_highlighted": "Choose a highlighted square."
+        },
+        "meta": "{room} · {bet} coins · 8×8",
+        "side": {
+          "black": "Black",
+          "white": "White"
+        },
+        "end": {
+          "checkmate": "Checkmate",
+          "stalemate": "Stalemate — draw",
+          "insufficient_material": "Draw: insufficient material",
+          "threefold_repetition": "Draw: threefold repetition",
+          "fifty_move": "Draw: 50-move rule",
+          "timeout": "Time expired",
+          "player_left": "Game ended",
+          "finished": "Game over"
+        },
+        "status": {
+          "check_mine": "Your king is in check",
+          "check_opponent": "Opponent is in check",
+          "your_turn": "Your turn",
+          "opponent_turn": "Opponent’s turn"
+        },
+        "promotion": {
+          "queen": "Queen",
+          "rook": "Rook",
+          "bishop": "Bishop",
+          "knight": "Knight",
+          "title": "Pawn promotion",
+          "note": "Choose the new piece."
+        },
+        "piece": {
+          "white": {
+            "king": "White king",
+            "queen": "White queen",
+            "rook": "White rook",
+            "bishop": "White bishop",
+            "knight": "White knight",
+            "pawn": "White pawn",
+            "piece": "White piece"
+          },
+          "black": {
+            "king": "Black king",
+            "queen": "Black queen",
+            "rook": "Black rook",
+            "bishop": "Black bishop",
+            "knight": "Black knight",
+            "pawn": "Black pawn",
+            "piece": "Black piece"
+          }
         }
       }
     }
