@@ -126,6 +126,9 @@ const completeScopes = [
   'store.wrappers',
   'store',
   'profile.providers',
+  'profile.entry_effects',
+  'profile.victory_effects',
+  'profile.badges',
 ];
 
 for (const scope of completeScopes) {
