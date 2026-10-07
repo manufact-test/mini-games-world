@@ -144,7 +144,7 @@ function openLanguageSettingsSheet(){
       return;
     }
     setExplicitLocale(locale);
-    globalThis.location?.reload();
+    closeSheet();
   };
   document.getElementById('languageRuBtn')?.addEventListener('click', () => activate('ru'));
   document.getElementById('languageEnBtn')?.addEventListener('click', () => activate('en'));
@@ -274,7 +274,7 @@ function isHistoryCacheStale(){return !historyCache || (Date.now()-historyCacheA
 function refreshHistoryCache({force=false}={}){
   if(!force&&!isHistoryCacheStale())return Promise.resolve(historyCache);
   if(historyCachePromise)return historyCachePromise;
-  historyCachePromise=api.historyFast()
+  historyCachePromise=api.history()
     .then(result=>{historyCache=result;historyCacheAt=Date.now();return result;})
     .finally(()=>{historyCachePromise=null;});
   return historyCachePromise;

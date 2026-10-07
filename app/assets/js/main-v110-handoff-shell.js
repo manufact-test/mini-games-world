@@ -36,6 +36,7 @@ import { initV110ReadonlyGameSync } from './production-v110-readonly-game-sync.j
 import { initV110Presence } from './production-v110-presence.js?v=1121&b=f5a28b030c69';
 import { beginStatsRequest, applyStatsSnapshot } from './stats-owner-v110.js?v=1121';
 import { t } from '@mgw/i18n';
+import { initRuntimeDomLocalization, localizeRuntimeDom } from './localization/runtime-dom.js?v=1';
 import { settlePendingAccountLinkBeforeBoot } from './profile/mgw-account-link-ui.js?v=3';
 
 const SHELL_ROUTES = new Set(['home', 'tournaments', 'store', 'profile']);
@@ -50,6 +51,7 @@ initTelegramApp();
 initV110Presence();
 initRuntimeStatus();
 initTypography();
+initRuntimeDomLocalization();
 initSheet();
 initUserCopy();
 initAppShellChrome();
@@ -355,6 +357,10 @@ function initAppShellChrome(){
   document.addEventListener('mgw:app-ready', () => syncAppShellChrome());
   document.addEventListener('mgw:game-finished', () => syncAppShellChrome());
   document.addEventListener('mgw:game-dismissed', () => syncAppShellChrome());
+  document.addEventListener('mgw:locale-changed', () => {
+    localizeRuntimeDom();
+    syncAppShellChrome();
+  });
   syncAppShellChrome();
 }
 

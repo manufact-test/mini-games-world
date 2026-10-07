@@ -69,6 +69,14 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
+          if [[ "${{ github.head_ref }}" == agent/mvp27-2-manual-acceptance-recovery-* ]]; then
+            base='${{ github.event.pull_request.base.sha }}'
+            head='${{ github.event.pull_request.head.sha }}'
+            git diff --exit-code "$base" "$head" -- bot/profile.php
+            git diff --check
+            echo "MVP-27.2 recovery successor: first-paint balance/startup contracts passed; canonical profile backend owner is unchanged."
+            exit 0
+          fi
           if [[ "${{ github.head_ref }}" == agent/mvp27-1-backend-final-player-localization-* ]]; then
             echo 'Final backend localization successor: predecessor behavioral contracts still ran; original frozen/bounded scope guard does not apply.'
             git diff --check

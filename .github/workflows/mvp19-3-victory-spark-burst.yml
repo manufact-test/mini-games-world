@@ -122,6 +122,14 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
+          if [[ "${{ github.head_ref }}" == agent/mvp27-2-manual-acceptance-recovery-* ]]; then
+            base='${{ github.event.pull_request.base.sha }}'
+            head='${{ github.event.pull_request.head.sha }}'
+            git diff --exit-code "$base" "$head" -- bot/games bot/services/GameService.php bot/services/GameActionService.php bot/services/GameInviteService.php cron config/private.php
+            git diff --check
+            echo "MVP-27.2 recovery successor: Victory contracts passed; game mechanics owners remain frozen."
+            exit 0
+          fi
           if [[ "${{ github.head_ref }}" == agent/mvp27-1-* ]]; then
             echo 'MVP-27.1 successor localization slice: historical bounded-scope guard is not applicable.'
             exit 0

@@ -69,7 +69,7 @@ assert(homeSource.includes("data-open-moderation-center")
   'Account/settings ownership must live in the Settings sheet.');
 assert(!profileSource.includes("sectionHead('profile.account_title','profile.account_note')"),
   'Profile must stay decluttered: Account and settings belongs to the Settings sheet.');
-assert(apiClientSource.includes("'X-MGW-Locale':String(document.documentElement?.lang || 'ru')"),
+assert(apiClientSource.includes("'X-MGW-Locale':String(getI18n().locale || 'ru')"),
   'Mini App API requests must carry the current visible locale.');
 assert(serverLocalizationSource.includes("HTTP_X_MGW_LOCALE")
   && serverLocalizationSource.includes("self::requestLocale($catalog)"),

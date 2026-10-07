@@ -11,7 +11,7 @@ function mgw_notification_copy(string $key, array $params = [], string $emergenc
         if (!$catalog instanceof LocalizationCatalog) {
             $catalog = new LocalizationCatalog(dirname(__DIR__) . '/app/locales');
         }
-        return $catalog->translate($key, $params);
+        return $catalog->translate($key, $params, mgw_notification_request_locale($catalog));
     } catch (Throwable $error) {
         error_log('[MiniGamesWorld notification localization] ' . $error->getMessage());
         $fallback = $emergencyFallback;
@@ -20,6 +20,15 @@ function mgw_notification_copy(string $key, array $params = [], string $emergenc
         }
         return $fallback;
     }
+}
+
+function mgw_notification_request_locale(LocalizationCatalog $catalog): ?string
+{
+    $raw = strtolower(trim((string)($_SERVER['HTTP_X_MGW_LOCALE'] ?? '')));
+    if ($raw === '') return null;
+    $normalized = str_replace('_', '-', $raw);
+    $locale = explode('-', $normalized, 2)[0] ?? '';
+    return in_array($locale, $catalog->supportedLocales(), true) ? $locale : null;
 }
 require_once __DIR__ . '/services/NotificationService.php';
 require_once __DIR__ . '/services/GameInviteService.php';

@@ -36,6 +36,10 @@ const GAME_ICON_ASSET = {
 };
 
 export function initGameCardCopy(){
+  localizeGameCardCopy();
+}
+
+function localizeGameCardCopy(){
   document.querySelectorAll('[data-game-card]').forEach(card => {
     const meta = GAME_META[String(card.dataset.gameCard || '')];
     if (!meta) return;
@@ -54,6 +58,8 @@ export function initGameCardCopy(){
     if (rulesButton) rulesButton.setAttribute('aria-label', t('game_cards.rules_aria', { game:titleText }));
   });
 }
+
+document.addEventListener('mgw:locale-changed', localizeGameCardCopy);
 
 function renderGameIcon(icon, meta){
   const asset = GAME_ICON_ASSET[meta.id];

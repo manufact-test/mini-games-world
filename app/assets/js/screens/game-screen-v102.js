@@ -43,6 +43,15 @@ export function initGameScreen(){
   runtime.initialized = true;
   document.getElementById('leaveGame')?.addEventListener('click', requestLeaveGame);
 
+  document.addEventListener('mgw:locale-changed', () => {
+    const game = state.activeGame;
+    const id = String(game?.id || '');
+    if (!id || !document.getElementById('screen-game')?.classList.contains('active')) return;
+    const item = gameRuntime(id);
+    const viewer = item.viewer || resolveViewer(game);
+    if (viewer) renderGame(game, viewer, true);
+  });
+
   document.addEventListener('mgw:sheet-closed', () => {
     const game = state.activeGame;
     const id = String(game?.id || '');

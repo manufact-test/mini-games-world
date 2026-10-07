@@ -60,6 +60,11 @@ export function initProfileScreen(){
   initAccountLinkUi();
   initAccountLinkHomeOnboarding();
   renderProfileV2();
+  document.addEventListener('mgw:locale-changed', () => {
+    lastProfileRenderSignature = '';
+    renderProfileV2();
+    document.dispatchEvent(new CustomEvent('mgw:cosmetic-inventory-changed', { detail:{ reason:'locale-change' } }));
+  });
   document.addEventListener('mgw:open-profile', openProfile);
   const warm = () => warmProfileSnapshot();
   // Start the read immediately after the current boot task. It is read-only,
@@ -767,7 +772,11 @@ function avatarChoiceMarkup(item, activeAvatar){
 
 
 function avatarName(itemId){
-  const index = LAUNCH_AVATARS.indexOf(String(itemId || ''));
+  const normalized = String(itemId || '');
+  if (LAUNCH_AVATARS.includes(normalized)) {
+    try { return t(`store.products.${normalized}`); } catch (error) {}
+  }
+  const index = LAUNCH_AVATARS.indexOf(normalized);
   return index >= 0 ? t('store.profile.avatar_name',{number:index + 1}) : t('profile.collection.avatar_fallback');
 }
 function renderNameColorCollection(nickname){

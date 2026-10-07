@@ -24,11 +24,13 @@ const START_IDS = new Set([
   'startGoSearchBtn',
   'startDominoSearchBtn',
 ]);
-const LOCK_PATTERN = new RegExp([
-  'search.lock_markers.active_game_other_device',
-  'search.lock_markers.searching_other_device',
-  'search.lock_markers.game_open_other_device',
-].map(key => escapeRegExp(t(key))).join('|'), 'iu');
+function lockPattern(){
+  return new RegExp([
+    'search.lock_markers.active_game_other_device',
+    'search.lock_markers.searching_other_device',
+    'search.lock_markers.game_open_other_device',
+  ].map(key => escapeRegExp(t(key))).join('|'), 'iu');
+}
 
 const searchRuntime = window.__MGW_V100_SEARCH_RUNTIME__ ||= {
   initialized:false,
@@ -49,6 +51,17 @@ export function initSearchScreen(){
   searchRuntime.initialized = true;
 
   registerScreenCleanup('search', handleSearchScreenLeave);
+
+  document.addEventListener('mgw:locale-changed', () => {
+    if (!document.getElementById('screen-search')?.classList.contains('active')) return;
+    const gameType = String(state.selectedGame || 'tictactoe');
+    const info = document.getElementById('searchInfo');
+    if (info) {
+      const context = normalizeContext({ gameType, size:selectedSizeFor(gameType) });
+      info.textContent = context.label;
+      info.dataset.mgwSearchContext = '1';
+    }
+  });
 
   document.addEventListener('click', event => {
     const origin = event.target;
@@ -135,7 +148,10 @@ export async function beginSearch(rawContext){
   closeSheet();
 
   const info = document.getElementById('searchInfo');
-  if (info) info.textContent = context.label;
+  if (info) {
+    info.textContent = context.label;
+    info.dataset.mgwSearchContext = '1';
+  }
   showScreen('search');
   haptic('light');
 
@@ -229,7 +245,7 @@ export async function beginSearch(rawContext){
     if (epoch !== searchRuntime.epoch) return null;
     cancelLocalSearch();
     void stopSearchAuthoritatively(null);
-    if (LOCK_PATTERN.test(String(error?.message || ''))) {
+    if (lockPattern().test(String(error?.message || ''))) {
       rememberV99PassiveLock({ message:error.message });
       showExplicitLock();
       return null;
@@ -388,6 +404,19 @@ function normalizeContext(value){
     title,
     label:t('search.match_label', { game:title, bet:formatNumber(bet) }) + (gameType === 'domino' ? '' : t('search.board_suffix', { size })),
   };
+}
+
+function selectedSizeFor(type){
+  return {
+    tictactoe:Number(state.selectedBoardSize || 3),
+    four_in_a_row:Number(state.selectedFourBoardSize || 7),
+    battleship:10,
+    checkers:8,
+    reversi:Number(state.selectedReversiBoardSize || 8),
+    chess:8,
+    go:Number(state.selectedGoBoardSize || 9),
+    domino:7,
+  }[type] || defaultSize(type);
 }
 
 function defaultSize(type){

@@ -117,8 +117,14 @@ export function applyAccountLocalePreference(accountLocale = null){
 }
 
 export function setExplicitLocale(locale){
+  const previous = clientI18n?.locale || readInlineLocalization().locale;
   const activated = activateLocale(locale);
   try { globalThis.localStorage?.setItem(EXPLICIT_LOCALE_KEY, activated); } catch (error) {}
+  if (activated !== previous && globalThis.document?.dispatchEvent) {
+    globalThis.document.dispatchEvent(new CustomEvent('mgw:locale-changed', {
+      detail:{ previous, locale:activated },
+    }));
+  }
   return activated;
 }
 

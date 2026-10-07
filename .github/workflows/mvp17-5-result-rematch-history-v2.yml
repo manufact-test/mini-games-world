@@ -17,6 +17,10 @@ on:
       - 'app/assets/js/games/game-invites-v110.js'
       - 'bot/helpers/WebAppLaunchUrl.php'
       - 'bot/services/HistoryService.php'
+      - 'bot/history/RuntimeHistoryRepository.php'
+      - 'bot/tests/Mvp27_2ManualRecoveryHistoryTest.php'
+      - 'ops/checks/mvp27_2_manual_acceptance_recovery_contract.mjs'
+      - 'app/assets/js/localization/runtime-dom.js'
       - 'bot/services/BotProfilePolicy.php'
       - 'bot/services/GameInviteService.php'
       - 'bot/services/invites/GameInviteActionTrait.php'
@@ -60,6 +64,8 @@ jobs:
           php -l app/runtime/client/version-manifest.php
           php -l bot/helpers/WebAppLaunchUrl.php
           php -l bot/services/HistoryService.php
+          php -l bot/history/RuntimeHistoryRepository.php
+          php -l bot/tests/Mvp27_2ManualRecoveryHistoryTest.php
           php -l bot/services/BotProfilePolicy.php
           php -l bot/services/GameInviteService.php
           php -l bot/services/invites/GameInviteActionTrait.php
@@ -86,10 +92,18 @@ jobs:
           node --input-type=module --check < app/assets/js/screens/game-screen-v102.js
           node --input-type=module --check < app/assets/js/screens/profile-screen-v110.js
           node --input-type=module --check < app/assets/js/screens/home-screen.js
+          node --input-type=module --check < app/assets/js/localization/runtime-dom.js
+          node --check ops/checks/mvp27_2_manual_acceptance_recovery_contract.mjs
           node --input-type=module --check < app/assets/js/production-v110-acceptance-runtime.js
           node --input-type=module --check < app/assets/js/production-v110-targeted-interactions.js
           node --input-type=module --check < app/assets/js/games/game-invites-v110-rematch-policy-v175.js
           node --input-type=module --check < app/assets/js/games/game-invites-v110.js
+
+      - name: MVP-27.2 manual acceptance recovery ownership
+        run: node ops/checks/mvp27_2_manual_acceptance_recovery_contract.mjs
+
+      - name: MVP-27.2 canonical live History projection
+        run: php bot/tests/Mvp27_2ManualRecoveryHistoryTest.php
 
       - name: MVP-17.5 History chronological current-match regression
         run: php bot/tests/Mvp17_5HistoryChronologyRegressionTest.php
