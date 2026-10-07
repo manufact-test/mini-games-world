@@ -71,10 +71,9 @@ async function startStoreAvatarSelection(){
   if (storeAvatarStarted) return;
   storeAvatarStarted = true;
   try {
-    const [apiModule, stateModule, toastModule, uiModule, telegramModule, profileModelModule, sheetModule] = await Promise.all([
+    const [apiModule, stateModule, uiModule, telegramModule, profileModelModule, sheetModule] = await Promise.all([
       import('./api/client.js?v=47'),
       import('./state.js?v=27'),
-      import('./components/toast.js?v=27'),
       import('./ui.js?v=89'),
       import('./telegram/telegram-app.js?v=27'),
       import('./profile/mgw-profile-model.js?v=1'),
@@ -83,7 +82,6 @@ async function startStoreAvatarSelection(){
     storeAvatarRuntime = {
       api:apiModule.api,
       state:stateModule.state,
-      toast:toastModule.toast,
       renderUser:uiModule.renderUser,
       haptic:telegramModule.haptic,
       mergeCanonicalMgwUser:profileModelModule.mergeCanonicalMgwUser,
@@ -395,7 +393,7 @@ function restoreStoreAvatarConfirmed(){
 async function drainStoreAvatarSelectionQueue(){
   const runtime = storeAvatarRuntime;
   if (!runtime || storeAvatarSaving) return;
-  const { api, state, toast, renderUser, haptic, mergeCanonicalMgwUser } = runtime;
+  const { api, state, renderUser, haptic, mergeCanonicalMgwUser } = runtime;
   storeAvatarSaving = true;
 
   try {
