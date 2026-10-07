@@ -563,7 +563,7 @@ async function drainAvatarSelectionQueue(){
           continue;
         }
         restoreConfirmedAvatarSelection();
-        toast(error.message || t('profile.avatar_save_error'));
+        if (currentScreen() === 'profile') toast(error.message || t('profile.avatar_save_error'));
       }
     }
   } finally {
