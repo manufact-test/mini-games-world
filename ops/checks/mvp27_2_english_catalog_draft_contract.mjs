@@ -144,6 +144,8 @@ const completeScopes = [
   'arena.hall',
   'arena.ready',
   'arena.bracket',
+  'arena.terminal',
+  'arena.progression',
 ];
 
 for (const scope of completeScopes) {
