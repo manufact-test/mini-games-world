@@ -108,6 +108,7 @@ expect(!fs.existsSync('app/assets/css/screens/profile-game-tabs-active-v1.css'),
 expect(activeProfile.includes('id="mgwProfileAvatarEquip"')
   && activeProfile.includes('data-profile-avatar-equip="1"')
   && !activeProfile.includes('id="mgwAvatarEquip"'), 'Active Profile avatar action must not collide with the global Store avatar delegate');
+expect(activeProfile.includes("if (currentScreen() === 'profile') toast(error.message || t('profile.avatar_save_error'));"), 'Delayed Profile avatar feedback must not leak onto Home after navigation');
 expect(manifest.includes("'./assets/js/screens/profile-screen-v110.js?v=1109' => './assets/js/screens/profile-screen-v110.js?v=1145")
   && manifest.includes('profile_tabs=native-scroll-restored-v1'), 'Manifest must publish the native-scroll Profile corrective');
 
