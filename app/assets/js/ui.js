@@ -73,11 +73,6 @@ export function renderUser(user){
     profileV2Avatar.dataset.avatarItemId = canonicalAvatarId;
     profileV2Avatar.textContent = 'MG';
   }
-  const profileV2Avatar = document.getElementById('profileV2Avatar');
-  if (profileV2Avatar) {
-    profileV2Avatar.dataset.avatarItemId = canonicalAvatarId;
-    profileV2Avatar.textContent = 'MG';
-  }
   const date = document.getElementById('profileDate');
   if (date) date.textContent = user?.registered_at ? t('profile.member_since', { date:formatDate(user.registered_at) }) : t('shell.profile_date_pending');
 }
