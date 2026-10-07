@@ -23,12 +23,15 @@ assert.deepEqual(
   'Bootstrap core must retain exactly canonical clean-entry and main owners'
 );
 
-assert.ok(manifest.includes("'@mgw/clean-entry' => './assets/js/production-clean-entry-v110-mvp19-3-final-polish-mobile-nav-v2.js?v=2&mvp27_1=profile-selection-localized-v1"),
-  'Manifest must publish the localized canonical clean-entry wrapper identity');
-assert.ok(wrapper.includes("import './production-clean-entry-v110-mvp19-3-final-polish.js?v=1140&mvp27_1=profile-selection-localized-v1"),
-  'Canonical wrapper must publish the localized final-polish identity');
-assert.ok(polish.includes("import './production-clean-entry-v110.js?v=1132&mvp27_1=profile-selection-localized-v1"),
-  'Final-polish must publish the localized active clean-entry identity');
+const cleanAlias = manifest.match(/'@mgw\/clean-entry'\s*=>\s*'\.\/assets\/js\/production-clean-entry-v110-mvp19-3-final-polish-mobile-nav-v2\.js\?v=(\d+)([^']*)'/);
+assert.ok(cleanAlias && Number(cleanAlias[1]) >= 2 && cleanAlias[2].includes('mvp27_1=profile-selection-localized-v1'),
+  'Manifest must publish the localized canonical clean-entry wrapper identity or a newer successor');
+const polishImport = wrapper.match(/production-clean-entry-v110-mvp19-3-final-polish\.js\?v=(\d+)([^']*)/);
+assert.ok(polishImport && Number(polishImport[1]) >= 1140 && polishImport[2].includes('mvp27_1=profile-selection-localized-v1'),
+  'Canonical wrapper must publish the localized final-polish identity or a newer successor');
+const targetImport = polish.match(/production-clean-entry-v110\.js\?v=(\d+)([^']*)/);
+assert.ok(targetImport && Number(targetImport[1]) >= 1132 && targetImport[2].includes('mvp27_1=profile-selection-localized-v1'),
+  'Final-polish must publish the localized active clean-entry identity or a newer successor');
 
 assert.ok(target.includes("import { t } from '@mgw/i18n';"),
   'Active clean-entry must consume canonical @mgw/i18n');

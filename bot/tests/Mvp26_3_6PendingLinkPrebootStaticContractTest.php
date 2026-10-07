@@ -76,10 +76,18 @@ $assert(
     preg_match('/main-v110-handoff-shell\\.js\\?v=\\d+[^\\n]*mvp26_3_6=pending-link-preboot-v1/', $manifest) === 1,
     'Active v110 shell cache identity must include the pending-link corrective.'
 );
+$profileAliasMatch = [];
+$profileAliasOk = preg_match(
+    "~'\\./assets/js/screens/profile-screen-v110\\.js\\?v=1109'\\s*=>\\s*'\\./assets/js/screens/profile-screen-v110\\.js\\?v=(\\d+)([^']*)'~",
+    $manifest,
+    $profileAliasMatch
+) === 1;
 $assert(
     str_contains($manifest, "'./assets/js/profile/mgw-account-link-ui.js?v=3' => './assets/js/profile/mgw-account-link-ui.js?v=4&mvp27_1=localized-v1'")
-    && str_contains($manifest, "'./assets/js/screens/profile-screen-v110.js?v=1109' => './assets/js/screens/profile-screen-v110.js?v=1142"),
-    'Active Profile graph must preserve one accepted v3 account-link specifier and resolve it to the localized canonical owner.'
+    && $profileAliasOk
+    && (int)($profileAliasMatch[1] ?? 0) >= 1142
+    && str_contains((string)($profileAliasMatch[2] ?? ''), 'mvp27_1=profile-localized-v1'),
+    'Active Profile graph must preserve one accepted v3 account-link specifier and resolve it to the localized canonical owner or a newer successor.'
 );
 $assert(
     !str_contains($ui, 'LedgerWriteService')

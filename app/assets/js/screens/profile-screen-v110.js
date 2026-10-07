@@ -35,6 +35,8 @@ let profileRenderIdleHandle = null;
 let profileRenderFallbackHandle = null;
 let nicknameSaving = false;
 let avatarSaving = false;
+let avatarQueuedItemId = '';
+let avatarConfirmedItemId = '';
 let nameColorSaving = false;
 let gameCosmeticSaving = false;
 let activeCollectionGame = 'tictactoe';
@@ -494,35 +496,79 @@ function openAvatarPreview(itemId){
   });
 }
 
-async function chooseAvatar(itemId){
-  if (!ownedAvatarIds().includes(itemId) || avatarSaving || itemId === currentAvatarItemId()) return;
-  const previousProfile = cloneObject(state.mgwProfile);
-  const previousUser = cloneObject(state.user);
+function chooseAvatar(itemId){
+  if (!ownedAvatarIds().includes(itemId)) return;
+  const currentItemId = currentAvatarItemId();
   const previousSelectedAvatarId = state.selectedAvatarId;
+  if (!avatarSaving && itemId === currentItemId) return;
+
+  if (!avatarSaving) {
+    avatarConfirmedItemId = String(previousSelectedAvatarId || currentItemId || '').trim();
+  }
+
+  avatarQueuedItemId = itemId;
+  applyOptimisticAvatarSelection(itemId);
+  closeSheet();
+
+  if (!avatarSaving) void drainAvatarSelectionQueue();
+}
+
+function applyOptimisticAvatarSelection(itemId){
   const optimisticProfile = {
     ...(state.mgwProfile && typeof state.mgwProfile === 'object' ? state.mgwProfile : {}),
-    avatar:{ item_id:itemId },
+    avatar:{
+      ...(state.mgwProfile?.avatar && typeof state.mgwProfile.avatar === 'object' ? state.mgwProfile.avatar : {}),
+      item_id:itemId,
+    },
   };
-
-  avatarSaving = true;
   state.selectedAvatarId = itemId;
   state.mgwProfile = optimisticProfile;
   state.user = mergeCanonicalMgwUser(state.user, {}, optimisticProfile);
   renderUser(state.user);
   renderProfileV2();
-  closeSheet();
+}
+
+function restoreConfirmedAvatarSelection(){
+  const previousSelectedAvatarId = String(avatarConfirmedItemId || '').trim();
+  if (!previousSelectedAvatarId) return;
+  state.selectedAvatarId = previousSelectedAvatarId;
+  applyOptimisticAvatarSelection(previousSelectedAvatarId);
+}
+
+async function drainAvatarSelectionQueue(){
+  if (avatarSaving) return;
+  avatarSaving = true;
 
   try {
-    applyProfileResponse(await api.profileV2({ avatar_item_id:itemId }));
-  } catch (error) {
-    state.selectedAvatarId = previousSelectedAvatarId;
-    state.mgwProfile = previousProfile;
-    state.user = previousProfile ? mergeCanonicalMgwUser(previousUser, {}, previousProfile) : previousUser;
-    renderUser(state.user);
-    renderProfileV2();
-    toast(error.message || t('profile.avatar_save_error'));
+    while (avatarQueuedItemId) {
+      const itemId = avatarQueuedItemId;
+      avatarQueuedItemId = '';
+
+      try {
+        const result = await api.profileV2({ avatar_item_id:itemId });
+        const confirmedItemId = String(result?.profile?.avatar?.item_id || result?.user?.avatar_item_id || '').trim();
+        if (confirmedItemId && confirmedItemId !== itemId) {
+          throw new Error(t('profile.avatar_save_error'));
+        }
+
+        applyProfileResponse(result);
+        avatarConfirmedItemId = itemId;
+
+        if (avatarQueuedItemId) {
+          applyOptimisticAvatarSelection(avatarQueuedItemId);
+        }
+      } catch (error) {
+        if (avatarQueuedItemId) {
+          applyOptimisticAvatarSelection(avatarQueuedItemId);
+          continue;
+        }
+        restoreConfirmedAvatarSelection();
+        toast(error.message || t('profile.avatar_save_error'));
+      }
+    }
   } finally {
     avatarSaving = false;
+    avatarConfirmedItemId = '';
   }
 }
 
