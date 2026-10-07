@@ -93,6 +93,8 @@ const completeScopes = [
   'server.presence_endpoint',
   'server.search_speed',
   'server.identity_policy',
+  'server.notifications',
+  'server.history',
   'settings',
   'account_data',
   'account_link',

@@ -1,7 +1,7 @@
 {
   "_meta": {
     "locale": "en",
-    "version": 30,
+    "version": 31,
     "status": "draft"
   },
   "common": {
@@ -3223,6 +3223,101 @@
     },
     "identity_policy": {
       "nickname_taken": "This nickname is already taken. Choose another one."
+    },
+    "notifications": {
+      "player_fallback": "Player",
+      "game_fallback": "Game",
+      "game_lower_fallback": "game",
+      "invite_cancelled_title": "Invitation cancelled",
+      "opponent_cancelled_title": "Opponent cancelled participation",
+      "inviter_cancelled_message": "{name} cancelled the invitation to play “{game}”.",
+      "invitee_cancelled_message": "{name} cancelled participation in the “{game}” match.",
+      "invite_accepted_title": "Invitation accepted",
+      "invite_accepted_message": "Waiting for the inviting player to start the match.",
+      "invite_declined_title": "Invitation declined",
+      "invite_declined_message": "You declined {name}’s invitation to play “{game}”.",
+      "invalid_request": "Invalid request.",
+      "user_not_found": "User not found.",
+      "single_mutation_only": "Only one notification state can be changed at a time.",
+      "service": {
+        "prize_fallback": "Prize",
+        "shop_order_done_title": "Order completed",
+        "shop_order_done_message": "Request #{id}: {prize}{denomination}.",
+        "shop_order_rejected_title": "Order rejected",
+        "shop_order_rejected_message": "Request #{id}: {prize}.",
+        "payment_applied_title": "Top-up confirmed",
+        "payment_applied_message": "Request #{id}: credited +{coins} {room} coins.",
+        "payment_rejected_title": "Top-up rejected",
+        "payment_rejected_message": "Request #{id} for {coins} {room} coins was rejected.",
+        "admin_gold_title": "Gold credited",
+        "admin_gold_message": "Credited +{amount} Gold.",
+        "welcome_title": "Welcome!",
+        "welcome_message": "Thanks for joining Mini Games World. We credited +{amount} coins.",
+        "weekly_title": "Weekly coins credited",
+        "weekly_message": "Matches completed: {games}. Credited +{amount} coins.",
+        "first_game_title": "New game bonus",
+        "first_game_message": "First completed match in “{game}”. Credited +{amount} coins.",
+        "friend_request_title": "New friend request",
+        "friend_accepted_title": "You are now friends",
+        "friend_request_message": "{name} wants to add you as a friend. Open the request to view the profile and accept or decline it.",
+        "friend_accepted_message": "Your request was accepted by “{name}”.",
+        "new_game_fallback": "New game",
+        "shop_order_rejected_reason_message": "Request #{id}: {prize}. Reason: {reason}.",
+        "payment_applied_price_message": "Request #{id}: credited +{coins} {room} coins for {price} {currency}.",
+        "payment_rejected_reason_message": "Request #{id} for {coins} {room} coins was rejected. Reason: {reason}.",
+        "admin_gold_reason_message": "Credited +{amount} Gold. Reason: {reason}."
+      }
+    },
+    "history": {
+      "operations": {
+        "prize_order": "Prize order",
+        "prize_store_provider": "Prize Store · {provider}",
+        "provider_fallback": "prize",
+        "ordinary_match": "Regular match",
+        "win_timeout": "Win by timeout",
+        "win_opponent_left": "Win: opponent left",
+        "win": "Winnings",
+        "refund_opponent_not_connected": "Refund: opponent did not connect"
+      },
+      "match": {
+        "opponent_fallback": "Opponent",
+        "active": "Game in progress",
+        "not_started": "Match did not start",
+        "draw": "Draw",
+        "victory_timeout": "Victory by timeout",
+        "victory_opponent_left": "Victory: opponent left",
+        "victory": "Victory",
+        "technical_defeat": "Technical loss",
+        "defeat": "Defeat"
+      },
+      "description": {
+        "opponent_not_connected": "opponent did not connect",
+        "draw": "draw",
+        "versus": "vs {opponent}"
+      },
+      "games": {
+        "four_in_a_row_short": "Four in a Row",
+        "checkers_short": "Checkers"
+      },
+      "balance": {
+        "game_entry": "Match entry",
+        "game_win": "Winnings",
+        "game_refund": "Draw refund",
+        "shop_order": "Prize order",
+        "shop_refund": "Prize refund",
+        "system_migration": "System migration",
+        "welcome_bonus": "Starter coins",
+        "weekly_bonus": "Weekly credit",
+        "admin_gold_topup": "Credit",
+        "default": "Balance operation"
+      },
+      "amount": {
+        "coins": "{amount} coins"
+      },
+      "rooms": {
+        "gold": "Gold room",
+        "match": "Match room"
+      }
     }
   }
 }
