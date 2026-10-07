@@ -67,7 +67,7 @@ expect(!exactCheckersCss.includes('data-profile-game-panel'), 'final Checkers bo
 expect(exactCheckersCss.includes('height:auto!important') && exactCheckersCss.includes('aspect-ratio:1 / 1!important'), 'final Checkers media owner must force full Store-square geometry');
 expect(exactCheckersCss.includes('grid-template-rows:repeat(8,minmax(0,1fr))!important'), 'final board/effect geometry must preserve all eight Store rows');
 expect(exactCheckersCss.includes('border-radius:8px!important') && exactCheckersCss.includes('border-radius:18px!important'), 'final board/effect owner must preserve accepted Store radii');
-expect(layout.includes('profile-game-cosmetics-parity-v1.css?v=4&mvp19_6=profile-card-visual-repair-v3&manual_acceptance=scroll-arrows-v1'), 'Historical Profile wrapper must retain its shared parity stylesheet identity');
+expect(layout.includes('profile-game-cosmetics-parity-v1.css?v=5&mvp19_6=profile-card-visual-repair-v3&manual_acceptance=native-no-arrows-v2'), 'Active Profile wrapper must retain accepted game-card parity without arrow UI');
 expect(layout.includes('profile-game-cosmetics-manual-repair-v3.css?v=4&mvp19_6=checkers-store-parity-exact-v1'), 'Profile wrapper must retain the manual repair layer');
 expect(layout.includes('profile-checkers-store-exact-v2.css?v=1&mvp19_6=board-effect-full-square-v1'), 'Profile wrapper must load the final direct Checkers Store-square owner');
 expect(layout.indexOf('ensureProfileCheckersStoreExactStyles();') > layout.indexOf('ensureProfileGameCosmeticsManualRepairStyles();'), 'final direct Checkers Store-square owner must be appended after older Profile repair styles');
@@ -98,19 +98,31 @@ expect(checkers.includes('keepProfileGameTabVisible(gameTab, false)'), 'tab sele
 expect(!checkers.includes('scrollIntoView'), 'Profile tab selection must never reintroduce full-page jump behavior');
 expect(manualRepairCss.includes('scroll-behavior:auto!important'), 'final Profile rail owner must disable CSS smooth-scroll lag');
 
-// Factual Telegram v110 direct Profile owner must preserve the accepted native rail without visible corrective controls.
-expect(activeProfile.includes('class="profile-v2-game-tabs"'), 'Active direct Profile owner must keep the native horizontal game-tab rail');
-expect(!activeProfile.includes('function ensureProfileGameTabStyles()')
-  && !activeProfile.includes('function initProfileGameTabScroller()')
-  && !activeProfile.includes('data-profile-game-tabs-scroll')
-  && !activeProfile.includes('profile-v2-game-tabs-arrow'), 'Active Profile must not inject visible arrows or a competing rail owner');
-expect(!fs.existsSync('app/assets/css/screens/profile-game-tabs-active-v1.css'), 'Rejected PR2096 arrow stylesheet must be removed');
+// Factual Telegram v110 must route through the accepted full game-parity chain while keeping the selector arrow-free.
+expect(activeProfile.includes('class="profile-v2-game-tabs"'), 'Base Profile owner must keep the native horizontal game-tab rail');
+expect(layout.includes('initProfileFourInARowParity()')
+  && layout.includes('initProfileBattleshipParity()')
+  && layout.includes('initProfileCheckersHardSquare()')
+  && layout.includes('initProfileReversiParity()')
+  && layout.includes('initProfileGoParity()')
+  && layout.includes('initProfileDominoParity()'), 'Active wrapper must restore accepted game-specific Profile preview owners');
+expect(layout.includes("mgwGameTabsScrollerAffordance = 'native-wheel-no-arrows-v2'")
+  && !layout.includes('data-profile-game-tabs-scroll')
+  && !layout.includes('profile-v2-game-tabs-arrow')
+  && !css.includes('profile-v2-game-tabs-arrow')
+  && !css.includes('profile-v2-game-tabs-shell'), 'Active Profile game selector must scroll natively without visible arrows or wrapper controls');
+expect(css.includes('.profile-v2-game-tab:active{transform:none!important}'), 'Pressing a game tab must not shrink or distort its text/icon');
+expect(!fs.existsSync('app/assets/css/screens/profile-game-tabs-active-v1.css'), 'Rejected PR2096 arrow stylesheet must stay removed');
 expect(activeProfile.includes('id="mgwProfileAvatarEquip"')
   && activeProfile.includes('data-profile-avatar-equip="1"')
   && !activeProfile.includes('id="mgwAvatarEquip"'), 'Active Profile avatar action must not collide with the global Store avatar delegate');
-expect(activeProfile.includes("if (currentScreen() === 'profile') toast(error.message || t('profile.avatar_save_error'));"), 'Delayed Profile avatar feedback must not leak onto Home after navigation');
-expect(manifest.includes("'./assets/js/screens/profile-screen-v110.js?v=1109' => './assets/js/screens/profile-screen-v110.js?v=1145")
-  && manifest.includes('profile_tabs=native-scroll-restored-v1'), 'Manifest must publish the native-scroll Profile corrective');
+expect(activeProfile.includes("document.addEventListener('mgw:avatar-selection-changed'")
+  && !activeProfile.includes("toast(error.message || t('profile.avatar_save_error'))"), 'Profile avatar state must synchronize silently without delayed selection/remove feedback');
+expect(manifest.includes("'./assets/js/screens/profile-screen-v110.js?v=1109' => './assets/js/profile/mgw-profile-chess-layout-v2.js?v=44")
+  && manifest.includes('manual_acceptance=native-no-arrows-v2')
+  && manifest.includes('game_tab_icons=normalized-v3')
+  && manifest.includes('four_profile=live-previews-v3')
+  && manifest.includes('battleship_profile=four-parity-v3'), 'Manifest must publish the accepted full Profile game-parity chain for factual v110');
 
 // Tic-Tac-Toe must keep exactly one accepted graphical X/O owner; no text glyph may sit on top of it.
 expect(manualRepairCss.includes('flex:0 0 27px!important') && manualRepairCss.includes('width:27px!important'), 'Tic-Tac-Toe tab must restore the accepted optical box');
