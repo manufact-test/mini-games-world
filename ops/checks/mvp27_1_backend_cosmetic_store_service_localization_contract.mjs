@@ -80,7 +80,7 @@ for(const token of [
 assert.ok(Number(locale?._meta?.version)>=68,'RU catalog must be Store service revision 68 or newer.');
 assert.equal(manifest.default_locale,'ru');
 assert.equal(manifest.fallback_locale,'ru');
-assert.deepEqual(manifest.supported_locales,['ru'],'MVP-27.1 production manifest must remain truthfully RU-only.');
+assert.deepEqual(manifest.supported_locales,['ru','en'],'Production manifest must expose the active RU/EN runtime after MVP-27.2 activation.');
 
 assert.ok(Number.isInteger(Number(baseline.scanned_files)) && Number(baseline.scanned_files) > 0,'Successor classification may reduce scan coverage only through an explicit ownership proof; the player-facing audit itself must remain populated.');
 assert.ok(Number(baseline.cyrillic_lines_total)<=1300,'Backend debt must ratchet to the Store-service ceiling or lower.');

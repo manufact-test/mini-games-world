@@ -118,7 +118,9 @@ $assertContains("target.id === 'moreMenuOpen'", $home, 'Top more menu must remai
 $assertContains("menuItemMarkup('settingsBtn', '⚙️', t('settings.title'))", $home, 'More menu must expose Settings through the shared row owner');
 $assertContains('id="languageSettingsBtn"', $home, 'Settings must expose Language');
 $assertContains('.sheet .menu-item:focus-visible', $mainCss, 'Menu focus must use the same row geometry without a second outline');
-$assertNotContains('language_en', $home, 'English must not be offered before the full EN catalog exists');
+$assertContains('languageEnBtn', $home, 'Completed EN runtime must expose an English language choice');
+$assertContains("t('settings.language_en')", $home, 'English language choice must use the canonical locale catalog');
+$assertContains('mvp27_2=language-settings-account-owner-v1', $versionManifest, 'Settings cache identity must preserve the bilingual owner');
 $assertContains('explicitLocale', $i18n, 'Locale precedence must include explicit user choice');
 $assertContains('accountLocale', $i18n, 'Locale precedence must include saved MGW account locale');
 $assertContains('platformLocale', $i18n, 'Locale precedence must include platform/device locale');

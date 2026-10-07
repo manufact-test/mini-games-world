@@ -6,7 +6,8 @@ import { openSheet, closeSheet } from '../components/sheet.js?v=68';
 import { showScreen } from '../router.js?v=27';
 import { haptic } from '../telegram/telegram-app.js?v=27';
 import { renderBalances } from '../ui.js?v=90-wallet-15-3';
-import { t, setExplicitLocale, formatDateTime as formatLocalizedDateTime } from '@mgw/i18n';
+import { t, getI18n, setExplicitLocale, formatDate as formatLocalizedDate, formatDateTime as formatLocalizedDateTime } from '@mgw/i18n';
+import { accountLinkProfileMarkup } from '../profile/mgw-account-link-ui.js?v=3';
 
 const HISTORY_CACHE_MAX_AGE_MS = 15000;
 let historyCache = null;
@@ -92,22 +93,61 @@ function menuItemMarkup(id, icon, label, tone = ''){
   return `<button class="btn menu-item menu-item-standard${toneClass}" id="${escapeHtml(id)}" type="button"><span class="menu-item-icon" aria-hidden="true">${escapeHtml(icon)}</span><span class="menu-item-label">${escapeHtml(label)}</span></button>`;
 }
 
+function currentInterfaceLocale(){
+  try { return getI18n().locale === 'en' ? 'en' : 'ru'; } catch (error) { return 'ru'; }
+}
+
+function interfaceLanguageLabel(locale = currentInterfaceLocale()){
+  return t(locale === 'en' ? 'settings.language_en' : 'settings.language_ru');
+}
+
+function settingsProviderName(provider){
+  try { return t(`profile.providers.${provider}`); } catch (error) { return provider || t('profile.provider_unknown'); }
+}
+
+function settingsIdentityRow(identity){
+  const provider = String(identity?.provider || '').trim().toLowerCase();
+  const linkedAt = identity?.linked_at || null;
+  return `<div class="profile-v2-linked-row"><span class="profile-v2-provider-mark" aria-hidden="true">${escapeHtml(provider.slice(0,1).toUpperCase() || '•')}</span><span><strong>${escapeHtml(settingsProviderName(provider))}</strong><small>${escapeHtml(linkedAt ? t('profile.linked_since',{ date:formatLocalizedDate(linkedAt) }) : t('profile.linked'))}</small></span><b>${escapeHtml(t('profile.connected'))}</b></div>`;
+}
+
+function settingsAccountMarkup(){
+  const profile = state.mgwProfile && typeof state.mgwProfile === 'object' ? state.mgwProfile : {};
+  const identities = Array.isArray(profile.identities) ? profile.identities : [];
+  return `<div class="profile-v2-account-card">
+    <button class="profile-v2-setting-row profile-v2-setting-button" id="languageSettingsBtn" type="button"><span><strong>${escapeHtml(t('profile.language'))}</strong><small>${escapeHtml(t('profile.language_note'))}</small></span><b>${escapeHtml(interfaceLanguageLabel())}</b></button>
+    <div class="profile-v2-account-divider"></div>
+    <button class="profile-v2-setting-row profile-v2-setting-button" type="button" data-open-moderation-center><span><strong>${escapeHtml(t('profile.moderation.title'))}</strong><small>${escapeHtml(t('profile.moderation.settings_note'))}</small></span><b>${escapeHtml(t('profile.moderation.open'))}</b></button>
+    <div class="profile-v2-account-divider"></div>
+    ${accountLinkProfileMarkup(
+      state.profileAuth || { provider:state.user?.mgw_identity_provider || '' },
+      identities
+    )}
+    <div class="profile-v2-linked-head"><strong>${escapeHtml(t('profile.linked_accounts'))}</strong><small>${escapeHtml(t('profile.linked_accounts_note'))}</small></div>
+    <div class="profile-v2-linked-list">${identities.length ? identities.map(settingsIdentityRow).join('') : `<div class="profile-v2-empty">${escapeHtml(t('profile.linked_empty'))}</div>`}</div>
+  </div>`;
+}
+
 function openSettingsSheet(){
-  openSheet(`<div class="sheet-head"><div><h2>${escapeHtml(t('settings.title'))}</h2></div><button class="close" data-close-sheet type="button">×</button></div><div class="menu-list"><button class="btn menu-item" id="languageSettingsBtn" type="button">🌐 ${escapeHtml(t('settings.language'))}<span>${escapeHtml(t('settings.language_ru'))}</span></button></div>`);
+  openSheet(`<div class="sheet-head"><div><h2>${escapeHtml(t('settings.title'))}</h2></div><button class="close" data-close-sheet type="button">×</button></div>${settingsAccountMarkup()}`);
   document.getElementById('languageSettingsBtn')?.addEventListener('click', openLanguageSettingsSheet);
 }
 
 function openLanguageSettingsSheet(){
-  openSheet(`<div class="sheet-head"><div><h2>${escapeHtml(t('settings.language'))}</h2><p>${escapeHtml(t('settings.language_note'))}</p></div><button class="close" data-close-sheet type="button">×</button></div><div class="menu-list"><button class="btn menu-item active" id="languageRuBtn" type="button">${escapeHtml(t('settings.language_ru'))}<span>✓</span></button></div>`);
-  document.getElementById('languageRuBtn')?.addEventListener('click', async () => {
-    try {
-      const result = await api.profileV2({ preferred_locale:'ru' });
-      if (result?.profile) state.mgwProfile = result.profile;
-      setExplicitLocale('ru');
+  const currentLocale = currentInterfaceLocale();
+  const option = (id, locale, label) => `<button class="btn menu-item${currentLocale === locale ? ' active' : ''}" id="${id}" type="button">${escapeHtml(label)}<span>${currentLocale === locale ? '✓' : ''}</span></button>`;
+  openSheet(`<div class="sheet-head"><div><h2>${escapeHtml(t('settings.language'))}</h2><p>${escapeHtml(t('settings.language_note'))}</p></div><button class="close" data-close-sheet type="button">×</button></div><div class="menu-list">${option('languageRuBtn','ru',t('settings.language_ru'))}${option('languageEnBtn','en',t('settings.language_en'))}</div>`);
+
+  const activate = locale => {
+    if (locale === currentLocale) {
       closeSheet();
-      toast(t('settings.language_saved'));
-    } catch (error) { toast(error.message || t('profile.save_error')); }
-  });
+      return;
+    }
+    setExplicitLocale(locale);
+    globalThis.location?.reload();
+  };
+  document.getElementById('languageRuBtn')?.addEventListener('click', () => activate('ru'));
+  document.getElementById('languageEnBtn')?.addEventListener('click', () => activate('en'));
 }
 
 function localizedStrongHtml(key, values = {}){

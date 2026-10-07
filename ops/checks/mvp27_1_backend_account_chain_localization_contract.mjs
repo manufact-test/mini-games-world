@@ -145,7 +145,7 @@ for(const file of runtimeFiles){
 const adapter=fs.readFileSync('bot/localization/ServerLocalization.php','utf8');
 assert(adapter.includes("app/runtime/localization/LocalizationCatalog.php"),'Server adapter must require canonical LocalizationCatalog.');
 assert(adapter.includes("new LocalizationCatalog("),'Server adapter must instantiate canonical LocalizationCatalog.');
-assert(adapter.includes("->translate($key, $params)"),'Server adapter must delegate translation to LocalizationCatalog.');
+assert(adapter.includes("->translate($key, $params, self::requestLocale($catalog))"),'Server adapter must delegate translation to LocalizationCatalog with the active request locale.');
 
 const lifecycle=fs.readFileSync('bot/accounts/AccountDataLifecycleService.php','utf8');
 assert(lifecycle.includes("display_name=:deleted_player"),'Deleted-player DB anonymization must use localized parameter ownership.');

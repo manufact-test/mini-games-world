@@ -27,7 +27,7 @@ async function requestUrl(url, payload = {}){
   try {
     response = await fetch(url, {
       method:'POST',
-      headers:{'Content-Type':'application/json'},
+      headers:{'Content-Type':'application/json','X-MGW-Locale':String(document.documentElement?.lang || 'ru')},
       body:JSON.stringify({ initData:getInitData(), sessionId:getSessionId(), deviceId:getDeviceId(), ...payload })
     });
   } catch (_) {
@@ -52,7 +52,7 @@ async function downloadAccountExport(requestId){
   try {
     response = await fetch(ACCOUNT_DATA_URL, {
       method:'POST',
-      headers:{'Content-Type':'application/json'},
+      headers:{'Content-Type':'application/json','X-MGW-Locale':String(document.documentElement?.lang || 'ru')},
       body:JSON.stringify({
         initData:getInitData(),
         sessionId:getSessionId(),

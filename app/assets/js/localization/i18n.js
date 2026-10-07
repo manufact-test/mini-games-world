@@ -80,8 +80,15 @@ function inlinePayload(documentRef = globalThis.document){
   return JSON.parse(String(node.textContent || ''));
 }
 
+function explicitLocaleOverride(){
+  try { return globalThis.localStorage?.getItem(EXPLICIT_LOCALE_KEY) || null; } catch (error) { return null; }
+}
+
 export function readInlineLocalization(documentRef = globalThis.document){
-  return createI18n(inlinePayload(documentRef), documentRef?.documentElement?.lang || null);
+  const requestedLocale = explicitLocaleOverride() || documentRef?.documentElement?.lang || null;
+  const i18n = createI18n(inlinePayload(documentRef), requestedLocale);
+  if (documentRef?.documentElement) documentRef.documentElement.lang = i18n.locale;
+  return i18n;
 }
 
 let clientI18n = null;
@@ -103,8 +110,7 @@ function activateLocale(requestedLocale){
 }
 
 export function applyAccountLocalePreference(accountLocale = null){
-  let explicitLocale = null;
-  try { explicitLocale = globalThis.localStorage?.getItem(EXPLICIT_LOCALE_KEY) || null; } catch (error) {}
+  const explicitLocale = explicitLocaleOverride();
   const platformLocale = globalThis.navigator?.languages?.[0] || globalThis.navigator?.language || null;
   const fallbackLocale = inlinePayload()?.manifest?.fallback_locale || 'ru';
   return activateLocale(resolvePreferredLocale({ explicitLocale, accountLocale, platformLocale, fallbackLocale }));

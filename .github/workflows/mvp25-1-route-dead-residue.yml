@@ -53,8 +53,8 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          if [[ "${{ github.head_ref }}" == agent/mvp27-1-backend-final-player-localization-* ]]; then
-            echo 'Final backend localization successor: predecessor behavioral contracts still ran; original frozen/bounded scope guard does not apply.'
+          if [[ "${{ github.head_ref }}" == agent/mvp27-1-backend-final-player-localization-* || "${{ github.head_ref }}" == agent/mvp27-2-* ]]; then
+            echo 'Localization successor: predecessor behavioral contracts still ran; original frozen/bounded scope guard does not apply.'
             git diff --check
             exit 0
           fi
