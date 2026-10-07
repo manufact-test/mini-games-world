@@ -76,6 +76,7 @@ const completeScopes = [
   'entry',
   'nav',
   'topbar',
+  'notifications',
   'shell',
   'runtime_status',
   'settings',
