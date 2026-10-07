@@ -350,6 +350,7 @@ function applyStoreAvatarOptimistic(itemId){
   if (!runtime) return;
   const { state, mergeCanonicalMgwUser } = runtime;
   state.selectedAvatarId = itemId;
+  document.dispatchEvent(new CustomEvent('mgw:avatar-selection-changed', { detail:{ itemId } }));
 
   if (state.mgwProfile && typeof state.mgwProfile === 'object') {
     state.mgwProfile = {
@@ -373,6 +374,7 @@ function restoreStoreAvatarConfirmed(){
   const { state, mergeCanonicalMgwUser, renderUser } = runtime;
   const itemId = String(storeAvatarConfirmedItemId || DEFAULT_AVATAR_ITEM_ID).trim() || DEFAULT_AVATAR_ITEM_ID;
   state.selectedAvatarId = itemId;
+  document.dispatchEvent(new CustomEvent('mgw:avatar-selection-changed', { detail:{ itemId } }));
   if (state.mgwProfile && typeof state.mgwProfile === 'object') {
     state.mgwProfile = {
       ...state.mgwProfile,
