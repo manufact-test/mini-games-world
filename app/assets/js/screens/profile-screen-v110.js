@@ -834,7 +834,7 @@ function renderGameCosmeticsCollection(){
       <div class="profile-v2-game-tabs" role="tablist" aria-label="${escapeHtml(t('profile.collection.games_tabs_aria'))}">
         ${games.map(game => {
           const active = game.game_type === activeGame.game_type;
-          return `<button class="profile-v2-game-tab${active ? ' active' : ''}" type="button" role="tab" data-profile-game-tab="${escapeHtml(game.game_type)}" aria-selected="${active ? 'true' : 'false'}"><span class="profile-v2-game-tab-mark" aria-hidden="true">${escapeHtml(gameCollectionMark(game.game_type))}</span><span>${escapeHtml(game.title)}</span></button>`;
+          return `<button class="profile-v2-game-tab${active ? ' active' : ''}" type="button" role="tab" data-profile-game-tab="${escapeHtml(game.game_type)}" aria-selected="${active ? 'true' : 'false'}"><span class="profile-v2-game-tab-mark" aria-hidden="true">${gameCollectionMarkMarkup(game.game_type)}</span><span>${escapeHtml(game.title)}</span></button>`;
         }).join('')}
       </div>
       <div class="profile-v2-game-panel" role="tabpanel" data-profile-game-panel="${escapeHtml(activeGame.game_type)}">
@@ -931,6 +931,17 @@ function gameCosmeticLayer(item){
 function gameCollectionOrder(gameType){
   const index = GAME_TYPES.indexOf(String(gameType || ''));
   return index >= 0 ? index : 999;
+}
+
+function gameCollectionMarkMarkup(gameType){
+  const type = String(gameType || '');
+  if (type === 'checkers') {
+    return '<svg class="mgw-profile-tab-checker" viewBox="0 0 16 16" focusable="false"><circle class="mgw-profile-tab-checker-face" cx="8" cy="8" r="6.1"></circle><circle class="mgw-profile-tab-checker-ring" cx="8" cy="8" r="3.7"></circle></svg>';
+  }
+  if (type === 'battleship') {
+    return '<svg class="mgw-profile-tab-battleship" viewBox="0 0 30 20" focusable="false"><path class="mgw-bs-tab-hull" d="M3 11.5h24l-4 5H8l-5-5Z"></path><rect class="mgw-bs-tab-cabin" x="10" y="6.5" width="10" height="5" rx="1"></rect><rect class="mgw-bs-tab-bridge" x="13" y="3.5" width="4" height="3" rx=".7"></rect></svg>';
+  }
+  return escapeHtml(gameCollectionMark(type));
 }
 
 function gameCollectionMark(gameType){
