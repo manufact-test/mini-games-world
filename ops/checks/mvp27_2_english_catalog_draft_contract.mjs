@@ -124,6 +124,7 @@ const completeScopes = [
   'store.bundles',
   'store.games',
   'store.wrappers',
+  'store',
 ];
 
 for (const scope of completeScopes) {
@@ -145,4 +146,4 @@ for (const key of [
 }
 
 assert(englishLeaves.length >= 365, `Expected at least 365 English draft leaves after MVP-27.2.2a, got ${englishLeaves.length}.`);
-console.log(`MVP-27.2 English draft catalog: PASS (${englishLeaves.length} leaves; all eight games + rules complete; RU runtime still authoritative).`);
+console.log(`MVP-27.2 English draft catalog: PASS (${englishLeaves.length} leaves; all eight games/rules + Store complete; RU runtime still authoritative).`);
