@@ -114,7 +114,7 @@ function frameMeta(item){ return item?.metadata && typeof item.metadata === 'obj
 function frameName(item){
   const itemId = String(item?.item_id || '');
   const localeKey = FRAME_NAME_KEYS[itemId];
-  return String(frameMeta(item).display_name || (localeKey ? frameText(localeKey) : '') || itemId || frameText('fallback_name'));
+  return String((localeKey ? frameText(localeKey) : '') || frameMeta(item).display_name || itemId || frameText('fallback_name'));
 }
 function framePrice(item){ return Math.max(0, Number(frameMeta(item).price_coins || 0)); }
 function frameOfferId(item){ return String(frameMeta(item).offer_id || String(item?.item_id || '').replace(/^profile-/, '')); }
