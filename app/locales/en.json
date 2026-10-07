@@ -1,7 +1,7 @@
 {
   "_meta": {
     "locale": "en",
-    "version": 9,
+    "version": 10,
     "status": "draft"
   },
   "common": {
@@ -1342,6 +1342,197 @@
             "theme": "Theme",
             "elements": "Elements",
             "effect": "Effect"
+          }
+        }
+      }
+    },
+    "games": {
+      "empty": "Game cosmetics are not available yet",
+      "cosmetics_title": "Game customization",
+      "generic_item": "Game item",
+      "catalog_titles": {
+        "tictactoe": "Tic-Tac-Toe",
+        "chess": "Chess",
+        "checkers": "Checkers",
+        "reversi": "Reversi",
+        "go": "Go",
+        "domino": "Domino",
+        "four_in_a_row": "Four in a Row",
+        "battleship": "Battleship"
+      },
+      "presentation": {
+        "chess": {
+          "groups": {
+            "boards": {
+              "title": "Boards",
+              "subtitle": "Chess board appearance"
+            },
+            "pieces": {
+              "title": "Pieces",
+              "subtitle": "Appearance of both players’ pieces"
+            },
+            "effects": {
+              "title": "Effects",
+              "subtitle": "One selected effect triggers at the matching moment"
+            }
+          },
+          "kinds": {
+            "theme": "Chess board",
+            "elements": "Piece set",
+            "effect": "Game effect"
+          }
+        },
+        "checkers": {
+          "groups": {
+            "boards": {
+              "title": "Boards",
+              "subtitle": "Checkers board appearance"
+            },
+            "pieces": {
+              "title": "Checkers",
+              "subtitle": "Appearance of both players’ checkers"
+            },
+            "effects": {
+              "title": "Effects",
+              "subtitle": "One selected effect triggers on the matching event"
+            }
+          },
+          "kinds": {
+            "theme": "Checkers board",
+            "elements": "Checkers set",
+            "effect": "Game effect"
+          }
+        },
+        "domino": {
+          "groups": {
+            "tables": {
+              "title": "Tables",
+              "subtitle": "Game table appearance"
+            },
+            "tiles": {
+              "title": "Tiles",
+              "subtitle": "Domino tile set"
+            },
+            "effects": {
+              "title": "Effects",
+              "subtitle": ""
+            }
+          },
+          "kinds": {
+            "theme": "Game table",
+            "elements": "Tile set",
+            "effect": "Game effect"
+          }
+        },
+        "tictactoe": {
+          "groups": {
+            "fields": {
+              "title": "Boards",
+              "subtitle": "Board background and grid"
+            },
+            "marks": {
+              "title": "Marks",
+              "subtitle": "Appearance of X and O"
+            },
+            "effects": {
+              "title": "Effects",
+              "subtitle": "One selected effect triggers on every move"
+            }
+          },
+          "kinds": {
+            "theme": "Game board",
+            "elements": "Mark set",
+            "effect": "Move effect"
+          }
+        }
+      },
+      "descriptions": {
+        "chess": {
+          "theme": {
+            "wood": "Amber and burgundy board with deep contrast and a warm club feel",
+            "tournament_dark": "High-contrast tournament board",
+            "marble": "Cool marble with natural veining",
+            "neon": "Dark board with neon glow",
+            "fallback": "Changes the chess board appearance"
+          },
+          "elements": {
+            "wood": "Amber and dark cherry pieces with a warm sheen and deep contrast",
+            "marble": "Light marble pieces",
+            "metal": "Polished metal pieces",
+            "neon": "Pieces with a bright neon outline",
+            "fallback": "Changes the appearance of chess pieces"
+          },
+          "effect": {
+            "move": "A light pulse marks the completed move",
+            "capture": "A flash highlights a capture",
+            "check": "An energy halo appears on check",
+            "fallback": "Adds a visual game effect"
+          }
+        },
+        "checkers": {
+          "theme": {
+            "wood": "Cool azure-mint board with dark teal squares",
+            "dark": "Clean dark board with strong contrast",
+            "marble": "Light stone with cool veining",
+            "neon": "Dark board with cyan-purple glow",
+            "fallback": "Changes the checkers board appearance"
+          },
+          "elements": {
+            "wood": "Glazed turquoise and terracotta checkers with a ceramic sheen",
+            "marble": "Smooth stone checkers with natural veining",
+            "metal": "Polished metal checkers",
+            "neon": "Checkers with a bright neon outline",
+            "fallback": "Changes the appearance of checkers"
+          },
+          "effect": {
+            "move": "A light trail highlights a regular move",
+            "capture": "A short impact burst marks a capture",
+            "promotion": "A crown flash appears when a piece becomes a king",
+            "fallback": "Adds a visual game effect"
+          }
+        },
+        "domino": {
+          "theme": {
+            "felt": "Deep burgundy felt with a wine-colored edge and soft club depth",
+            "midnight": "Dark blue table with cool lighting and a calm club atmosphere",
+            "walnut": "Warm walnut table with a continuous wooden playing surface and lively grain",
+            "neon": "Deep dark table with a cyan-purple neon edge",
+            "fallback": "Changes the game table appearance"
+          },
+          "elements": {
+            "ivory": "Warm amber tiles with dark pips and a soft dimensional sheen",
+            "ebony": "Classic matte black tiles with light pips",
+            "marble": "Marble tiles with natural mineral texture and crisp pips",
+            "neon": "Dark tiles with bright neon pips and a fine outline",
+            "fallback": "Changes the appearance of domino tiles"
+          },
+          "effect": {
+            "precision_drop": "A bright accent at the moment of a precise play",
+            "stock_pulse": "A dramatic tile draw from the stock",
+            "chain_finale": "A finale with a cascade of falling domino tiles",
+            "fallback": "Adds a visual game effect"
+          }
+        },
+        "tictactoe": {
+          "theme": {
+            "classic": "Warm classic board",
+            "dark": "Clean dark theme",
+            "glass": "Dimensional glass board",
+            "neon": "Neon grid and glow",
+            "fallback": "Changes the board background and grid"
+          },
+          "elements": {
+            "classic": "Clean classic X and O marks",
+            "3d": "Dimensional light-colored marks",
+            "metal": "Gold X and steel O",
+            "neon": "Glowing neon marks",
+            "fallback": "Changes the X and O marks"
+          },
+          "effect": {
+            "impact": "The mark appears with a short impact and flash",
+            "sparks": "A quick burst of sparks flies around the new mark",
+            "wave": "Two light waves spread from the newly placed mark",
+            "fallback": "Adds a visual effect to every move"
           }
         }
       }
