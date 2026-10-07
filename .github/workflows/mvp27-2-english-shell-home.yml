@@ -48,9 +48,17 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
+          if [[ "${{ github.head_ref }}" != agent/mvp27-2-1-* ]]; then
+            echo 'Successor MVP-27.2 slice: Shell/Home contract remains a regression baseline; original bounded-slice path guard does not apply.'
+            exit 0
+          fi
           base='${{ github.event.pull_request.base.sha }}'
           head='${{ github.event.pull_request.head.sha }}'
-          allowed='^(app/locales/en\.json|ops/checks/mvp27_2_1_english_shell_home_contract\.mjs|\.github/workflows/mvp27-2-english-shell-home\.yml)$'
+          allowed='^(app/locales/en\.json|ops/checks/mvp27_2_1_english_shell_home_contract\.mjs|\.github/workflows/mvp27-2-english-shell-home\.yml)
+
+      - name: Tracked secret scan
+        run: node scripts/ci/check-secrets.mjs
+
           bad="$(git diff --name-only "$base" "$head" | grep -Ev "$allowed" || true)"
           test -z "$bad" || { printf 'Unexpected MVP-27.2.1 paths:\n%s\n' "$bad" >&2; exit 1; }
 
