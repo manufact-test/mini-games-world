@@ -1,7 +1,7 @@
 {
   "_meta": {
     "locale": "en",
-    "version": 23,
+    "version": 24,
     "status": "draft"
   },
   "common": {
@@ -2673,6 +2673,117 @@
       "open_mini_app": "Open Mini App",
       "tournament_assigned_title": "Tournament date scheduled",
       "tournament_starts": "starts"
+    }
+  },
+  "friends": {
+    "menu": {
+      "title": "Friends"
+    },
+    "page": {
+      "title": "Friends",
+      "subtitle": "Find players, accept requests, and invite friends to matches."
+    },
+    "loading": {
+      "refresh": "Refreshing list…"
+    },
+    "search": {
+      "placeholder": "Part of nickname or MGW-ID",
+      "aria": "Find a player by part of nickname or MGW-ID",
+      "searching_short": "Searching…",
+      "action": "Search",
+      "searching": "Searching for players…",
+      "results": "Search results",
+      "hide": "Hide",
+      "enter_query": "Enter part of a nickname or a full MGW-ID.",
+      "nickname_min": "For nickname search, enter at least 2 characters.",
+      "not_found": "No players found. Try another part of the nickname."
+    },
+    "tabs": {
+      "aria": "Friend sections",
+      "friends": "Friends",
+      "requests": "Requests",
+      "recent": "Recent",
+      "blocked": "Blocked"
+    },
+    "sections": {
+      "friends": "Friends",
+      "incoming": "Incoming requests",
+      "outgoing": "Outgoing requests",
+      "recent": "Recent opponents",
+      "blocked": "Blocked players"
+    },
+    "player_fallback": "Player",
+    "recent_match": "Last match: {date}",
+    "recently": "recently",
+    "actions": {
+      "aria": "Player actions",
+      "accept": "Accept",
+      "decline": "Decline",
+      "cancel": "Cancel",
+      "unblock": "Unblock",
+      "add": "Add",
+      "remove": "Remove",
+      "block": "Block"
+    },
+    "menu_actions": {
+      "invite": "Invite to game",
+      "profile": "Profile and stats",
+      "remove": "Remove from friends",
+      "report": "Report",
+      "block": "Block"
+    },
+    "confirm": {
+      "unblock_title": "Unblock player?",
+      "unblock_note": "{name} will be able to interact with you through social features again.",
+      "remove_title": "Remove from friends?",
+      "remove_note": "{name} will be removed from your friends list.",
+      "block_title": "Block player?",
+      "block_note": "Friend requests and new game invitations will be unavailable, and your current friendship will be removed."
+    },
+    "profile": {
+      "title": "Player profile",
+      "subtitle": "Public MGW stats",
+      "matches": "Matches",
+      "wins": "Wins",
+      "losses": "Losses",
+      "draws": "Draws",
+      "game_stats": "{matches} matches · {wins} wins",
+      "game_names": {
+        "tictactoe": "Tic-Tac-Toe",
+        "four_in_a_row": "Four in a Row",
+        "battleship": "Battleship",
+        "checkers": "Checkers",
+        "reversi": "Reversi",
+        "chess": "Chess",
+        "go": "Go",
+        "domino": "Domino"
+      }
+    },
+    "report": {
+      "title": "Report",
+      "reason": "Reason",
+      "comment": "Comment",
+      "comment_placeholder": "Optional. Briefly describe the situation",
+      "send": "Submit report",
+      "choose_reason": "Choose a reason for the report.",
+      "sent_case": "Report submitted · {case_id}",
+      "sent": "Report submitted.",
+      "send_error": "Could not submit the report."
+    },
+    "empty": {
+      "incoming": "No incoming requests.",
+      "outgoing": "No outgoing requests.",
+      "friends": "Find a player by part of nickname or MGW-ID and send a request.",
+      "recent": "Completed matches with real players will appear here.",
+      "blocked": "The blocked list is empty.",
+      "default": "Nothing here yet."
+    },
+    "errors": {
+      "load": "Could not load friends.",
+      "search": "Could not search for players.",
+      "action": "Could not complete the action.",
+      "profile_unavailable": "Profile unavailable.",
+      "profile_open": "Could not open the player profile."
     }
   }
 }
