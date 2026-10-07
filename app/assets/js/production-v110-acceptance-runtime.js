@@ -445,15 +445,16 @@ function syncLaunchPresentation(game, phase){
     const authoritativeElapsedAtReceipt = remainingToStart === null
       ? 0
       : Math.max(0, Math.min(numbersDuration, numbersDuration - remainingToStart));
-    // A delayed first countdown response must not make the accepted 3-2-1
-    // sequence appear to begin at 2. Keep a short perceptible first beat while
-    // preserving the server anchor for the rest of the countdown. The launch
-    // poll owner is accelerated only during preparing/countdown, so this clamp
-    // is a latency safety net rather than a replacement clock.
-    const elapsedAtReceipt = Math.min(
-      authoritativeElapsedAtReceipt,
-      Math.max(0, LAUNCH_COUNTDOWN_STEP_MS - LAUNCH_FIRST_BEAT_MIN_MS),
-    );
+    // A delayed first ordinary countdown response must not make the accepted
+    // 3-2-1 sequence appear to begin at 2. Keep a short perceptible first beat
+    // only for the three-second flow. Longer authoritative countdowns (including
+    // tournaments) retain their exact server-derived elapsed time.
+    const elapsedAtReceipt = presentation.countdownSeconds === 3
+      ? Math.min(
+          authoritativeElapsedAtReceipt,
+          Math.max(0, LAUNCH_COUNTDOWN_STEP_MS - LAUNCH_FIRST_BEAT_MIN_MS),
+        )
+      : authoritativeElapsedAtReceipt;
 
     // The visible sequence consumes the exact authoritative server countdown.
     // Ordinary matches remain 3-2-1; tournament matches publish 10 seconds.
