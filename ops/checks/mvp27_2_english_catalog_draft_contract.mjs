@@ -96,6 +96,10 @@ const completeScopes = [
   'games.go',
   'rules.reversi',
   'rules.go',
+  'games.checkers',
+  'games.chess',
+  'rules.checkers',
+  'rules.chess',
 ];
 
 for (const scope of completeScopes) {
