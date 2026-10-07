@@ -1,0 +1,47 @@
+name: MVP-27.2 English Draft Catalog
+
+on:
+  pull_request:
+    branches:
+      - agent/mvp-13-2-staging
+    paths:
+      - 'app/locales/en.json'
+      - 'app/locales/ru.json'
+      - 'app/locales/manifest.json'
+      - 'ops/checks/mvp27_2_english_catalog_draft_contract.mjs'
+      - '.github/workflows/mvp27-2-english-draft-catalog.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  english-draft:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - name: Checkout exact candidate
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          persist-credentials: false
+          fetch-depth: 0
+
+      - name: Draft catalog contract
+        run: |
+          set -euo pipefail
+          node --check ops/checks/mvp27_2_english_catalog_draft_contract.mjs
+          node ops/checks/mvp27_2_english_catalog_draft_contract.mjs
+
+      - name: Preserve localization architecture
+        run: |
+          set -euo pipefail
+          node ops/checks/mvp16_2_localization_contract.mjs
+          php bot/tests/Mvp162LocalizationInfrastructureTest.php
+          node ops/checks/mvp27_1_localization_architecture_contract.mjs
+
+      - name: Preserve Russian active-owner zero debt
+        run: node ops/checks/mvp27_1_hardcoded_text_audit.mjs
+
+      - name: Tracked secret scan
+        run: node scripts/ci/check-secrets.mjs
