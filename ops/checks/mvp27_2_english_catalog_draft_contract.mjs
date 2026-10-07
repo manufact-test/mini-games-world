@@ -81,6 +81,7 @@ const completeScopes = [
   'runtime_status',
   'settings',
   'account_data',
+  'account_link',
   'weekly_match',
   'game_cards',
   'acceptance_runtime',
