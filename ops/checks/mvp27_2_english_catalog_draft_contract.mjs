@@ -106,6 +106,15 @@ const completeScopes = [
   'rules.battleship',
   'games',
   'rules',
+  'store.tabs',
+  'store.balance',
+  'store.units',
+  'store.coins',
+  'store.actions',
+  'store.errors',
+  'store.profile_selection',
+  'store.profile',
+  'store.purchase',
 ];
 
 for (const scope of completeScopes) {
