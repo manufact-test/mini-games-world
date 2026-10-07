@@ -1,7 +1,7 @@
 {
   "_meta": {
     "locale": "en",
-    "version": 29,
+    "version": 30,
     "status": "draft"
   },
   "common": {
@@ -3143,6 +3143,86 @@
       "unavailable": "MGW Friends is temporarily unavailable.",
       "rate_limited": "Too many actions. Try again a little later.",
       "failed": "Could not complete the MGW Friends action."
+    },
+    "account_data": {
+      "unavailable": "Account data management is temporarily unavailable.",
+      "method_not_allowed": "Request method is not supported.",
+      "invalid_request": "Invalid request.",
+      "profile_unavailable": "MGW profile unavailable for this session.",
+      "invalid_action": "Invalid account data management action.",
+      "failed": "Could not process account data.",
+      "download": {
+        "method_not_allowed": "Request method is not supported.",
+        "invalid_archive": "Invalid archive.",
+        "unavailable": "Data download is temporarily unavailable.",
+        "profile_unavailable": "MGW profile unavailable for this session.",
+        "failed": "Could not download the data archive."
+      },
+      "website_hook": {
+        "invalid_request": "Invalid request.",
+        "invalid_mgw_id": "Invalid MGW-ID.",
+        "verification_reference_required": "A confirmed website verification reference was not provided."
+      }
+    },
+    "account_link": {
+      "method_not_allowed": "Request method is not supported.",
+      "invalid_request": "Invalid request.",
+      "android_required": "Account linking must be started from the Android app.",
+      "unavailable": "Account linking is temporarily unavailable.",
+      "invalid_action": "Invalid account linking action.",
+      "failed": "Could not process account linking. Try again.",
+      "telegram": {
+        "title": "🔐 Android linking",
+        "prompt": "Do you confirm signing in to your MGW profile “{nickname}” from the Android app?\n\nAfter confirmation, Android will use the same profile, balance, purchases, stats, and rating. The temporary 1,000 starter coins from the Android profile will not be transferred.",
+        "confirm_button": "✅ Confirm linking",
+        "cancel_button": "Cancel",
+        "start_failed_prefix": "Could not start linking: {message}",
+        "start_failed_retry": "Could not start linking. Return to Android and create a new attempt.",
+        "confirmed_text": "✅ Linking confirmed.\n\nReturn to the Android app and complete linking.",
+        "confirmed_answer": "Confirmed",
+        "cancelled_text": "Linking cancelled.\n\nIf you change your mind, start a new attempt from the Android app.",
+        "cancelled_answer": "Revoked",
+        "confirm_failed": "Could not confirm linking. Try again.",
+        "challenge_expired": "The link has expired. Create a new attempt in Android.",
+        "telegram_account_missing": "Open MINI GAMES WORLD in Telegram first, then try linking again.",
+        "target_android_conflict": "This profile is already linked to another Android device.",
+        "challenge_claimed": "This attempt is already being used by another Telegram profile."
+      }
+    },
+    "profile_endpoint": {
+      "nickname_too_short": "Nickname must be at least 3 characters.",
+      "nickname_too_long": "Nickname can be up to 13 characters.",
+      "nickname_invalid_characters": "Nickname can contain letters, numbers, spaces, hyphens, and underscores.",
+      "update_invalid": "Could not save your MGW profile.",
+      "invalid_request": "Invalid request.",
+      "profile_unavailable": "MGW profile unavailable for this session.",
+      "temporarily_unavailable": "MGW profile is temporarily unavailable.",
+      "load_failed": "Could not load the MGW profile.",
+      "nickname_taken": "This nickname is already taken. Choose another one."
+    },
+    "auth": {
+      "telegram_panel_required": "Open the panel through Telegram.",
+      "test_player": "Test player",
+      "telegram_app_required": "Open the app through Telegram."
+    },
+    "social_invite": {
+      "mgw_player_unavailable": "MGW player unavailable.",
+      "player_unavailable": "The player is currently unavailable for an invitation.",
+      "blocked_or_unavailable": "Invitation unavailable: the player is blocked or unavailable.",
+      "platform_unavailable": "Invitation platform unavailable."
+    },
+    "presence_endpoint": {
+      "invalid_request": "Invalid request.",
+      "unknown_action": "Unknown presence action.",
+      "user_not_found": "User not found.",
+      "device_session_not_found": "Device session not found."
+    },
+    "search_speed": {
+      "invalid_request": "Invalid request.",
+      "user_not_found": "User not found."
+    },
+    "identity_policy": {
+      "nickname_taken": "This nickname is already taken. Choose another one."
     }
   }
 }
