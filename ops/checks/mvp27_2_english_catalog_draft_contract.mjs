@@ -136,6 +136,13 @@ const completeScopes = [
   'profile.moderation',
   'profile.tournament',
   'profile',
+  'arena.scroll_left',
+  'arena.scroll_right',
+  'arena.official_title',
+  'arena.errors',
+  'arena.registration',
+  'arena.hall',
+  'arena.ready',
 ];
 
 for (const scope of completeScopes) {
