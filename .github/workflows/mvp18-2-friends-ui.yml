@@ -108,7 +108,9 @@ jobs:
               bot/social \
               ':(exclude)bot/social/PlayerReportService.php'
           else
-            git diff --exit-code "${baseline}" HEAD -- \
+            current_base='${{ github.event.pull_request.base.sha }}'
+            echo 'Successor PR: protect accepted Friends/social owners against the current PR base.'
+            git diff --exit-code "${current_base}" HEAD -- \
               bot/friends.php \
               bot/social
           fi
