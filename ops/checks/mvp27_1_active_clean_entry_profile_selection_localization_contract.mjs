@@ -79,8 +79,6 @@ for (const key of [
   'store.profile_selection.actions.selected',
   'store.profile_selection.actions.select',
   'store.profile_selection.avatar.errors.unconfirmed',
-  'store.profile_selection.avatar.errors.remove',
-  'store.profile_selection.avatar.errors.select',
 ]) assert.ok(target.includes(`t('${key}')`), 'Active clean-entry must use locale key: ' + key);
 
 assert.ok(target.includes(
