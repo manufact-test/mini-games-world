@@ -1,7 +1,7 @@
 {
   "_meta": {
     "locale": "en",
-    "version": 14,
+    "version": 15,
     "status": "draft"
   },
   "common": {
@@ -714,6 +714,96 @@
       "game": {
         "trigger": "Reactions",
         "palette_aria": "Choose a reaction"
+      }
+    },
+    "collection": {
+      "title": "My collection",
+      "my_avatars": "My avatars",
+      "avatar_fallback": "Avatar",
+      "name_color_remove_error": "Could not remove the name color.",
+      "name_color_select_error": "Could not select the name color.",
+      "game_cosmetics_aria": "Game customization",
+      "games_title": "Games",
+      "games": {
+        "chess": {
+          "products": {
+            "game-chess-board-wood": "Wooden board",
+            "game-chess-pieces-wood": "Wooden pieces"
+          }
+        },
+        "checkers": {
+          "title": "Russian Checkers",
+          "empty": "Purchased items for this game will appear here.",
+          "fallback": "Checkers customization",
+          "groups": {
+            "theme": "Boards",
+            "elements": "Checkers",
+            "effect": "Effects"
+          }
+        },
+        "reversi": {
+          "title": "Reversi",
+          "empty": "Purchased Reversi items will appear here.",
+          "fallback": "Reversi customization",
+          "groups": {
+            "theme": "Boards",
+            "elements": "Pieces",
+            "effect": "Effects"
+          }
+        },
+        "go": {
+          "title": "Go",
+          "empty": "Purchased Go items will appear here.",
+          "fallback": "Go customization",
+          "groups": {
+            "theme": "Boards",
+            "elements": "Stones",
+            "effect": "Effects"
+          }
+        },
+        "domino": {
+          "title": "Domino",
+          "empty": "Purchased Domino items will appear here.",
+          "fallback": "Domino customization",
+          "groups": {
+            "theme": "Tables",
+            "elements": "Tiles",
+            "effect": "Effects"
+          }
+        },
+        "four_in_a_row": {
+          "title": "Four in a Row",
+          "empty": "Purchased Four in a Row items will appear here.",
+          "fallback": "Four in a Row item",
+          "effect_fallback": "Game effect",
+          "groups": {
+            "theme": "Boards",
+            "elements": "Pieces",
+            "effect": "Effects"
+          }
+        },
+        "battleship": {
+          "title": "Battleship",
+          "empty": "Purchased Battleship items will appear here.",
+          "fallback": "Battleship item",
+          "groups": {
+            "theme": "Maps",
+            "elements": "Fleet",
+            "effect": "Effects"
+          }
+        }
+      },
+      "games_empty": "Purchased game items will appear here.",
+      "games_tabs_aria": "Games in collection",
+      "game_empty": "Purchased items for this game will appear here.",
+      "unavailable": "Unavailable",
+      "cosmetics_label": "Customization",
+      "cosmetic_remove_error": "Could not remove the customization.",
+      "cosmetic_select_error": "Could not select the item.",
+      "game_groups": {
+        "theme": "Boards",
+        "elements": "Marks",
+        "effect": "Effects"
       }
     }
   },
