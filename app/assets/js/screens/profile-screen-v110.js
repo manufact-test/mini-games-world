@@ -44,6 +44,9 @@ let lastProfileRenderSignature = '';
 let hiddenProfileRenderPending = false;
 let lastFullProfileSnapshotAt = 0;
 let avatarSelectionSyncBound = false;
+let profileRenderLifecycleBound = false;
+let pendingGameTabScrollState = null;
+let pendingGameTabScrollCapturedAt = 0;
 
 export function initProfileScreen(){
   document.querySelector('#screen-profile [data-back-home]')?.remove();
@@ -53,6 +56,7 @@ export function initProfileScreen(){
   }
   bindProfileActions();
   bindAvatarSelectionSync();
+  bindProfileRenderLifecycle();
   initAccountLinkUi();
   initAccountLinkHomeOnboarding();
   renderProfileV2();
@@ -141,8 +145,16 @@ function applyProfileResponse(result, options = {}){
   if (profileChromeSignature() !== previousChromeSignature) renderUser(state.user);
   if (Number(state.user?.balance || 0) !== previousBalance) renderBalances(state.user);
 
-  if ((options.deferWhileHidden === true && shouldDeferHiddenProfileRender())
-      || (options.deferWhileActive === true && shouldDeferActiveProfileRender())) {
+  if (options.deferWhileActive === true && shouldDeferActiveProfileRender()) {
+    // Do not rebuild the long Profile DOM while the user is reading it. The old
+    // idle remount was the source of the delayed vertical jump: once input went
+    // quiet, requestIdleCallback replaced #profileV2Root and the game-parity
+    // repair chain changed heights again. Keep the fresh state in memory and
+    // converge the hidden DOM after the user leaves Profile instead.
+    hiddenProfileRenderPending = true;
+    return;
+  }
+  if (options.deferWhileHidden === true && shouldDeferHiddenProfileRender()) {
     scheduleProfileRenderIdle();
     return;
   }
@@ -182,6 +194,15 @@ function shouldDeferHiddenProfileRender(){
     && root.childElementCount > 0;
 }
 
+function bindProfileRenderLifecycle(){
+  if (profileRenderLifecycleBound) return;
+  profileRenderLifecycleBound = true;
+  document.addEventListener('mgw:screen-changed', event => {
+    if (event?.detail?.from !== 'profile' || event?.detail?.to === 'profile') return;
+    if (hiddenProfileRenderPending) scheduleProfileRenderIdle();
+  });
+}
+
 function cancelScheduledProfileRender(){
   if (profileRenderIdleHandle !== null && typeof globalThis.cancelIdleCallback === 'function') {
     globalThis.cancelIdleCallback(profileRenderIdleHandle);
@@ -194,6 +215,13 @@ function cancelScheduledProfileRender(){
 
 function scheduleProfileRenderIdle(){
   hiddenProfileRenderPending = true;
+
+  const root = document.getElementById('profileV2Root');
+  if (currentScreen() === 'profile' && root instanceof HTMLElement && root.childElementCount > 0) {
+    // Never arm a background full remount while Profile is visible. The pending
+    // snapshot is rendered once the route leaves Profile.
+    return;
+  }
   if (profileRenderIdleHandle !== null || profileRenderFallbackHandle !== null) return;
 
   if (typeof globalThis.requestIdleCallback === 'function') {
@@ -207,6 +235,12 @@ function flushScheduledProfileRender(deadline){
   profileRenderIdleHandle = null;
   profileRenderFallbackHandle = null;
   if (!hiddenProfileRenderPending) return;
+
+  const root = document.getElementById('profileV2Root');
+  if (currentScreen() === 'profile' && root instanceof HTMLElement && root.childElementCount > 0) {
+    hiddenProfileRenderPending = true;
+    return;
+  }
 
   const inputPending = typeof navigator?.scheduling?.isInputPending === 'function'
     && navigator.scheduling.isInputPending({ includeContinuous:true });
@@ -255,6 +289,18 @@ function bindProfileActions(){
   const screen = document.getElementById('screen-profile');
   if (!screen || screen.dataset.profileV2Bound === '1') return;
   screen.dataset.profileV2Bound = '1';
+
+  // Capture the vertical scroll position before a game-tab pointerdown can move
+  // focus. Telegram/WebView may otherwise auto-reveal the focused button before
+  // click, making the first game selection look like a vertical recenter.
+  screen.addEventListener('pointerdown', event => {
+    const target = event.target instanceof Element ? event.target : null;
+    const gameTab = target?.closest('[data-profile-game-tab]');
+    if (!(gameTab instanceof HTMLElement)) return;
+    pendingGameTabScrollState = captureProfileScrollState(gameTab);
+    pendingGameTabScrollCapturedAt = Date.now();
+  }, { passive:true });
+
   screen.addEventListener('click', async event => {
     const copyButton = event.target.closest('[data-copy-mgw-id]');
     if (copyButton) {
@@ -289,7 +335,14 @@ function bindProfileActions(){
     const gameTab = event.target.closest('[data-profile-game-tab]');
     if (gameTab) {
       const nextGame = String(gameTab.dataset.profileGameTab || '').trim();
-      if (nextGame && nextGame !== activeCollectionGame) switchProfileGameCollection(nextGame);
+      const captured = pendingGameTabScrollState
+        && Date.now() - pendingGameTabScrollCapturedAt < 1500
+        ? pendingGameTabScrollState
+        : captureProfileScrollState(gameTab);
+      pendingGameTabScrollState = null;
+      pendingGameTabScrollCapturedAt = 0;
+      if (nextGame && nextGame !== activeCollectionGame) switchProfileGameCollection(nextGame, captured);
+      else restoreProfileScrollState(captured);
       return;
     }
     const gameCosmeticCard = event.target.closest('[data-profile-game-cosmetic]');
@@ -869,7 +922,7 @@ function renderGameCosmeticsCollection(){
   `;
 }
 
-function switchProfileGameCollection(nextGame){
+function switchProfileGameCollection(nextGame, scrollState = null){
   const games = ownedGameCosmeticGames();
   const activeGame = games.find(game => game.game_type === nextGame);
   if (!activeGame) return;
@@ -887,6 +940,12 @@ function switchProfileGameCollection(nextGame){
 
   panel.dataset.profileGamePanel = activeCollectionGame;
   panel.innerHTML = renderGameCosmeticGroups(activeGame);
+
+  // Restore after the base panel swap and again on the next frame, after all
+  // game-specific click listeners have applied their canonical preview markup.
+  // This preserves the user's vertical reading position without touching the
+  // horizontal game rail's own scrollLeft.
+  restoreProfileScrollState(scrollState || captureProfileScrollState(collection));
 }
 
 function renderGameCosmeticGroups(activeGame){
