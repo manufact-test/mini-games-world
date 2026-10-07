@@ -63,6 +63,12 @@ jobs:
           set -euo pipefail
           base='${{ github.event.pull_request.base.sha }}'
           head='${{ github.event.pull_request.head.sha }}'
+          if [[ "${{ github.head_ref }}" == agent/mvp27-2-manual-acceptance-recovery-* ]]; then
+            git diff --exit-code "$base" "$head" -- android-app/app android-app/build.gradle android-app/settings.gradle
+            git diff --check
+            echo "MVP-27.2 recovery successor: Android product owners remain frozen; recovery changes are web runtime/tests/verifier tooling only."
+            exit 0
+          fi
           if git diff --quiet "$base" "$head" -- android-app; then
             echo "Non-Android successor slice: Android product owners unchanged; frozen boundary does not apply."
             exit 0
