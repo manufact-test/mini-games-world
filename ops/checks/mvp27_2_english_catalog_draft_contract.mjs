@@ -84,6 +84,7 @@ const completeScopes = [
   'game_cards',
   'acceptance_runtime',
   'game_invites',
+  'friends',
   'game_screen',
   'search',
   'setup',
