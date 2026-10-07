@@ -69,7 +69,8 @@ jobs:
           need(onboarding.includes("PENDING_LINK_KEY"), 'pending link suppression missing');
           need(profile.includes("mgw-account-link-onboarding.js?v=5"), 'Onboarding module cache-bust missing');
           need(shell.includes("profile-screen-v110.js?v=1109"), 'active shell Profile specifier changed unexpectedly');
-          need(manifest.includes("'./assets/js/screens/profile-screen-v110.js?v=1109' => './assets/js/screens/profile-screen-v110.js?v=1142"), 'active Profile import must resolve to the current canonical URL');
+          const profileAlias=manifest.match(/'\.\/assets\/js\/screens\/profile-screen-v110\.js\?v=1109'\s*=>\s*'\.\/assets\/js\/screens\/profile-screen-v110\.js\?v=(\d+)([^']*)'/);
+          need(profileAlias && Number(profileAlias[1]) >= 1142 && profileAlias[2].includes('mvp27_1=profile-localized-v1'), 'active Profile import must resolve to the localized canonical URL or a newer successor');
           need(onboarding.includes("mgw-account-link-onboarding-overlay"), 'dedicated Home onboarding overlay owner missing');
           need(onboarding.includes("mgw-account-link-onboarding-sheet"), 'dedicated Home onboarding sheet owner missing');
           need(onboarding.includes("mgw-account-link-onboarding-bridge"), 'Telegram → Android bridge presentation missing');
