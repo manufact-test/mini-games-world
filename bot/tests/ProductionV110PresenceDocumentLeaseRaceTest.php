@@ -74,10 +74,17 @@ try {
         && str_contains($client, 'presenceLeaseId,')
         && str_contains($client, 'function createPresenceLeaseId()'),
         'The canonical client presence owner must keep one unique lease for each app document.');
+    $pingStart = strpos($client, 'async function pingPresence(){');
+    $refreshStart = strpos($client, 'async function refreshStatus(){');
+    $pingBody = $pingStart !== false && $refreshStart !== false && $refreshStart > $pingStart
+        ? substr($client, $pingStart, $refreshStart - $pingStart)
+        : '';
     $assert(str_contains($client, "Presence transport starts before profile/bootstrap reads.")
         && str_contains($client, "  startPresence();\n}")
-        && str_contains($client, "if (runtime.pingBusy || document.visibilityState !== 'visible') return false;")
-        && !str_contains($client, "runtime.pingBusy || !runtime.appReady"),
+        && str_contains($client, 'function presenceTransportBusy()')
+        && str_contains($client, 'return runtime.pingBusy || runtime.statusBusy;')
+        && str_contains($pingBody, "if (presenceTransportBusy() || document.visibilityState !== 'visible') return false;")
+        && !str_contains($pingBody, 'runtime.appReady'),
         'A new document must register its lease before profile bootstrap completes.');
     $assert(str_contains($endpoint, '$presenceLeaseId = clean_string($payload[\'presenceLeaseId\'] ?? \'\', 120);')
         && str_contains($endpoint, '$presence->touch($accountId, $sessionId, $presenceLeaseId);')
