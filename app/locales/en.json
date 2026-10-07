@@ -1,7 +1,7 @@
 {
   "_meta": {
     "locale": "en",
-    "version": 24,
+    "version": 25,
     "status": "draft"
   },
   "common": {
@@ -2784,6 +2784,89 @@
       "action": "Could not complete the action.",
       "profile_unavailable": "Profile unavailable.",
       "profile_open": "Could not open the player profile."
+    }
+  },
+  "account_data": {
+    "menu": {
+      "title": "Data & account"
+    },
+    "title": "Data & account",
+    "loading": "Loading status…",
+    "intro": {
+      "title": "Account data management",
+      "text": "Download a copy of your data or request account deletion here."
+    },
+    "export": {
+      "title": "Download my data",
+      "text": "We'll create a ZIP archive. It includes an easy-to-read HTML summary, JSON/CSV, and profile images.",
+      "download": "Download ZIP",
+      "downloading": "Downloading…",
+      "create_new": "Create new",
+      "creating": "Creating…",
+      "create_archive": "Create archive",
+      "creating_archive": "Creating archive…",
+      "rate_limited_until": "A new archive can be created after {date}.",
+      "failed_note": "The previous export could not be prepared. You can request it again.",
+      "expired_note": "The previous archive has already been deleted after its retention period.",
+      "never": "No archive has been created yet.",
+      "ready": "Archive ready",
+      "stored_until": "Stored until {date}",
+      "processing": "Archive is being created…",
+      "last_failed": "The last attempt failed.",
+      "last_expired": "The previous archive's retention period expired.",
+      "last_request": "Last request: {status}"
+    },
+    "delete": {
+      "title": "Delete account",
+      "scheduled_text": "Deletion is already scheduled. You can cancel the request before the deadline — the account will continue to work.",
+      "after": "Deletion after",
+      "grace_text": "Deletion is not immediate. After confirmation, you will have 7 days to change your mind and cancel the request.",
+      "cancel": "Cancel deletion",
+      "cancelling": "Cancelling…",
+      "action": "Delete account"
+    },
+    "confirm": {
+      "title": "Delete account?",
+      "warning_title": "Are you sure you want to delete your account?",
+      "warning_text": "After confirmation, a 7-day waiting period will begin. You can cancel the request at any time during it.",
+      "save_first_title": "Save your data first?",
+      "save_first_text": "You can go back to the previous screen, create a ZIP archive, and download it before deletion.",
+      "save_first_action": "Download data first",
+      "retention_note": "After deletion is completed, your profile and personal links will be deleted or anonymized. Some history may be retained only where necessary to verify matches, game-coin operations, security, or legal requirements.",
+      "keep": "Keep account",
+      "schedule": "Yes, schedule deletion",
+      "scheduling": "Scheduling…"
+    },
+    "toasts": {
+      "archive_ready": "Data archive is ready.",
+      "download_started": "ZIP download started.",
+      "deletion_cancelled": "Deletion cancelled. Your account has been kept.",
+      "deletion_scheduled_date": "Your account will be deleted in 7 days. Deletion date: {date}.",
+      "deletion_scheduled": "Your account will be deleted in 7 days."
+    },
+    "errors": {
+      "load": "Could not load account data management.",
+      "android_reauth_unavailable": "Android could not prepare secure confirmation.",
+      "reauth_cancelled": "Confirmation cancelled.",
+      "reauth_failed": "Could not confirm the action on this device.",
+      "reauth_timeout": "Confirmation timed out. Try again.",
+      "create_export": "Could not create the data archive.",
+      "download_export": "Could not download the data archive.",
+      "android_download_unavailable": "Android could not prepare the archive download.",
+      "android_download_failed": "Android could not start the archive download.",
+      "android_download_timeout": "The download did not start. Try again.",
+      "cancel_delete": "Could not cancel deletion.",
+      "schedule_delete": "Could not schedule deletion.",
+      "reauth_required": "Reopen MINI GAMES WORLD from Telegram to confirm.",
+      "rate_limited": "You can request a new export later."
+    },
+    "status": {
+      "unknown": "unknown"
+    },
+    "bytes": {
+      "b": "{value} B",
+      "kb": "{value} KB",
+      "mb": "{value} MB"
     }
   }
 }
