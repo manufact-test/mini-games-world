@@ -70,7 +70,7 @@ function ensureDominoProfileStyles(){
   ensureStyle('data-mgw-domino-store-card-fill-v5', '../../css/games/domino/store-card-fill-live-pips-v5.css?v=2&mvp19_9=domino-card-fill-live-pips-v6');
   ensureStyle('data-mgw-domino-store-effects-v9', '../../css/games/domino/store-effects-scene-v9.css?v=7&mvp19_9=domino-premium-effects-v15-proportions');
   ensureStyle('data-mgw-domino-preview-component-v44', '../../css/games/domino/store-effects-preview-component-v44.css?v=4&mvp19_9=domino-svg-pips-v48');
-  ensureStyle('data-mgw-profile-domino-parity', '../../css/screens/profile-domino-store-parity-v1.css?v=4&mvp19_9=domino-profile-animation-parity-v44');
+  ensureStyle('data-mgw-profile-domino-parity', '../../css/screens/profile-domino-store-parity-v1.css?v=5&mvp19_9=domino-profile-tab-icon-fallback-v1');
 }
 
 function ensureStyle(marker, relativeHref){
