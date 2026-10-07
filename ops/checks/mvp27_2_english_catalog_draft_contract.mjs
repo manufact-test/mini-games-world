@@ -129,6 +129,9 @@ const completeScopes = [
   'profile.entry_effects',
   'profile.victory_effects',
   'profile.badges',
+  'profile.frames',
+  'profile.backgrounds',
+  'profile.reactions',
 ];
 
 for (const scope of completeScopes) {
