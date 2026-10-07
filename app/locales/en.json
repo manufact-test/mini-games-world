@@ -1,7 +1,7 @@
 {
   "_meta": {
     "locale": "en",
-    "version": 17,
+    "version": 18,
     "status": "draft"
   },
   "common": {
@@ -2340,6 +2340,70 @@
           }
         }
       }
+    }
+  },
+  "arena": {
+    "scroll_left": "Scroll games left",
+    "scroll_right": "Scroll games right",
+    "official_title": "Official tournament",
+    "errors": {
+      "sync_start": "Could not sync the tournament start.",
+      "sync_launch": "Could not sync the match launch.",
+      "update_hall": "Could not update the Tournament Hall.",
+      "update_tournament": "Could not update the tournament.",
+      "sync_result": "Could not sync the tournament result.",
+      "ready": "Could not confirm readiness.",
+      "enter_hall": "Could not enter the Tournament Hall.",
+      "update_pair_ready": "Could not update pair readiness.",
+      "update_presence": "Could not update presence in the Tournament Hall.",
+      "load": "Could not load the tournament."
+    },
+    "registration": {
+      "read_rules": "Read the rules and confirm your agreement before registering.",
+      "confirm_updated_rules": "Confirm the updated tournament rules?",
+      "confirm_register": "Confirm the rules and reserve {fee} coins to enter the official tournament?",
+      "confirm_leave": "Cancel registration? The reserved 50,000 coins will return to your available balance.",
+      "register_not_saved": "Registration was not saved. Try again.",
+      "leave_not_saved": "Registration cancellation was not saved. Try again.",
+      "publish_not_saved": "Registration was saved but has not been published yet. Try again.",
+      "change_error": "Could not change the registration."
+    },
+    "hall": {
+      "entering": "Entering the hall…",
+      "enter": "Enter",
+      "label": "Tournament Hall",
+      "started": "Tournament started",
+      "open": "Hall open",
+      "opens_15": "Opens 15 minutes before the start",
+      "gate_note": "Only participants in this tournament can enter. The bracket will appear when the tournament starts.",
+      "present_at_start": "Present at start",
+      "technical_loss": "Technical loss",
+      "present": "In the hall",
+      "left": "Not in the hall now",
+      "not_entered": "Did not enter",
+      "player_fallback": "Player",
+      "bracket_hidden": "Bracket is still hidden",
+      "bracket_hidden_note": "It will be generated randomly at the exact tournament start time.",
+      "bracket_title": "Tournament bracket",
+      "start": "START",
+      "inside_title": "You are in the Tournament Hall",
+      "participants": "Participants"
+    },
+    "ready": {
+      "saving_result": "Saving tournament result…",
+      "loading_pair": "Loading readiness for your pair…",
+      "match_label": "Tournament match",
+      "self_suffix": " · you",
+      "ready": "Ready",
+      "waiting": "Waiting",
+      "prompt": "Confirm readiness within two minutes.",
+      "expired": "The two-minute readiness window has ended.",
+      "launched": "Match launched.",
+      "both_ready": "Both ready · launching match.",
+      "self_ready": "You are ready · waiting for opponent.",
+      "confirming": "Confirming…",
+      "action": "I’m ready",
+      "first_match_pair": "First match · pair {pair_no}"
     }
   }
 }
