@@ -1,7 +1,7 @@
 {
   "_meta": {
     "locale": "en",
-    "version": 27,
+    "version": 28,
     "status": "draft"
   },
   "common": {
@@ -2985,5 +2985,33 @@
       "again": "Try again"
     },
     "success": "Telegram account linked. Loading your profile…"
+  },
+  "typography": {
+    "short_words_pattern": "(?:a|an|the|and|or|but|for|nor|so|yet|at|by|in|of|on|to|up|as|if)",
+    "number_units_pattern": "Gold|Match|coin(?:s)?|₽|RUB|rub(?:le)?s?|%|hour(?:s)?|minute(?:s)?|second(?:s)?",
+    "word_chars": "A-Za-z",
+    "number_sign_chars": "A-Z0-9",
+    "content_probe_chars": "A-Za-z0-9"
+  },
+  "units": {
+    "coin": {
+      "one": "{count} coin",
+      "few": "{count} coins",
+      "many": "{count} coins",
+      "other": "{count} coins"
+    },
+    "game": {
+      "one": "{count} game",
+      "few": "{count} games",
+      "many": "{count} games",
+      "other": "{count} games"
+    }
+  },
+  "user_copy": {
+    "application_prefix": "Request",
+    "already_marker": "already",
+    "balance_after_admin": "Balance will change after administrator confirmation.",
+    "order_already_created": "This request has already been created.",
+    "orders_status_hint": "Track its status in “My requests”."
   }
 }
