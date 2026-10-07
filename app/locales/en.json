@@ -1,7 +1,7 @@
 {
   "_meta": {
     "locale": "en",
-    "version": 13,
+    "version": 14,
     "status": "draft"
   },
   "common": {
@@ -589,6 +589,131 @@
         "purchase": "Could not buy the badge.",
         "remove": "Could not remove the badge.",
         "select": "Could not select the badge."
+      }
+    },
+    "frames": {
+      "title": "Frames",
+      "type": "Frame",
+      "fallback_name": "Frame",
+      "names": {
+        "sky": "Blue Sky",
+        "gold": "Golden Halo",
+        "aurora": "Aurora",
+        "spectrum": "Living Spectrum"
+      },
+      "tiers": {
+        "normal": "Standard",
+        "rare": "Rare",
+        "epic": "Epic",
+        "animated": "Animated",
+        "fallback": "Frame"
+      },
+      "actions": {
+        "remove": "Remove",
+        "select": "Select",
+        "buy": "Buy"
+      },
+      "purchase": {
+        "title": "Confirm purchase",
+        "to_pay": "To pay",
+        "coins_value": "{count} coins",
+        "remaining": "Remaining",
+        "missing": "Missing {count}",
+        "buy_for": "Buy for {count}"
+      },
+      "toast": {
+        "purchased": "Frame added to your collection.",
+        "removed": "Frame removed.",
+        "selected": "Frame selected."
+      },
+      "errors": {
+        "purchase": "Could not buy the frame.",
+        "remove": "Could not remove the frame.",
+        "select": "Could not select the frame."
+      }
+    },
+    "backgrounds": {
+      "fallback_name": "Background",
+      "tiers": {
+        "normal": "Standard",
+        "rare": "Rare",
+        "epic": "Epic",
+        "legendary": "Legendary",
+        "fallback": "Background"
+      },
+      "preview": {
+        "aria": "Profile background preview",
+        "label": "Profile"
+      },
+      "title": "Profile backgrounds",
+      "type": "Profile background",
+      "status": {
+        "selected": "Selected",
+        "owned": "In collection"
+      },
+      "actions": {
+        "remove": "Remove",
+        "select": "Select",
+        "buy": "Buy"
+      },
+      "purchase": {
+        "title": "Confirm purchase",
+        "missing": "Missing {count}",
+        "buy_for": "Buy for {count}",
+        "type_with_tier": "Profile background · {tier}",
+        "to_pay": "To pay",
+        "coins_value": "{count} coins",
+        "remaining": "Remaining"
+      },
+      "toast": {
+        "purchased": "Background added to your collection.",
+        "removed": "Background removed.",
+        "selected": "Background selected."
+      },
+      "errors": {
+        "purchase": "Could not buy the background.",
+        "remove": "Could not remove the background.",
+        "select": "Could not select the background."
+      }
+    },
+    "reactions": {
+      "fallback_name": "Reactions",
+      "fallback_subtitle": "Reaction pack",
+      "codes": {
+        "wave": "Hello",
+        "clap": "Bravo",
+        "heart": "Heart",
+        "fire": "Fire",
+        "target": "Bullseye",
+        "spark": "Wow",
+        "crown": "Crown",
+        "handshake": "Good game"
+      },
+      "title": "Reactions",
+      "status": {
+        "owned": "In collection"
+      },
+      "actions": {
+        "buy": "Buy"
+      },
+      "purchase": {
+        "title": "Confirm purchase",
+        "to_pay": "To pay",
+        "coins_value": "{count} coins",
+        "remaining": "Remaining",
+        "missing": "Missing {count}",
+        "buy_for": "Buy for {count}"
+      },
+      "toast": {
+        "purchased": "Reactions added to your collection."
+      },
+      "errors": {
+        "purchase": "Could not buy reactions.",
+        "send": "Could not send the reaction."
+      },
+      "game": {
+        "trigger": "Reactions",
+        "palette_aria": "Choose a reaction"
       }
     }
   },
