@@ -31,7 +31,7 @@ export function localizeRuntimeDom(){
     searchInfo.textContent = t('shell.search_waiting');
   }
   setText('#searchMeName', 'shell.search_you');
-  setText('#screen-search .players-vs .player-card:last-child strong', 'shell.search_opponent');
+  setText('#screen-search .vs-cards .player-card:last-child strong', 'shell.search_opponent');
   setText('#changeSearch', 'shell.search_leave');
 
   setText('#matchMeta', 'home.history.match');
@@ -42,8 +42,8 @@ export function localizeRuntimeDom(){
   setAttr('#screen-game [data-game-rules-current]', 'aria-label', 'rules.open');
   setText('#leaveGame', 'game_screen.result.home');
 
-  setText('#screen-profile > .screen-head .page-title', 'profile.title');
-  setText('#screen-profile > .screen-head .page-sub', 'profile.subtitle');
+  setText('#screen-profile .page-head .page-title', 'profile.title');
+  setText('#screen-profile .page-head .page-sub', 'profile.subtitle');
   const profileName = document.getElementById('profileName');
   if (profileName && profileName.textContent?.trim() === '') profileName.textContent = t('profile.player');
   const profileDate = document.getElementById('profileDate');
