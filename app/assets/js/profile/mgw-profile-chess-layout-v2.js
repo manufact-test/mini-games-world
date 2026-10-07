@@ -50,7 +50,8 @@ function prepareProfileGameTabInputMode(){
 
   screen.dataset.mgwGameTabsInputV2 = '1';
   screen.dataset.mgwGameTabsScroller = '1';
-  screen.dataset.mgwGameTabsScrollerMode = 'delayed-capture-v3-arrows-wheel';
+  screen.dataset.mgwGameTabsScrollerMode = 'delayed-capture-v2';
+  screen.dataset.mgwGameTabsScrollerAffordance = 'arrows-wheel-v1';
   prepareProfileGameTabAffordance(screen);
 
   // The old Profile rail captured the pointer on pointerdown. In Telegram/WebView
