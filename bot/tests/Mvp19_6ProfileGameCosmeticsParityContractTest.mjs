@@ -119,8 +119,8 @@ expect(activeProfile.includes('id="mgwProfileAvatarEquip"')
 expect(activeProfile.includes("document.addEventListener('mgw:avatar-selection-changed'")
   && !activeProfile.includes("toast(error.message || t('profile.avatar_save_error'))"), 'Profile avatar state must synchronize silently without delayed selection/remove feedback');
 expect(manifest.includes("'./assets/js/screens/profile-screen-v110.js?v=1109' => './assets/js/profile/mgw-profile-chess-layout-v2.js?v=45")
-  && manifest.includes('manual_acceptance=native-no-arrows-v2')
-  && manifest.includes('game_tab_icons=normalized-v3')
+  && manifest.includes('manual_acceptance=tab-icons-corrective-v1')
+  && manifest.includes('game_tab_icons=normalized-v4')
   && manifest.includes('four_profile=live-previews-v3')
   && manifest.includes('battleship_profile=four-parity-v3'), 'Manifest must publish the accepted full Profile game-parity chain for factual v110');
 
