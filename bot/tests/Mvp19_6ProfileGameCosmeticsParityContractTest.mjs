@@ -133,6 +133,9 @@ for (const game of ['checkers','chess']) {
   expect(css.includes(`data-profile-game-tab="${game}"`), `${game} tab must retain an explicit normalized icon owner`);
 }
 expect(activeProfile.includes('mgw-profile-tab-checker') && activeProfile.includes('mgw-profile-tab-checker-ring'), 'Base Profile render must own a real Checkers token with an inner ring');
+expect(activeProfile.includes('captureProfileScrollState') && activeProfile.includes('restoreProfileScrollState')
+  && activeProfile.includes("root.closest('.content')") && activeProfile.includes("host.style.overflowAnchor = 'none'"),
+  'Active Profile rerenders must preserve the scroll host instead of jumping the user back to the game collection');
 expect(activeProfile.includes('mgw-profile-tab-battleship') && activeProfile.includes('mgw-bs-tab-hull'), 'Base Profile render must own Battleship SVG markup so rerenders cannot blank the ship icon');
 expect(css.includes('width:14px!important') && css.includes('content:none!important') && css.includes('mgw-profile-tab-checker-ring'), 'Russian Checkers tab must use the compact canonical SVG token and suppress the legacy oversized dot');
 expect(css.includes('content:"♞"'), 'Chess tab must use a readable chess identity');
@@ -147,6 +150,10 @@ expect(layout.includes("mgw-profile-checkers-parity.js?v=4&mvp19_6=checkers-prof
 expect(manifest.includes("'./assets/js/screens/profile-screen-v110.js?v=1108' => './assets/js/profile/mgw-profile-chess-layout-v2.js?v=") && manifest.includes('mvp19_6=checkers-profile-manual-repair-v3') && manifest.includes('profile_card_visual=checkers-board-effect-store-exact-v2') && manifest.includes('profile_card_runtime=checkers-hard-square-v1') && manifest.includes('profile_perf=observer-cycle-v2'), 'manifest must publish the hard-square Checkers board/effect Profile owner identity independent of cache revision');
 expect(/client\.js\?v=(?:115[3-9]|11[6-9]\d|1[2-9]\d{2,})/.test(manifest) && manifest.includes('profile_inventory=store-sync-v1') && manifest.includes('mvp25_2=network-human-error-v2'), 'manifest must retain current Store/Profile inventory synchronization through the localized API successor');
 expect(manifest.includes("'./assets/js/games/checkers/renderer.js?v=57' => './assets/js/checkers-cosmetics/renderer-real-flight-cascade-v1.js?v=3&mvp19_6=all-paid-real-flight-v1&parent=single-flight-dom-v2&css=live-effects-v6&move=trail-only-v1&mvp27_1=checkers-renderer-localized-v1'"), 'accepted Checkers gameplay/effect runtime identity must preserve mechanics through the localized cache successor');
+expect(manifest.includes("'./assets/js/screens/profile-screen-v110.js?v=1126&profile_base=accepted-game-cosmetics' => './assets/js/screens/profile-screen-v110.js?v=1147")
+  && manifest.includes('manual_acceptance=canonical-tab-icons-scroll-stable-v1')
+  && manifest.includes('profile_tabs=base-owner-v2'),
+  'accepted Profile cosmetics base must cache-bust the canonical icon and scroll-stability owner');
 expect(chess.includes('const CHESS_PROFILE_ITEMS = Object.freeze({'), 'accepted Chess Profile parity owner must remain present');
 expect(chess.includes("game-chess-effect-check") && chess.includes('quantum-echo'), 'accepted Chess effect Profile presentation must remain intact');
 
