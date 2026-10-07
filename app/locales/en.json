@@ -1,7 +1,7 @@
 {
   "_meta": {
     "locale": "en",
-    "version": 34,
+    "version": 35,
     "status": "draft"
   },
   "common": {
@@ -3714,6 +3714,123 @@
       "welcome_description": "Mini Games World starter bonus",
       "first_game_description": "Bonus for the first completed match in a game",
       "weekly_description": "Weekly bonus for game activity"
+    },
+    "account_chain": {
+      "common": {
+        "player_fallback": "Player"
+      },
+      "identity": {
+        "deleted_reopen_later": "The previous account was deleted. To sign in with a new account, reopen MINI GAMES WORLD through Telegram later.",
+        "deletion_in_progress": "The MGW account is unavailable: data deletion is in progress or already completed."
+      },
+      "auth": {
+        "open_from_android": "Open MINI GAMES WORLD through the Android app.",
+        "unavailable": "Android sign-in is currently unavailable.",
+        "invalid_invite_link": "Invalid invitation link.",
+        "rate_limited": "Too many sign-in attempts. Try again a little later.",
+        "open_failed": "Could not open MINI GAMES WORLD. Try again."
+      },
+      "reauth": {
+        "method_not_allowed": "Request method is not supported.",
+        "unavailable": "Android confirmation is currently unavailable.",
+        "android_only": "Confirmation is available only in the Android app.",
+        "invalid_action": "Invalid Android confirmation action.",
+        "rate_limited": "Too many confirmation attempts. Try again later.",
+        "device_confirm_failed": "Could not confirm this device.",
+        "failed": "Could not confirm the action. Try again.",
+        "challenge_unavailable": "This confirmation attempt is no longer available.",
+        "expired": "The confirmation has expired. Repeat the action.",
+        "profile_unavailable": "Could not verify the MGW profile.",
+        "session_unavailable": "The Android session is unavailable. Restart the app.",
+        "challenge_not_found": "Confirmation attempt not found.",
+        "challenge_invalid": "Invalid confirmation attempt.",
+        "unlock_required": "Confirm the action by unlocking your device, then try again.",
+        "telegram_refresh_required": "For this action, reopen MINI GAMES WORLD from Telegram and try again."
+      },
+      "export": {
+        "prepare_directory_failed": "Could not prepare the export directory.",
+        "zip_write_failed": "Could not write the ZIP export.",
+        "invalid_zip_name": "Invalid file name in the ZIP archive."
+      },
+      "data": {
+        "account_not_found": "MGW account not found.",
+        "deletion_locked": "Account deletion is already in progress or completed.",
+        "deletion_not_cancellable": "There is no scheduled deletion that can be cancelled.",
+        "export_still_valid": "You can request a new export later. The latest archive is still valid.",
+        "export_not_ready": "The export was not found or is not ready yet.",
+        "export_expired": "This export’s retention period has expired.",
+        "export_missing": "The export file is unavailable.",
+        "deleted_player": "Deleted player",
+        "csv_build_failed": "Could not build the CSV export.",
+        "export_title": "MINI GAMES WORLD — data export",
+        "export_heading": "MINI GAMES WORLD data export",
+        "export_created_label": "Created",
+        "export_description": "The complete machine-readable export is in <code>data.json</code>. Tabular data is also provided in the <code>csv/</code> directory.",
+        "export_section_label": "Section",
+        "export_records_label": "Records",
+        "image_none": "The account has no available user image.",
+        "image_catalog_only": "The account has no separately uploaded image. The catalog avatar is described in data.json.",
+        "image_media_root_not_configured": "The profile references an image, but the private media root is not configured for export. Metadata is preserved in data.json.",
+        "image_media_root_unavailable": "The private media root is unavailable; image metadata is preserved in data.json.",
+        "image_file_unavailable": "The user image file was not found or is unavailable; its metadata is preserved in data.json.",
+        "image_read_failed": "Could not read the user image; its metadata is preserved in data.json.",
+        "invalid_mgw_id": "Invalid MGW-ID.",
+        "invalid_source": "Invalid request source.",
+        "private_export_dir_failed": "Could not prepare the private export directory."
+      },
+      "link": {
+        "telegram_bot_unavailable": "The Telegram bot for account linking is currently unavailable.",
+        "rate_limited": "Too many linking attempts. Try again later.",
+        "invalid_token": "The linking URL is invalid.",
+        "telegram_first_open_required": "Open MINI GAMES WORLD in Telegram at least once first, then try linking again.",
+        "already_linked": "This Telegram account is already linked to the current MGW profile.",
+        "target_ownership_missing": "Could not verify the owner of the Telegram profile.",
+        "target_android_conflict": "This MGW profile is already linked to another Android device.",
+        "challenge_claimed": "This linking attempt is already being confirmed by another Telegram profile.",
+        "confirmation_owner_mismatch": "This link must be confirmed by the same Telegram profile.",
+        "cancel_owner_mismatch": "This link must be cancelled by the same Telegram profile.",
+        "telegram_confirmation_required": "Confirm linking in Telegram first.",
+        "target_invalid": "The target MGW profile is invalid.",
+        "android_identity_missing": "Android identity was not found.",
+        "android_identity_conflict": "Android identity belongs to another MGW profile.",
+        "telegram_identity_changed": "Telegram identity changed before linking was completed.",
+        "target_android_linked": "The target MGW profile is already linked to another Android device.",
+        "source_other_device_or_session": "The temporary Android profile already contains another device or session.",
+        "target_device_conflict": "The Android device is already registered to the target profile.",
+        "source_not_pristine": "The temporary Android profile is no longer in its initial state.",
+        "source_extra_identity": "The temporary Android profile already contains an additional identity.",
+        "source_activity_or_purchases": "The temporary Android profile already has activity or purchases. Automatic linking has been stopped.",
+        "source_user_activity": "The temporary Android profile already contains user activity. Automatic linking has been stopped.",
+        "source_owner_changed": "The owner of the temporary Android profile changed.",
+        "source_balance_ambiguous": "The balance of the temporary Android profile is ambiguous.",
+        "source_balance_changed": "The balance of the temporary Android profile has already changed. Automatic linking has been stopped.",
+        "source_runtime_missing": "The temporary Android runtime profile was not found.",
+        "source_already_used": "The temporary Android profile has already been used. Automatic linking has been stopped.",
+        "source_game_stats": "The temporary Android profile already contains game statistics.",
+        "source_economy_activity": "The temporary Android profile already contains economy activity.",
+        "source_non_start_transaction": "The temporary Android profile already contains a non-starter transaction.",
+        "source_start_balance_ambiguous": "The starter balance of the temporary Android profile is ambiguous.",
+        "source_other_user_state": "The temporary Android profile is already linked to other user state.",
+        "source_game_or_social_data": "The temporary Android profile is already linked to game or social data.",
+        "source_ledger_activity": "The temporary Android profile ledger already contains activity.",
+        "state_changed": "The linking state changed.",
+        "target_owner_changed": "The owner of the target MGW profile changed.",
+        "target_unavailable": "The target MGW profile is unavailable.",
+        "android_auth_required": "Linking must be started from the Android app.",
+        "android_profile_missing": "Android MGW profile not found.",
+        "ownership_missing": "MGW profile owner not found.",
+        "challenge_device_mismatch": "This linking attempt belongs to another Android device.",
+        "challenge_profile_changed": "The MGW profile for this linking attempt changed.",
+        "challenge_expired": "The linking URL has expired. Create a new one.",
+        "challenge_state_invalid": "This linking attempt is no longer available.",
+        "challenge_not_found": "Linking attempt not found.",
+        "link_not_found": "Linking URL not found.",
+        "identity_ambiguous": "MGW identity is ambiguous.",
+        "ownership_ambiguous": "The MGW profile owner is ambiguous.",
+        "challenge_invalid": "The linking identifier is invalid.",
+        "telegram_identity_invalid": "Telegram identity is invalid.",
+        "unavailable": "Account linking is currently unavailable."
+      }
     }
   }
 }

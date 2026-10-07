@@ -106,6 +106,7 @@ const completeScopes = [
   'server.rating_archive_endpoint',
   'server.leaderboard_endpoint',
   'server.weekly_match',
+  'server.account_chain',
   'settings',
   'account_data',
   'account_link',
