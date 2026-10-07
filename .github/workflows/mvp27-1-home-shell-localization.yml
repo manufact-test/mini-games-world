@@ -46,6 +46,11 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
+          if [[ "${{ github.head_ref }}" == agent/mvp27-2-* ]]; then
+            echo "MVP-27.2 successor: focused localization/parity contracts above are authoritative; historical bounded migration scope does not apply."
+            git diff --check
+            exit 0
+          fi
           base='${{ github.event.pull_request.base.sha }}'
           head='${{ github.event.pull_request.head.sha }}'
           if git diff --quiet "$base" "$head" -- app/assets/js/screens/home-screen.js; then

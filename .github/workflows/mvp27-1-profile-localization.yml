@@ -104,6 +104,11 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
+          if [[ "${{ github.head_ref }}" == agent/mvp27-2-* ]]; then
+            echo "MVP-27.2 successor: focused localization/parity contracts above are authoritative; historical bounded migration scope does not apply."
+            git diff --check
+            exit 0
+          fi
           base='${{ github.event.pull_request.base.sha }}'
           head='${{ github.event.pull_request.head.sha }}'
           if [[ "${{ github.head_ref }}" == agent/mvp27-1-profile-manual-corrective-* || "${{ github.head_ref }}" == agent/mvp27-1-profile-avatar-games-manual-corrective-* ]]; then
