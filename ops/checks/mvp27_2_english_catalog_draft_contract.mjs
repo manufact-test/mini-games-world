@@ -96,6 +96,8 @@ const completeScopes = [
   'home.menu',
   'home.history',
   'home.rules_guide',
+  'home.report',
+  'home',
   'home.support',
   'games.router',
   'games.tictactoe',
