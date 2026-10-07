@@ -115,6 +115,7 @@ const completeScopes = [
   'store.profile_selection',
   'store.profile',
   'store.purchase',
+  'store.products',
 ];
 
 for (const scope of completeScopes) {
