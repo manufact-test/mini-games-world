@@ -76,10 +76,9 @@ $assert(
     'Avatar cache ownership must prefer the internal MGW id.'
 );
 $assert(
-    str_contains($sources['ui'], "const topAvatar = document.getElementById('topAvatar');")
-        && str_contains($sources['ui'], 'delete topAvatar.dataset.avatarId;')
-        && str_contains($sources['ui'], "['profileAvatar','searchMeAvatar'].forEach"),
-    'Persistent shell identity must stay avatar-neutral while Profile/search may render the selected avatar.'
+    str_contains($sources['ui'], "['topAvatar','profileAvatar','searchMeAvatar'].forEach")
+        && str_contains($sources['ui'], 'el.dataset.avatarId = canonicalAvatarId;'),
+    'Persistent shell, Profile and search must converge on the selected canonical MGW avatar.'
 );
 $assert(
     str_contains($sources['entry'], 'X-MGW-Profile-API: provider-neutral-mgw-v1')
