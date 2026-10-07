@@ -1,7 +1,7 @@
 {
   "_meta": {
     "locale": "en",
-    "version": 6,
+    "version": 7,
     "status": "draft"
   },
   "common": {
@@ -1053,6 +1053,89 @@
           "many": "cells"
         }
       }
+    }
+  },
+  "store": {
+    "tabs": {
+      "coins": "Coins",
+      "profile": "Profile",
+      "games": "Games",
+      "bundles": "Bundles",
+      "aria": "Store sections"
+    },
+    "balance": {
+      "label": "Balance"
+    },
+    "units": {
+      "coins": "coins"
+    },
+    "coins": {
+      "unavailable": "Coin top-ups are unavailable"
+    },
+    "actions": {
+      "selected_feminine": "Selected",
+      "selected": "Selected",
+      "purchased": "Purchased",
+      "buy": "Buy",
+      "remove": "Remove",
+      "select": "Select",
+      "selected_toast": "Item selected.",
+      "removed_toast": "Customization removed."
+    },
+    "errors": {
+      "incomplete_response": "The Store returned an incomplete response.",
+      "purchase": "Could not complete the purchase.",
+      "select": "Could not select the item.",
+      "remove": "Could not remove the customization.",
+      "unavailable": "The Store is temporarily unavailable",
+      "retry": "Try again."
+    },
+    "profile_selection": {
+      "status": {
+        "selected": "Selected",
+        "owned": "In collection"
+      },
+      "actions": {
+        "remove": "Remove",
+        "selected": "Selected",
+        "select": "Select"
+      },
+      "avatar": {
+        "toast": {
+          "removed": "Avatar removed.",
+          "selected": "Avatar selected."
+        },
+        "errors": {
+          "unconfirmed": "The profile did not confirm the selected avatar.",
+          "remove": "Could not remove the avatar.",
+          "select": "Could not select the avatar."
+        }
+      }
+    },
+    "profile": {
+      "avatars_title": "Avatars",
+      "avatars_empty": "Avatars are not available yet",
+      "avatar_name": "Avatar {number}",
+      "name_color_title": "Name color",
+      "name_colors_empty": "Name colors are not available yet",
+      "name_color_tiers": {
+        "normal": "Standard",
+        "rare": "Rare",
+        "gradient": "Gradient",
+        "fallback": "Name color"
+      }
+    },
+    "purchase": {
+      "pending": "Purchasing…",
+      "confirm_title": "Confirm purchase",
+      "to_pay": "To pay",
+      "remaining": "Remaining",
+      "missing": "Missing {count}",
+      "buy_for": "Buy for {count}",
+      "success_bundle": "Bundle added to your collection.",
+      "success_avatar": "Avatar added to your collection.",
+      "success_name_color": "Name color added to your collection.",
+      "success_item": "Item added to your collection."
     }
   }
 }
