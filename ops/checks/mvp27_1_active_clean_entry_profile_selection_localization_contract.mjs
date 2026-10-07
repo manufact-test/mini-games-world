@@ -48,10 +48,21 @@ for (const token of [
   "action.setAttribute('aria-pressed', active ? 'true' : 'false')",
   "const remove = itemId !== '' && itemId === selectedItemId && itemId !== DEFAULT_AVATAR_ITEM_ID",
   "const nextItemId = remove ? DEFAULT_AVATAR_ITEM_ID : itemId",
-  "const result = await api.profileV2({ avatar_item_id:itemId })",
+  "storeAvatarQueuedIntent = { itemId, removed:Boolean(removed) }",
+  "if (!storeAvatarSaving) void drainStoreAvatarSelectionQueue()",
+  "const result = await api.profileV2({ avatar_item_id:intent.itemId })",
+  "if (pending?.itemId) applyStoreAvatarOptimistic(pending.itemId)",
   "state.user = mergeCanonicalMgwUser(state.user, result?.user || {}, state.mgwProfile)",
   "initMgwProfileBackgroundsOnDemand()",
 ]) assert.ok(target.includes(token), 'Active Store/Profile ownership invariant changed: ' + token);
+
+assert.ok(
+  target.includes('while (storeAvatarQueuedIntent)')
+    && target.includes('storeAvatarQueuedIntent = null;')
+    && target.includes('storeAvatarSaving = true;')
+    && target.includes('storeAvatarSaving = false;'),
+  'Active avatar selection must serialize server writes while latest visible intent remains replaceable.'
+);
 
 for (const key of [
   'store.profile_selection.status.selected',

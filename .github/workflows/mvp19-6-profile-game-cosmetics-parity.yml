@@ -9,6 +9,8 @@ on:
       - 'app/assets/js/profile/mgw-profile-checkers-parity.js'
       - 'app/assets/js/profile/mgw-profile-checkers-hard-square-v1.js'
       - 'app/assets/js/profile/mgw-profile-chess-layout-v2.js'
+      - 'app/assets/js/screens/profile-screen-v110.js'
+      - 'app/assets/css/screens/profile-game-tabs-active-v1.css'
       - 'app/assets/css/screens/profile-game-cosmetics-parity-v1.css'
       - 'app/assets/css/screens/profile-game-cosmetics-manual-repair-v3.css'
       - 'bot/tests/Mvp19_6ProfileGameCosmeticsParityContractTest.mjs'
@@ -44,6 +46,7 @@ jobs:
           node --check app/assets/js/profile/mgw-profile-checkers-parity.js
           node --check app/assets/js/profile/mgw-profile-checkers-hard-square-v1.js
           node --check app/assets/js/profile/mgw-profile-chess-layout-v2.js
+          node --check app/assets/js/screens/profile-screen-v110.js
           php -l app/runtime/client/version-manifest.php
 
       - name: Run focused Profile contracts

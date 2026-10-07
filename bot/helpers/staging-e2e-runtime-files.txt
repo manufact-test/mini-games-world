@@ -80,6 +80,7 @@ app/assets/css/screens/home.css
 app/assets/css/screens/search.css
 app/assets/css/screens/profile.css
 app/assets/css/screens/profile-corrective.css
+app/assets/css/screens/profile-game-tabs-active-v1.css
 app/assets/css/screens/notifications.css
 app/assets/css/screens/notifications-v2.css
 app/assets/css/shield-king.css

@@ -6,6 +6,7 @@ require_once dirname(__DIR__) . '/localization/ServerLocalization.php';
 final class PresenceService
 {
     private const ONLINE_WINDOW_SEC = 75;
+    private const PUBLIC_ONLINE_WINDOW_SEC = 15;
     private const GAME_DISCONNECT_WINDOW_SEC = 8;
     private const LEAVE_GRACE_SEC = 12;
     private const BACKGROUND_RECONNECT_FALLBACK_SEC = 15;
@@ -31,8 +32,8 @@ final class PresenceService
     public function touch(string $accountId, string $sessionId, string $presenceLeaseId = ''): void
     {
         // The generic bootstrap path still performs a legacy two-argument
-        // touch. Keep that useful for the public online counter, but make it a
-        // neutral lease so it cannot erase document-scoped disconnect evidence
+        // touch. Keep it as a neutral gameplay/bootstrap lease, but do not let it
+        // impersonate a visible foreground document in the public online counter
         // before the dedicated presence.php ping arrives.
         $this->writeLease(
             $accountId,
@@ -367,9 +368,10 @@ final class PresenceService
     private function directoryHasLiveSession(string $accountDirectory): bool
     {
         $now = time();
-        $cutoff = $now - self::ONLINE_WINDOW_SEC;
+        $cutoff = $now - self::PUBLIC_ONLINE_WINDOW_SEC;
         foreach (glob($accountDirectory . DIRECTORY_SEPARATOR . 'session-*.presence') ?: [] as $path) {
             $state = $this->readSessionState($path);
+            if ((string)($state['mode'] ?? 'foreground') !== 'foreground') continue;
             $touchedAt = (int)($state['touched_at'] ?? 0);
             $leaveAfter = (int)($state['leave_after'] ?? 0);
             if ($touchedAt >= $cutoff && ($leaveAfter <= 0 || $leaveAfter > $now)) return true;

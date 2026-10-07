@@ -1,0 +1,51 @@
+/* Manual acceptance: factual v110 Profile game selector rail.
+   Loaded only by the active direct Profile owner; keeps the global Profile CSS frozen. */
+#screen-profile .profile-v2-game-collection{
+  position:relative;
+}
+#screen-profile .profile-v2-game-tabs{
+  flex-wrap:nowrap;
+  max-width:100%;
+  overscroll-behavior-x:contain;
+  touch-action:pan-x;
+  cursor:grab;
+  scroll-behavior:auto;
+}
+#screen-profile .profile-v2-game-tabs.has-profile-game-tab-overflow{
+  padding-left:32px;
+  padding-right:32px;
+  scroll-padding-inline:32px;
+}
+#screen-profile .profile-v2-game-tabs.is-dragging{
+  cursor:grabbing;
+  user-select:none;
+  -webkit-user-select:none;
+}
+#screen-profile .profile-v2-game-tabs-arrow{
+  position:absolute;
+  z-index:6;
+  width:28px;
+  height:28px;
+  margin:0;
+  padding:0 0 2px;
+  display:grid;
+  place-items:center;
+  transform:translateY(-50%);
+  border:1px solid rgba(255,255,255,.16);
+  border-radius:50%;
+  background:rgba(14,18,31,.94);
+  color:#f3f5ff;
+  box-shadow:0 5px 16px rgba(0,0,0,.28);
+  font:700 22px/1 system-ui,sans-serif;
+  cursor:pointer;
+  touch-action:manipulation;
+}
+#screen-profile .profile-v2-game-tabs-arrow.is-left{left:2px}
+#screen-profile .profile-v2-game-tabs-arrow.is-right{right:2px}
+#screen-profile .profile-v2-game-tabs-arrow:disabled{
+  opacity:.22;
+  cursor:default;
+  pointer-events:none;
+}
+#screen-profile .profile-v2-game-tabs-arrow[hidden]{display:none!important}
+#screen-profile .profile-v2-game-tab:active{transform:none!important}

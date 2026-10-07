@@ -25,18 +25,18 @@ $db = [
 $originalDb = serialize($db);
 
 try {
-    $presence->touch('100', 'desktop');
-    $presence->touch('100', 'mobile');
-    $assert($stats->build($db)['online_players'] === 1, 'Two devices for one Telegram account must count as one online player.');
+    $presence->touch('100', 'desktop', 'desktop-page');
+    $presence->touch('100', 'mobile', 'mobile-page');
+    $assert($stats->build($db)['online_players'] === 1, 'Two foreground devices for one Telegram account must count as one online player.');
 
-    $presence->touch('200', 'phone');
-    $assert($stats->build($db)['online_players'] === 2, 'Two active Telegram accounts must count as two online players.');
+    $presence->touch('200', 'phone', 'phone-page');
+    $assert($stats->build($db)['online_players'] === 2, 'Two foreground Telegram accounts must count as two online players.');
 
-    $presence->leave('100', 'desktop');
-    $assert($stats->build($db)['online_players'] === 2, 'Closing one of two sessions must keep the account online.');
+    $presence->leave('100', 'desktop', 'desktop-page');
+    $assert($stats->build($db)['online_players'] === 2, 'Closing one of two foreground sessions must keep the account online.');
 
-    $presence->leave('100', 'mobile');
-    $assert($stats->build($db)['online_players'] === 2, 'A final leave must keep a short renewable grace window for mobile resume.');
+    $presence->leave('100', 'mobile', 'mobile-page');
+    $assert($stats->build($db)['online_players'] === 1, 'A final document leave must remove that account from the public online count immediately.');
 
     $account100 = $tempDir . '/account-' . hash('sha256', '100');
     $account100Files = glob($account100 . '/session-*.presence') ?: [];
@@ -47,7 +47,7 @@ try {
         $state['leave_after'] = time() - 1;
         file_put_contents($path, json_encode($state, JSON_UNESCAPED_SLASHES), LOCK_EX);
     }
-    $assert($stats->build($db)['online_players'] === 1, 'An elapsed leave lease must remove the final account session.');
+    $assert($stats->build($db)['online_players'] === 1, 'Expired left leases must not change the remaining foreground account count.');
 
     $account200 = $tempDir . '/account-' . hash('sha256', '200');
     $sessionFiles = glob($account200 . '/session-*.presence') ?: [];
@@ -55,8 +55,9 @@ try {
     file_put_contents($sessionFiles[0], json_encode([
         'touched_at' => time() - 90,
         'leave_after' => 0,
+        'mode' => 'foreground',
     ], JSON_UNESCAPED_SLASHES), LOCK_EX);
-    $assert($stats->build($db)['online_players'] === 0, 'A session older than the bounded Telegram background window must fall out.');
+    $assert($stats->build($db)['online_players'] === 0, 'A foreground session older than the public online window must fall out.');
 
     $assert(serialize($db) === $originalDb, 'Presence tracking must not add or change fields in application JSON data.');
 } finally {

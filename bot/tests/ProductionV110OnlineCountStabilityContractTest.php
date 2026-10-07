@@ -37,28 +37,33 @@ $assert(
 );
 $assert(
     str_contains($presence, 'const presenceLeaseId = createPresenceLeaseId();')
-        && str_contains($presence, '// Presence transport starts before the profile bootstrap.')
+        && str_contains($presence, 'Presence transport starts before profile/bootstrap reads.')
         && substr_count($presence, "beginStatsRequest('presence')") === 2
         && str_contains($presence, 'applyStatsSnapshot(statsTicket, data?.stats);'),
     'The client must solve Telegram reopen through document-scoped presence and the dedicated presence statistics channel.'
 );
 $assert(
-    str_contains($service, 'private const LEAVE_GRACE_SEC = 12;')
+    str_contains($service, 'private const PUBLIC_ONLINE_WINDOW_SEC = 15;')
+        && str_contains($service, "['mode'] ?? 'foreground') !== 'foreground'")
+        && str_contains($service, 'private const LEAVE_GRACE_SEC = 12;')
         && str_contains($service, '$sessionId . "\\0presence:" . $presenceLeaseId')
         && str_contains($service, "'leave_after'"),
-    'The server must preserve a bounded old-document handoff without merging separate document leases.'
+    'The server must publish only fresh foreground documents while preserving bounded old-document handoff semantics.'
 );
 $assert(
     str_contains($race, "touch('200', 'phone-device', 'old-page')")
         && str_contains($race, "touch('200', 'phone-device', 'new-page')")
         && str_contains($race, "leave('200', 'phone-device', 'old-page')")
+        && str_contains($race, "background('200', 'phone-device', 'old-page')")
+        && str_contains($race, 'background document must leave the public online count')
+        && str_contains($race, 'bootstrap presence must remain gameplay-compatible')
         && str_contains($race, "online_players'] === 2")
         && str_contains($race, 'delayed leave from the old Telegram document'),
-    'The executable regression must prove that an old document leave cannot reduce online while the new lease is alive.'
+    'The executable regression must prove foreground-only public presence without breaking multi-document handoff.'
 );
 $assert(
     substr_count($shell, "from './stats-owner-v110.js?v=1121'") === 1
-        && substr_count($shell, "from './production-v110-presence.js?v=1121'") === 1
+        && substr_count($shell, "from './production-v110-presence.js?v=1121") === 1
         && substr_count($shell, "beginStatsRequest('api')") === 2,
     'The active shell must keep one API statistics channel and one presence statistics channel.'
 );

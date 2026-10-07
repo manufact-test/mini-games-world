@@ -29,6 +29,7 @@ const GAME_COSMETIC_GROUPS = Object.freeze([
   { layer:'effect', titleKey:'profile.collection.game_groups.effect' },
 ]);
 const NICKNAME_MAX_LENGTH = 13;
+const PROFILE_GAME_TAB_DRAG_THRESHOLD = 5;
 let profileLoading = false;
 let profileRefreshTask = null;
 let profileRenderIdleHandle = null;
@@ -43,6 +44,10 @@ let activeCollectionGame = 'tictactoe';
 let lastProfileRenderSignature = '';
 let hiddenProfileRenderPending = false;
 let lastFullProfileSnapshotAt = 0;
+let profileGameTabDrag = null;
+let suppressProfileGameTabClick = false;
+let profileGameTabObserver = null;
+let profileGameTabDecorateScheduled = false;
 
 export function initProfileScreen(){
   document.querySelector('#screen-profile [data-back-home]')?.remove();
@@ -51,6 +56,8 @@ export function initProfileScreen(){
     if (cached) state.profileStats = cached;
   }
   bindProfileActions();
+  ensureProfileGameTabStyles();
+  initProfileGameTabScroller();
   initAccountLinkUi();
   initAccountLinkHomeOnboarding();
   renderProfileV2();
@@ -279,6 +286,7 @@ function bindProfileActions(){
     if (gameTab) {
       const nextGame = String(gameTab.dataset.profileGameTab || '').trim();
       if (nextGame && nextGame !== activeCollectionGame) switchProfileGameCollection(nextGame);
+      if (gameTab instanceof HTMLElement) keepProfileGameTabVisible(gameTab);
       return;
     }
     const gameCosmeticCard = event.target.closest('[data-profile-game-cosmetic]');
@@ -300,6 +308,211 @@ function bindProfileActions(){
   });
 }
 
+
+function ensureProfileGameTabStyles(){
+  const href = new URL('../../css/screens/profile-game-tabs-active-v1.css?v=1&manual_acceptance=active-scroll-owner-v1', import.meta.url).href;
+  const existing = document.querySelector('link[data-mgw-profile-game-tabs-active]');
+  if (existing instanceof HTMLLinkElement) {
+    if (existing.href !== href) existing.href = href;
+    return;
+  }
+  const link = document.createElement('link');
+  link.rel = 'stylesheet';
+  link.dataset.mgwProfileGameTabsActive = '1';
+  link.href = href;
+  document.head.appendChild(link);
+}
+
+function initProfileGameTabScroller(){
+  const screen = document.getElementById('screen-profile');
+  if (!(screen instanceof HTMLElement) || screen.dataset.profileGameTabsScrollOwner === 'active-profile-v1') return;
+
+  screen.dataset.profileGameTabsScrollOwner = 'active-profile-v1';
+
+  profileGameTabObserver?.disconnect();
+  profileGameTabObserver = new MutationObserver(scheduleProfileGameTabControls);
+  profileGameTabObserver.observe(screen, { childList:true, subtree:true });
+
+  screen.addEventListener('pointerdown', event => {
+    if (event.pointerType !== 'mouse' || event.button !== 0) return;
+    const target = event.target instanceof Element ? event.target : null;
+    const strip = target?.closest('.profile-v2-game-tabs');
+    if (!(strip instanceof HTMLElement) || strip.scrollWidth <= strip.clientWidth + 2) return;
+
+    profileGameTabDrag = {
+      strip,
+      pointerId:event.pointerId,
+      startX:event.clientX,
+      startScrollLeft:strip.scrollLeft,
+      moved:false,
+      captured:false,
+    };
+    suppressProfileGameTabClick = false;
+  });
+
+  screen.addEventListener('pointermove', event => {
+    const drag = profileGameTabDrag;
+    if (!drag || drag.pointerId !== event.pointerId) return;
+    const delta = event.clientX - drag.startX;
+    if (!drag.moved && Math.abs(delta) < PROFILE_GAME_TAB_DRAG_THRESHOLD) return;
+
+    if (!drag.moved) {
+      drag.moved = true;
+      drag.captured = true;
+      drag.strip.classList.add('is-dragging');
+      drag.strip.setPointerCapture?.(event.pointerId);
+    }
+
+    drag.strip.scrollLeft = drag.startScrollLeft - delta;
+    updateProfileGameTabControls(drag.strip);
+    if (event.cancelable) event.preventDefault();
+  });
+
+  const finishDrag = event => {
+    const drag = profileGameTabDrag;
+    if (!drag || drag.pointerId !== event.pointerId) return;
+    suppressProfileGameTabClick = drag.moved;
+    drag.strip.classList.remove('is-dragging');
+    if (drag.captured) drag.strip.releasePointerCapture?.(event.pointerId);
+    profileGameTabDrag = null;
+  };
+  screen.addEventListener('pointerup', finishDrag);
+  screen.addEventListener('pointercancel', finishDrag);
+
+  screen.addEventListener('wheel', event => {
+    const target = event.target instanceof Element ? event.target : null;
+    const strip = target?.closest('.profile-v2-game-tabs');
+    if (!(strip instanceof HTMLElement) || strip.scrollWidth <= strip.clientWidth + 2) return;
+    const delta = Math.abs(event.deltaX) > Math.abs(event.deltaY) ? event.deltaX : event.deltaY;
+    if (Math.abs(delta) < 1) return;
+    const before = strip.scrollLeft;
+    strip.scrollLeft += delta;
+    if (strip.scrollLeft !== before) {
+      updateProfileGameTabControls(strip);
+      if (event.cancelable) event.preventDefault();
+    }
+  }, { passive:false });
+
+  screen.addEventListener('click', event => {
+    const target = event.target instanceof Element ? event.target : null;
+    const arrow = target?.closest('[data-profile-game-tabs-scroll]');
+    if (arrow instanceof HTMLButtonElement) {
+      suppressProfileGameTabClick = false;
+      event.preventDefault();
+      event.stopImmediatePropagation();
+      const collection = arrow.closest('.profile-v2-game-collection');
+      const strip = collection?.querySelector('.profile-v2-game-tabs');
+      if (!(strip instanceof HTMLElement)) return;
+      const direction = Number(arrow.dataset.profileGameTabsScroll || 0);
+      const step = Math.max(120, Math.min(260, Math.round(strip.clientWidth * 0.72)));
+      const maxScroll = Math.max(0, strip.scrollWidth - strip.clientWidth);
+      strip.scrollLeft = Math.max(0, Math.min(maxScroll, strip.scrollLeft + direction * step));
+      updateProfileGameTabControls(strip);
+      return;
+    }
+
+    if (!suppressProfileGameTabClick) return;
+    suppressProfileGameTabClick = false;
+    if (!target?.closest('[data-profile-game-tab]')) return;
+    event.preventDefault();
+    event.stopImmediatePropagation();
+  }, true);
+
+  screen.addEventListener('scroll', event => {
+    const strip = event.target;
+    if (strip instanceof HTMLElement && strip.classList.contains('profile-v2-game-tabs')) {
+      updateProfileGameTabControls(strip);
+    }
+  }, true);
+
+  globalThis.addEventListener?.('resize', scheduleProfileGameTabControls, { passive:true });
+  scheduleProfileGameTabControls();
+}
+
+function scheduleProfileGameTabControls(){
+  if (profileGameTabDecorateScheduled) return;
+  profileGameTabDecorateScheduled = true;
+  queueMicrotask(() => {
+    profileGameTabDecorateScheduled = false;
+    document.querySelectorAll('#screen-profile .profile-v2-game-tabs').forEach(strip => {
+      ensureProfileGameTabControls(strip);
+      globalThis.requestAnimationFrame?.(() => updateProfileGameTabControls(strip));
+    });
+  });
+}
+
+function ensureProfileGameTabControls(strip){
+  if (!(strip instanceof HTMLElement)) return;
+  const collection = strip.closest('.profile-v2-game-collection');
+  if (!(collection instanceof HTMLElement)) return;
+
+  let left = collection.querySelector(':scope > [data-profile-game-tabs-scroll="-1"]');
+  let right = collection.querySelector(':scope > [data-profile-game-tabs-scroll="1"]');
+
+  if (!(left instanceof HTMLButtonElement)) {
+    left = document.createElement('button');
+    left.type = 'button';
+    left.className = 'profile-v2-game-tabs-arrow is-left';
+    left.dataset.profileGameTabsScroll = '-1';
+    left.setAttribute('aria-label', t('arena.scroll_left'));
+    left.textContent = '‹';
+    collection.appendChild(left);
+  }
+  if (!(right instanceof HTMLButtonElement)) {
+    right = document.createElement('button');
+    right.type = 'button';
+    right.className = 'profile-v2-game-tabs-arrow is-right';
+    right.dataset.profileGameTabsScroll = '1';
+    right.setAttribute('aria-label', t('arena.scroll_right'));
+    right.textContent = '›';
+    collection.appendChild(right);
+  }
+
+  updateProfileGameTabControls(strip);
+}
+
+function updateProfileGameTabControls(strip){
+  if (!(strip instanceof HTMLElement)) return;
+  const collection = strip.closest('.profile-v2-game-collection');
+  if (!(collection instanceof HTMLElement)) return;
+
+  const left = collection.querySelector(':scope > [data-profile-game-tabs-scroll="-1"]');
+  const right = collection.querySelector(':scope > [data-profile-game-tabs-scroll="1"]');
+  const maxScroll = Math.max(0, strip.scrollWidth - strip.clientWidth);
+  const hasOverflow = maxScroll > 3;
+  strip.classList.toggle('has-profile-game-tab-overflow', hasOverflow);
+
+  const collectionRect = collection.getBoundingClientRect();
+  const stripRect = strip.getBoundingClientRect();
+  const top = Math.round(stripRect.top - collectionRect.top + stripRect.height / 2);
+
+  if (left instanceof HTMLButtonElement) {
+    left.style.top = `${top}px`;
+    left.hidden = !hasOverflow;
+    left.disabled = !hasOverflow || strip.scrollLeft <= 3;
+  }
+  if (right instanceof HTMLButtonElement) {
+    right.style.top = `${top}px`;
+    right.hidden = !hasOverflow;
+    right.disabled = !hasOverflow || strip.scrollLeft >= maxScroll - 3;
+  }
+}
+
+function keepProfileGameTabVisible(tab){
+  const strip = tab?.closest?.('.profile-v2-game-tabs');
+  if (!(strip instanceof HTMLElement) || strip.clientWidth <= 0) return;
+  const stripRect = strip.getBoundingClientRect();
+  const tabRect = tab.getBoundingClientRect();
+  const inset = 8;
+  let delta = 0;
+  if (tabRect.left < stripRect.left + inset) delta = tabRect.left - stripRect.left - inset;
+  else if (tabRect.right > stripRect.right - inset) delta = tabRect.right - stripRect.right + inset;
+  if (Math.abs(delta) < 1) return;
+
+  const maxScroll = Math.max(0, strip.scrollWidth - strip.clientWidth);
+  strip.scrollLeft = Math.max(0, Math.min(maxScroll, strip.scrollLeft + delta));
+  updateProfileGameTabControls(strip);
+}
 
 function moderationActionLabel(value){
   const code = String(value || '');

@@ -54,7 +54,20 @@ export function renderUser(user){
     else delete el.dataset.nameColorItemId;
   });
   const championCrown = activeTournamentChampionCrown();
-  ['topAvatar','profileAvatar','searchMeAvatar'].forEach(id => {
+  const topAvatar = document.getElementById('topAvatar');
+  if (topAvatar) {
+    delete topAvatar.dataset.avatarId;
+    delete topAvatar.dataset.photoUrl;
+    delete topAvatar.dataset.photoOwner;
+    topAvatar.textContent = 'MG';
+    topAvatar.style.backgroundImage = '';
+    topAvatar.style.backgroundSize = '';
+    topAvatar.style.backgroundPosition = '';
+    topAvatar.style.backgroundRepeat = '';
+    topAvatar.classList.remove('has-photo');
+    topAvatar.classList.toggle('has-tournament-prestige-crown', championCrown);
+  }
+  ['profileAvatar','searchMeAvatar'].forEach(id => {
     const el = document.getElementById(id);
     if (!el) return;
     el.dataset.avatarId = canonicalAvatarId;
