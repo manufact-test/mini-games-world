@@ -56,15 +56,20 @@ const compatibilityTokenKeys = new Set([
   'games.router.aliases.four_in_a_row',
 ]);
 for (const [key, value] of leaves) {
-  assert(typeof value === 'string' && value.trim() !== '', `English key must be a non-empty string: ${key}`);
+  assert(typeof value === 'string', `English key must be a string: ${key}`);
 
   const ruValue = readPath(ru, key);
+  assert(typeof ruValue === 'string', `English draft key has no canonical RU owner: ${key}`);
+  if (ruValue === '') {
+    assert(value === '', `Canonical empty RU value must remain empty in EN: ${key}`);
+  } else {
+    assert(value.trim() !== '', `English key must be non-empty when RU owner is non-empty: ${key}`);
+  }
   if (compatibilityTokenKeys.has(key)) {
     assert(value === ruValue, `Compatibility parser token must remain locale-invariant: ${key}`);
   } else {
     assert(!cyrillic.test(value), `Cyrillic leaked into player-facing English draft: ${key}`);
   }
-  assert(typeof ruValue === 'string', `English draft key has no canonical RU owner: ${key}`);
   assert(JSON.stringify(placeholders(value)) === JSON.stringify(placeholders(ruValue)),
     `Placeholder mismatch for ${key}: RU=${placeholders(ruValue).join(',')} EN=${placeholders(value).join(',')}`);
 }
