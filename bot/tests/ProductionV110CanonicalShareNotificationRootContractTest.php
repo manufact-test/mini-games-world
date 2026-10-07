@@ -22,8 +22,8 @@ $clean = $read('app/assets/js/production-clean-entry-v110.js');
 
 $assert(str_contains($invites, "document.addEventListener('pointerdown', handleInvitePointerDown, true)")
     && str_contains($invites, 'function warmShareDraft(context)')
-    && str_contains($invites, "inviteRequest('create_link_draft', { ...normalized, prepareMessage:true }, { prefetch:true })"),
-    'The canonical invitation owner must keep serialized share prewarm.');
+    && preg_match("/inviteRequest\\(\\s*'create_link_draft'\\s*,\\s*\\{\\s*\\.\\.\\.normalized\\s*,\\s*prepareMessage:true\\s*\\}\\s*,\\s*\\{\\s*prefetch:true\\s*\\}\\s*\\)/s", $invites) === 1,
+    'The canonical invitation owner must keep serialized share prewarm regardless of source formatting.');
 $assert(str_contains($invites, 'tg.shareMessage(preparedId')
     && str_contains($invites, "tg.onEvent('shareMessageSent'")
     && str_contains($invites, "tg.onEvent('shareMessageFailed'")
