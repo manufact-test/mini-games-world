@@ -43,12 +43,25 @@ assert(!Object.prototype.hasOwnProperty.call(manifest.catalogs || {}, 'en'),
   'Incomplete English catalog must not be wired into the runtime manifest.');
 
 const cyrillic = /[А-Яа-яЁё]/u;
+const compatibilityTokenKeys = new Set([
+  'games.router.aliases.domino',
+  'games.router.aliases.go',
+  'games.router.aliases.chess',
+  'games.router.aliases.reversi',
+  'games.router.aliases.checkers',
+  'games.router.aliases.battleship',
+  'games.router.aliases.four_in_a_row',
+]);
 const englishLeaves = flatten(en).filter(([key]) => !key.startsWith('_meta.'));
 for (const [key, value] of englishLeaves) {
   assert(typeof value === 'string' && value.trim() !== '', `English key must be a non-empty string: ${key}`);
-  assert(!cyrillic.test(value), `Cyrillic leaked into English draft: ${key}`);
   const ruValue = readPath(ru, key);
   assert(typeof ruValue === 'string', `English draft key has no canonical RU owner: ${key}`);
+  if (compatibilityTokenKeys.has(key)) {
+    assert(value === ruValue, `Compatibility parser token must remain locale-invariant: ${key}`);
+  } else {
+    assert(!cyrillic.test(value), `Cyrillic leaked into player-facing English draft: ${key}`);
+  }
   assert(JSON.stringify(placeholders(value)) === JSON.stringify(placeholders(ruValue)),
     `Placeholder mismatch for ${key}: RU=${placeholders(ruValue).join(',')} EN=${placeholders(value).join(',')}`);
 }
@@ -74,6 +87,11 @@ const completeScopes = [
   'home.menu',
   'home.history',
   'home.rules_guide',
+  'games.router',
+  'games.tictactoe',
+  'games.four_in_a_row',
+  'rules.tictactoe',
+  'rules.four_in_a_row',
 ];
 
 for (const scope of completeScopes) {
