@@ -1,7 +1,7 @@
 {
   "_meta": {
     "locale": "en",
-    "version": 16,
+    "version": 17,
     "status": "draft"
   },
   "common": {
@@ -852,6 +852,58 @@
       "appeal_error": "Could not submit the appeal.",
       "settings_note": "Warnings, restrictions, and moderation decisions",
       "open": "Open"
+    },
+    "tournament": {
+      "rewards": {
+        "golden_ticket": "Golden Ticket",
+        "champion_crown": "Champion Crown",
+        "winner_badge": "Winner Badge",
+        "champion_cosmetics": "Champion Set",
+        "hall_of_fame": "Hall of Fame",
+        "cup_gold": "Gold Cup",
+        "silver_frame": "Silver Frame",
+        "finalist_result": "Tournament Finalist",
+        "cup_silver": "Silver Cup",
+        "bronze_mark": "Bronze Mark",
+        "third_place_result": "3rd Place",
+        "cup_bronze": "Bronze Cup",
+        "fallback": "Reward"
+      },
+      "status": {
+        "current_champion": "Current champion",
+        "crown_until": "Crown active until {until}",
+        "crown_active": "Champion Crown active",
+        "champion": "Official tournament champion",
+        "champion_metrics": "{championships} wins · {podiums} podiums",
+        "podium": "Official tournament podium finisher",
+        "podium_metrics": "{podiums} podiums",
+        "participant": "Tournament participant",
+        "participant_metrics": "{tournaments} tournaments"
+      },
+      "open_showcase": "Open tournament showcase",
+      "status_label": "Tournament status",
+      "units": {
+        "wins": "wins",
+        "podiums": "podiums",
+        "tournaments": "tournaments"
+      },
+      "ticket_short": "ticket",
+      "ticket_title": "Grand Tournament access",
+      "ticket_note": "Valid until the Grand Tournament · cannot be sold or transferred",
+      "active_now": "Active now",
+      "trophy_cabinet": "Trophy cabinet",
+      "achievements": "Achievements",
+      "history": "Tournament history",
+      "hall_of_fame": "Tournament Hall of Fame",
+      "hall_of_fame_note": "Official tournament champions and victory history",
+      "showcase_title": "Tournament showcase",
+      "showcase_note": "Status, trophies, and rewards from official tournaments.",
+      "reward_active_until": "Active until {until}",
+      "reward_active": "Active",
+      "reward_forever": "Permanent",
+      "placement": "{placement} place",
+      "participant": "Participant",
+      "official_tournament": "Official tournament"
     }
   },
   "acceptance_runtime": {

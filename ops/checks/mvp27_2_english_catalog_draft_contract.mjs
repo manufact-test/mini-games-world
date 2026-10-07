@@ -134,6 +134,7 @@ const completeScopes = [
   'profile.reactions',
   'profile.collection',
   'profile.moderation',
+  'profile.tournament',
 ];
 
 for (const scope of completeScopes) {
