@@ -75,6 +75,13 @@ jobs:
               bot/services/NotificationService.php \
               bot/services/ShopOrderNotificationService.php \
               bot/social/SocialFriendNotificationService.php
+          elif [[ "${{ github.head_ref }}" == agent/mvp27-2-manual-acceptance-recovery-* ]]; then
+            echo 'MVP-27.2 manual recovery: request-locale endpoint and semantic bonus reprojection are intentional; all other notification backend owners remain frozen.'
+            git diff --check
+            git diff --exit-code "${{ github.event.pull_request.base.sha }}" HEAD -- \
+              bot/notifications \
+              bot/services/ShopOrderNotificationService.php \
+              bot/social/SocialFriendNotificationService.php
           else
             echo 'Successor slice: notification owners must remain unchanged from the current PR base.'
             git diff --exit-code "${{ github.event.pull_request.base.sha }}" HEAD -- \
