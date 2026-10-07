@@ -1,5 +1,5 @@
 import { APP_CONFIG } from '../config.js?v=38';
-import { t } from '@mgw/i18n';
+import { t, getI18n } from '@mgw/i18n';
 import { state } from '../state.js?v=27';
 import { getInitData } from '../telegram/telegram-app.js?v=21';
 import { getSessionId, getDeviceId } from '../session.js?v=1131';
@@ -27,7 +27,7 @@ async function requestUrl(url, payload = {}){
   try {
     response = await fetch(url, {
       method:'POST',
-      headers:{'Content-Type':'application/json','X-MGW-Locale':String(document.documentElement?.lang || 'ru')},
+      headers:{'Content-Type':'application/json','X-MGW-Locale':String(getI18n().locale || 'ru')},
       body:JSON.stringify({ initData:getInitData(), sessionId:getSessionId(), deviceId:getDeviceId(), ...payload })
     });
   } catch (_) {
@@ -52,7 +52,7 @@ async function downloadAccountExport(requestId){
   try {
     response = await fetch(ACCOUNT_DATA_URL, {
       method:'POST',
-      headers:{'Content-Type':'application/json','X-MGW-Locale':String(document.documentElement?.lang || 'ru')},
+      headers:{'Content-Type':'application/json','X-MGW-Locale':String(getI18n().locale || 'ru')},
       body:JSON.stringify({
         initData:getInitData(),
         sessionId:getSessionId(),
