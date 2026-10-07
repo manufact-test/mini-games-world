@@ -499,10 +499,11 @@ function openAvatarPreview(itemId){
 function chooseAvatar(itemId){
   if (!ownedAvatarIds().includes(itemId)) return;
   const currentItemId = currentAvatarItemId();
+  const previousSelectedAvatarId = state.selectedAvatarId;
   if (!avatarSaving && itemId === currentItemId) return;
 
   if (!avatarSaving) {
-    avatarConfirmedItemId = currentItemId;
+    avatarConfirmedItemId = String(previousSelectedAvatarId || currentItemId || '').trim();
   }
 
   avatarQueuedItemId = itemId;
@@ -528,9 +529,10 @@ function applyOptimisticAvatarSelection(itemId){
 }
 
 function restoreConfirmedAvatarSelection(){
-  const itemId = String(avatarConfirmedItemId || '').trim();
-  if (!itemId) return;
-  applyOptimisticAvatarSelection(itemId);
+  const previousSelectedAvatarId = String(avatarConfirmedItemId || '').trim();
+  if (!previousSelectedAvatarId) return;
+  state.selectedAvatarId = previousSelectedAvatarId;
+  applyOptimisticAvatarSelection(previousSelectedAvatarId);
 }
 
 async function drainAvatarSelectionQueue(){
