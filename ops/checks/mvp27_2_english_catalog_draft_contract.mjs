@@ -92,6 +92,7 @@ const completeScopes = [
   'home.menu',
   'home.history',
   'home.rules_guide',
+  'home.support',
   'games.router',
   'games.tictactoe',
   'games.four_in_a_row',
