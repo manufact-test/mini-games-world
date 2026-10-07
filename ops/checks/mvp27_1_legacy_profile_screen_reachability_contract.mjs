@@ -63,9 +63,9 @@ assert.ok(main110.includes("import './main-v110-handoff-shell.js"), 'main-v110 m
 assert.ok(handoff.includes("import { initProfileScreen } from './screens/profile-screen-v110.js?v=1109';"),
   'Factual handoff must own the v110 Profile screen');
 assert.ok(handoff.includes('initProfileScreen();'), 'Factual handoff must initialize Profile');
-assert.ok(manifest.includes("'./assets/js/screens/profile-screen-v110.js?v=1109' => './assets/js/screens/profile-screen-v110.js?v=1142")
-  && manifest.includes('mvp27_1=profile-localized-v1'),
-  'Manifest must retain localized factual Profile owner');
+const profileAlias = manifest.match(/'\.\/assets\/js\/screens\/profile-screen-v110\.js\?v=1109'\s*=>\s*'\.\/assets\/js\/screens\/profile-screen-v110\.js\?v=(\d+)([^']*)'/);
+assert.ok(profileAlias && Number(profileAlias[1]) >= 1142 && profileAlias[2].includes('mvp27_1=profile-localized-v1'),
+  'Manifest must retain localized factual Profile owner or a newer successor');
 
 for (const [label, source] of [
   ['manifest', manifest],
