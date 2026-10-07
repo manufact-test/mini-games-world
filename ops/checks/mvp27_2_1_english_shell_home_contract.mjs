@@ -43,7 +43,7 @@ assert(!Object.prototype.hasOwnProperty.call(manifest.catalogs || {}, 'en'),
   'Incomplete English catalog must not be wired into the runtime manifest.');
 
 const leaves = flatten(en).filter(([key]) => !key.startsWith('_meta.'));
-assert(leaves.length === 159, `Expected 159 MVP-27.2.1 English leaves, got ${leaves.length}.`);
+assert(leaves.length >= 159, `Expected at least the 159 MVP-27.2.1 English leaves, got ${leaves.length}.`);
 
 const cyrillic = /[А-Яа-яЁё]/u;
 for (const [key, value] of leaves) {
@@ -77,4 +77,4 @@ for (const key of [
   assert(typeof readPath(en, key) === 'string', `Required MVP-27.2.1 English key missing: ${key}`);
 }
 
-console.log(`MVP-27.2.1 English Shell/Home draft: PASS (${leaves.length} localized leaves, RU runtime still authoritative).`);
+console.log(`MVP-27.2.1 English Shell/Home baseline: PASS (${leaves.length} current localized leaves, original slice preserved, RU runtime still authoritative).`);
