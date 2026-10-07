@@ -51,7 +51,6 @@ let shareWarmSequence = 0;
 let shareWarmTimer = null;
 let shareWarmExpiryTimer = null;
 let shareWarm = null;
-let shareWarmAbortController = null;
 let shareAttempt = null;
 let shareClickPending = false;
 let socialInviteTarget = null;
@@ -506,15 +505,11 @@ function warmShareDraft(context){
   }
 
   const previous = shareWarm;
-  if (previous?.status === 'loading' || previous?.status === 'queued') {
-    try { previous.abortController?.abort(); } catch (_) {}
-  }
   if (previous?.status === 'ready' && previous.result?.invite?.token) {
     window.clearTimeout(shareWarmExpiryTimer);
     void discardDraft(previous.result.invite);
   }
 
-  const abortController = typeof AbortController === 'function' ? new AbortController() : null;
   const entry = {
     id:++shareWarmSequence,
     key,
@@ -522,10 +517,8 @@ function warmShareDraft(context){
     status:'queued',
     result:null,
     promise:null,
-    abortController,
   };
   shareWarm = entry;
-  shareWarmAbortController = abortController;
   window.clearTimeout(shareWarmExpiryTimer);
 
   // Each context owns its own warm request. The previous implementation chained
@@ -537,7 +530,7 @@ function warmShareDraft(context){
     const result = await inviteRequest(
       'create_link_draft',
       { ...normalized, prepareMessage:true },
-      { prefetch:true, signal:abortController?.signal }
+      { prefetch:true }
     );
     if (!result?.invite?.token) throw new Error(inviteText('social.link_prepare_failed'));
     if (shareWarm?.id !== entry.id) {
@@ -549,9 +542,8 @@ function warmShareDraft(context){
     armWarmShareExpiry(entry);
     return result;
   })().catch(error => {
-    entry.status = String(error?.name || '') === 'AbortError' ? 'aborted' : 'failed';
+    entry.status = 'failed';
     if (shareWarm?.id === entry.id) shareWarm = null;
-    if (shareWarmAbortController === abortController) shareWarmAbortController = null;
     throw error;
   });
 
@@ -565,10 +557,6 @@ function cancelWarmShareDraft(){
   shareWarmExpiryTimer = null;
   const warm = shareWarm;
   shareWarm = null;
-  if (warm?.status === 'loading' || warm?.status === 'queued') {
-    try { warm.abortController?.abort(); } catch (_) {}
-  }
-  shareWarmAbortController = null;
   if (warm?.status === 'ready' && warm.result?.invite?.token) {
     void discardDraft(warm.result.invite);
   }
@@ -605,7 +593,6 @@ function restoreWarmShareDraft(attempt){
     promise:Promise.resolve(result),
   };
   shareWarm = entry;
-  shareWarmAbortController = null;
   armWarmShareExpiry(entry);
 }
 
