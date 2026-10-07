@@ -415,6 +415,10 @@ jobs:
             echo 'Backend-debt/classification/localization bundle: focused ownership proof owns scope; architecture audit remains proof-only.'
             exit 0
           fi
+          if [[ "${{ github.head_ref }}" == agent/mvp27-2-* ]]; then
+            echo 'MVP-27.2 successor localization/activation: architecture audit runs as regression proof; MVP-27.1 audit-only path guard is not applicable.'
+            exit 0
+          fi
           base='${{ github.event.pull_request.base.sha }}'
           head='${{ github.event.pull_request.head.sha }}'
           changed="$(git diff --name-only "$base" "$head")"

@@ -9,13 +9,17 @@ function assert(condition, message) {
 
 const manifest = JSON.parse(fs.readFileSync('app/locales/manifest.json', 'utf8'));
 const ru = JSON.parse(fs.readFileSync('app/locales/ru.json', 'utf8'));
+const en = JSON.parse(fs.readFileSync('app/locales/en.json', 'utf8'));
 const source = fs.readFileSync('app/assets/js/localization/i18n.js', 'utf8');
 
-assert(manifest.default_locale === 'ru', 'RU must remain the current production default during MVP-27.1.');
-assert(manifest.fallback_locale === 'ru', 'RU must remain the current production fallback during MVP-27.1.');
-assert(JSON.stringify(manifest.supported_locales) === JSON.stringify(['ru']),
-  'MVP-27.1 architecture audit must not claim production EN before MVP-27.2 translation exists.');
-assert(manifest.catalogs?.ru === 'ru.json', 'Production RU catalog mapping is missing.');
+assert(manifest.default_locale === 'ru', 'RU must remain the current default locale.');
+assert(manifest.fallback_locale === 'ru', 'RU must remain the current fallback locale.');
+assert(Array.isArray(manifest.supported_locales)
+  && manifest.supported_locales.includes('ru')
+  && manifest.supported_locales.includes('en'),
+  'Localization architecture must preserve active RU/EN support after MVP-27.2.');
+assert(manifest.catalogs?.ru === 'ru.json', 'RU catalog mapping is missing.');
+assert(manifest.catalogs?.en === 'en.json', 'EN catalog mapping is missing.');
 
 const tempModule = path.join(os.tmpdir(), `mgw-mvp27-i18n-${process.pid}.mjs`);
 fs.writeFileSync(tempModule, source, 'utf8');
@@ -26,53 +30,21 @@ const { createI18n, resolvePreferredLocale } = mod;
 assert(typeof createI18n === 'function', 'Client i18n factory missing.');
 assert(typeof resolvePreferredLocale === 'function', 'Locale precedence owner missing.');
 
-const syntheticManifest = {
-  ...manifest,
-  default_locale: 'ru',
-  fallback_locale: 'ru',
-  supported_locales: ['ru', 'en'],
-  catalogs: { ru:'ru.json', en:'en.json' },
-  formats: {
-    ...manifest.formats,
-    en: {
-      intl_locale:'en-US',
-      number:{ maximumFractionDigits:0 },
-      date:{
-        short:{ year:'numeric', month:'2-digit', day:'2-digit' },
-        long:{ year:'numeric', month:'long', day:'numeric' },
-      },
-      datetime:{
-        short:{ year:'numeric', month:'2-digit', day:'2-digit', hour:'2-digit', minute:'2-digit' },
-        long:{ year:'numeric', month:'long', day:'numeric', hour:'2-digit', minute:'2-digit' },
-      },
-    },
-  },
-  rules:{
-    ...manifest.rules,
-    games:{
-      ...manifest.rules.games,
-      tictactoe:{ ...manifest.rules.games.tictactoe, languages:['ru','en'] },
-    },
-  },
-};
+const catalogs = { ru, en };
+const english = createI18n({ manifest, catalogs }, 'en-US');
+assert(english.locale === 'en', 'Regional English locale must normalize to active en.');
+assert(english.t('nav.home') === 'Home', 'Active EN translation lookup failed.');
+assert(english.plural('units.coin', 1) === '1 coin', 'Active EN singular plural form failed.');
+assert(english.plural('units.coin', 2) === '2 coins', 'Active EN other plural form failed.');
+assert(english.formatNumber(12345).includes('12'), 'Active EN number formatting failed.');
+assert(typeof english.formatDate(new Date('2026-10-01T12:00:00Z')) === 'string',
+  'Active EN date formatting failed.');
+assert(english.rules('tictactoe').title === 'Tic-Tac-Toe',
+  'Rules metadata must resolve the active EN title.');
 
-const en = {
-  common:{ back:'Back' },
-  nav:{ home:'Home' },
-  games:{ tictactoe:{ name:'Tic-Tac-Toe' } },
-  units:{ coin:{ one:'{count} coin', other:'{count} coins' } },
-};
-
-const synthetic = createI18n({ manifest:syntheticManifest, catalogs:{ ru, en } }, 'en-US');
-assert(synthetic.locale === 'en', 'Regional English locale must normalize to en.');
-assert(synthetic.t('nav.home') === 'Home', 'Synthetic EN translation lookup failed.');
-assert(synthetic.plural('units.coin', 1) === '1 coin', 'Synthetic EN singular plural form failed.');
-assert(synthetic.plural('units.coin', 2) === '2 coins', 'Synthetic EN other plural form failed.');
-assert(synthetic.formatNumber(12345).includes('12'), 'Synthetic EN number formatting failed.');
-assert(typeof synthetic.formatDate(new Date('2026-10-01T12:00:00Z')) === 'string',
-  'Synthetic EN date formatting failed.');
-assert(synthetic.rules('tictactoe').title === 'Tic-Tac-Toe',
-  'Rules metadata must be able to resolve an EN title once the catalog exists.');
+const russian = createI18n({ manifest, catalogs }, 'ru-RU');
+assert(russian.locale === 'ru', 'Regional Russian locale must normalize to ru.');
+assert(russian.t('nav.home') === 'Главная', 'RU translation lookup regressed.');
 
 assert(resolvePreferredLocale({
   explicitLocale:'en',
@@ -102,4 +74,4 @@ for (const owner of [
 }
 
 console.log('MVP27_1_LOCALIZATION_ARCHITECTURE_CONTRACT=PASS');
-console.log('production: RU-only remains truthful; synthetic EN architecture: PASS');
+console.log('runtime: RU default/fallback preserved; active RU/EN architecture: PASS');

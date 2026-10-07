@@ -34,13 +34,13 @@ function placeholders(value){
 }
 
 assert(en?._meta?.locale === 'en', 'English draft locale metadata must be en.');
-assert(en?._meta?.status === 'draft', 'English catalog must remain draft during bounded MVP-27.2 slices.');
+assert(en?._meta?.status === 'active', 'English catalog must remain active after MVP-27.2 closure.');
 assert(manifest.default_locale === 'ru', 'RU must remain the default locale.');
 assert(manifest.fallback_locale === 'ru', 'RU must remain the fallback locale.');
-assert(Array.isArray(manifest.supported_locales) && manifest.supported_locales.length === 1 && manifest.supported_locales[0] === 'ru',
-  'Incomplete English catalog must not be declared supported.');
-assert(!Object.prototype.hasOwnProperty.call(manifest.catalogs || {}, 'en'),
-  'Incomplete English catalog must not be wired into the runtime manifest.');
+assert(Array.isArray(manifest.supported_locales) && manifest.supported_locales.includes('ru') && manifest.supported_locales.includes('en'),
+  'Shell/Home regression baseline must preserve active RU/EN runtime support.');
+assert(manifest.catalogs?.ru === 'ru.json' && manifest.catalogs?.en === 'en.json',
+  'Shell/Home regression baseline must preserve RU/EN catalog mappings.');
 
 const leaves = flatten(en).filter(([key]) => !key.startsWith('_meta.'));
 assert(leaves.length >= 159, `Expected at least the 159 MVP-27.2.1 English leaves, got ${leaves.length}.`);
@@ -95,4 +95,4 @@ for (const key of [
   assert(typeof readPath(en, key) === 'string', `Required MVP-27.2.1 English key missing: ${key}`);
 }
 
-console.log(`MVP-27.2.1 English Shell/Home baseline: PASS (${leaves.length} current localized leaves, original slice preserved, RU runtime still authoritative).`);
+console.log(`MVP-27.2.1 English Shell/Home baseline: PASS (${leaves.length} current localized leaves, original slice preserved, RU default/fallback + active EN preserved).`);
