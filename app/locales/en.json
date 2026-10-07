@@ -1,7 +1,7 @@
 {
   "_meta": {
     "locale": "en",
-    "version": 22,
+    "version": 23,
     "status": "draft"
   },
   "common": {
@@ -2630,6 +2630,49 @@
       "date_unknown": "Date not specified",
       "podium_unavailable": "Podium unavailable.",
       "participants": " · {capacity} participants"
+    }
+  },
+  "notifications": {
+    "title": "Notifications",
+    "mark_all": "Mark all as read",
+    "open": "Open",
+    "delete": "Delete",
+    "empty": "No notifications yet",
+    "loading": "Loading…",
+    "item_fallback": "Notification",
+    "load_error": "Could not open notifications",
+    "try_again": "Try again.",
+    "open_center": "Open notifications",
+    "unread_count": "Notifications: {count} new",
+    "view_request": "View",
+    "invite_actions": {
+      "accept": "Accept invitation",
+      "decline": "Decline",
+      "start": "Start game",
+      "cancel": "Cancel"
+    },
+    "request_error": "Notification error: {status}",
+    "friend_request_open_marker": "Open request",
+    "friend_request_open_hint": "Open the request to view the profile and accept or decline it.",
+    "tournament_local_time": "starts {date} in your local time",
+    "terminal": {
+      "invite_cancelled_owner": "You cancelled your invitation.",
+      "invite_cancelled_participant": "You cancelled your participation in the match.",
+      "invite_declined": "You declined the invitation."
+    },
+    "legacy_cleanup": {
+      "balance_already_updated": "Balance already updated",
+      "balance_not_changed": "Balance unchanged",
+      "balance_label": "Balance",
+      "status_label": "Status",
+      "status_already": "already",
+      "status_updated": "updated",
+      "return_status": "Check refund status",
+      "status_refund": "You can check the status and refund",
+      "returned": "Refunded",
+      "open_mini_app": "Open Mini App",
+      "tournament_assigned_title": "Tournament date scheduled",
+      "tournament_starts": "starts"
     }
   }
 }
