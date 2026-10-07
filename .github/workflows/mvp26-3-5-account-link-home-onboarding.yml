@@ -69,8 +69,13 @@ jobs:
           need(onboarding.includes("PENDING_LINK_KEY"), 'pending link suppression missing');
           need(profile.includes("mgw-account-link-onboarding.js?v=5"), 'Onboarding module cache-bust missing');
           need(shell.includes("profile-screen-v110.js?v=1109"), 'active shell Profile specifier changed unexpectedly');
-          const profileAlias=manifest.match(/'\.\/assets\/js\/screens\/profile-screen-v110\.js\?v=1109'\s*=>\s*'\.\/assets\/js\/screens\/profile-screen-v110\.js\?v=(\d+)([^']*)'/);
-          need(profileAlias && Number(profileAlias[1]) >= 1142 && profileAlias[2].includes('mvp27_1=profile-localized-v1'), 'active Profile import must resolve to the localized canonical URL or a newer successor');
+          const directProfileAlias=manifest.match(/'\.\/assets\/js\/screens\/profile-screen-v110\.js\?v=1109'\s*=>\s*'\.\/assets\/js\/screens\/profile-screen-v110\.js\?v=(\d+)([^']*)'/);
+          const wrapperProfileAlias=manifest.match(/'\.\/assets\/js\/screens\/profile-screen-v110\.js\?v=1109'\s*=>\s*'\.\/assets\/js\/profile\/mgw-profile-chess-layout-v2\.js\?v=(\d+)([^']*)'/);
+          const profileBaseAlias=manifest.match(/'\.\/assets\/js\/screens\/profile-screen-v110\.js\?v=1126&profile_base=accepted-game-cosmetics'\s*=>\s*'\.\/assets\/js\/screens\/profile-screen-v110\.js\?v=(\d+)([^']*)'/);
+          const profileAliasOk=(directProfileAlias && Number(directProfileAlias[1]) >= 1142 && directProfileAlias[2].includes('mvp27_1=profile-localized-v1'))
+            || (wrapperProfileAlias && Number(wrapperProfileAlias[1]) >= 44 && wrapperProfileAlias[2].includes('mvp27_1=profile-chain-localized-v1')
+              && profileBaseAlias && Number(profileBaseAlias[1]) >= 1142 && profileBaseAlias[2].includes('mvp27_1=profile-localized-v1'));
+          need(profileAliasOk, 'active Profile import must resolve through the localized direct base or accepted game-parity wrapper');
           need(onboarding.includes("mgw-account-link-onboarding-overlay"), 'dedicated Home onboarding overlay owner missing');
           need(onboarding.includes("mgw-account-link-onboarding-sheet"), 'dedicated Home onboarding sheet owner missing');
           need(onboarding.includes("mgw-account-link-onboarding-bridge"), 'Telegram → Android bridge presentation missing');
