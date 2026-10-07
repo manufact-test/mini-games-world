@@ -1,7 +1,7 @@
 {
   "_meta": {
     "locale": "en",
-    "version": 28,
+    "version": 29,
     "status": "draft"
   },
   "common": {
@@ -3013,5 +3013,136 @@
     "balance_after_admin": "Your balance will change after administrator confirmation.",
     "order_already_created": "This request has already been created.",
     "orders_status_hint": "Track the status in “My requests”."
+  },
+  "server": {
+    "support": {
+      "platforms": {
+        "telegram": "Telegram app",
+        "google_play": "Google Play app"
+      },
+      "categories": {
+        "feedback": "Feedback",
+        "idea": "Suggestion",
+        "complaint": "Report",
+        "technical": "Technical issue",
+        "payment": "Payment / coins",
+        "game": "Game / match",
+        "tournament": "Tournament",
+        "account": "Account",
+        "other": "Other"
+      },
+      "statuses": {
+        "open": "Open",
+        "in_progress": "In progress",
+        "waiting_user": "Waiting for user",
+        "resolved": "Resolved",
+        "closed": "Closed"
+      },
+      "priorities": {
+        "low": "Low",
+        "normal": "Normal",
+        "high": "High",
+        "critical": "Critical"
+      },
+      "errors": {
+        "invalid_platform": "Choose a platform.",
+        "invalid_category": "Choose a request category.",
+        "invalid_priority": "Choose a priority.",
+        "ticket_not_found": "Request not found.",
+        "ticket_closed": "A closed request cannot be continued. Create a new one.",
+        "user_unavailable": "MGW profile unavailable.",
+        "ticket_required": "Specify the request number.",
+        "attachment_not_found": "Attachment not found.",
+        "too_many_attachments": "You can attach no more than 3 files to one message.",
+        "invalid_attachment": "Invalid attachment.",
+        "invalid_attachment_type": "Images, PDF, and TXT are supported.",
+        "invalid_attachment_read": "Could not read the attachment.",
+        "attachment_too_large": "Each attachment must be no larger than 2 MB.",
+        "message_required": "Write a message.",
+        "invalid_queue_mode": "Invalid queue mode.",
+        "invalid_queue_filter": "Invalid queue filter.",
+        "invalid_status_admin": "Invalid request status.",
+        "invalid_priority_admin": "Invalid request priority.",
+        "reopen_required": "Reopen the request first."
+      },
+      "endpoint": {
+        "invalid_request": "Invalid request.",
+        "profile_unavailable": "MGW profile unavailable for this session.",
+        "unavailable": "MGW Support is temporarily unavailable.",
+        "invalid_action": "Invalid support action.",
+        "rate_limited": "Too many requests. Try again a little later.",
+        "failed": "Could not process the support request."
+      },
+      "attachment": {
+        "method_not_allowed": "Request method is not supported.",
+        "invalid_attachment": "Invalid attachment.",
+        "profile_unavailable": "MGW profile unavailable for this session.",
+        "unavailable": "MGW Support is temporarily unavailable.",
+        "failed": "Could not download the attachment."
+      },
+      "notifications": {
+        "reply_title": "Support reply",
+        "reply_text": "A new reply has arrived for request {ticket}."
+      }
+    },
+    "moderation": {
+      "report_reasons": {
+        "nickname": "Inappropriate nickname",
+        "avatar": "Inappropriate avatar",
+        "spam": "Spam",
+        "cheating": "Cheating",
+        "stalling": "Stalling the game",
+        "other": "Other",
+        "abuse": "Abuse or harassment",
+        "offensive_profile": "Inappropriate profile"
+      },
+      "restriction_scopes": {
+        "profile": "Profile changes",
+        "social": "Friends and social actions",
+        "gameplay": "New games and matches",
+        "all": "All game actions"
+      },
+      "errors": {
+        "appeal_forbidden": "This decision cannot be appealed.",
+        "appeal_unavailable": "This decision can no longer be appealed.",
+        "appeal_message_required": "Describe the reason for your appeal.",
+        "appeal_exists": "There is already an open appeal for this decision.",
+        "action_required": "The moderation decision is not defined.",
+        "action_not_found": "Moderation decision not found.",
+        "user_unavailable": "MGW player not found.",
+        "account_banned": "Account banned after manual review.",
+        "restricted_until": "Restriction active until {until} UTC.",
+        "restricted": "This account is restricted.",
+        "self_report": "You cannot report your own profile.",
+        "invalid_reason": "Choose a reason for the report.",
+        "invalid_match": "The linked match is unavailable for this report.",
+        "invalid_status": "Invalid report status.",
+        "report_not_found": "Report not found."
+      },
+      "endpoint": {
+        "invalid_request": "Invalid request.",
+        "profile_unavailable": "MGW profile unavailable for this session.",
+        "unavailable": "Moderation is temporarily unavailable.",
+        "invalid_action": "Invalid moderation action.",
+        "load_failed": "Could not load moderation data."
+      },
+      "player_fallback": "Player"
+    },
+    "friends": {
+      "self_relation": "You cannot perform this action on your own profile.",
+      "self_report": "You cannot report your own profile.",
+      "invalid_reason": "Choose a reason for the report.",
+      "invalid_match": "The linked match is unavailable for this report.",
+      "user_unavailable": "MGW player not found.",
+      "incoming_request_exists": "You already have an incoming request from this player.",
+      "request_not_incoming": "This incoming request is no longer available.",
+      "request_not_outgoing": "This outgoing request is no longer available.",
+      "action_unavailable": "This action is currently unavailable.",
+      "invalid_request": "Invalid request.",
+      "profile_unavailable": "MGW profile unavailable for this session.",
+      "unavailable": "MGW Friends is temporarily unavailable.",
+      "rate_limited": "Too many actions. Try again a little later.",
+      "failed": "Could not complete the MGW Friends action."
+    }
   }
 }
