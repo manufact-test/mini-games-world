@@ -1,7 +1,7 @@
 {
   "_meta": {
     "locale": "en",
-    "version": 10,
+    "version": 11,
     "status": "draft"
   },
   "common": {
@@ -1533,6 +1533,285 @@
             "sparks": "A quick burst of sparks flies around the new mark",
             "wave": "Two light waves spread from the newly placed mark",
             "fallback": "Adds a visual effect to every move"
+          }
+        }
+      }
+    },
+    "wrappers": {
+      "intent": {
+        "quantum_echo_description": "Ghostly echoes follow every move and collapse into an energy halo",
+        "groups": {
+          "chess": {
+            "theme": "Chess board appearance",
+            "elements": "Piece appearance",
+            "effect": "Premium chess move animations"
+          },
+          "tictactoe": {
+            "theme": "Board background and grid",
+            "elements": "Appearance of X and O",
+            "effect": "Animations on every move"
+          }
+        }
+      },
+      "checkers": {
+        "granite_description": "Polished granite with fine mineral speckling",
+        "bundle": {
+          "section_title": "Bundle",
+          "section_subtitle": "Neon board, neon checkers, and all three effects in one bundle",
+          "composition": "Neon board + neon checkers + move + capture + king.",
+          "complete": "Bundle already complete.",
+          "remaining": "{missing} of 5 left.",
+          "complete_button": "Bundle complete",
+          "buy_button": "Buy bundle for {price}",
+          "board": "Board",
+          "pieces": "Checkers",
+          "move": "Move",
+          "capture": "Capture",
+          "promotion": "King"
+        }
+      },
+      "reversi": {
+        "groups": {
+          "theme": {
+            "title": "Boards",
+            "subtitle": "Reversi board appearance"
+          },
+          "elements": {
+            "title": "Pieces",
+            "subtitle": "Appearance of black and white pieces"
+          },
+          "effect": {
+            "title": "Effects",
+            "subtitle": ""
+          },
+          "fallback": {
+            "title": "Reversi",
+            "subtitle": "Game cosmetics"
+          }
+        },
+        "kinds": {
+          "theme": "Reversi board",
+          "elements": "Piece set",
+          "effect": "Game effect"
+        },
+        "descriptions": {
+          "theme": {
+            "green": "Cool azure board with deep teal tones and a crisp high-contrast grid",
+            "dark": "Deep dark board for a calm high-contrast game",
+            "marble": "Light stone with soft cloudy texture and a quiet grid",
+            "neon": "Dark grid with bright neon glow",
+            "fallback": "Changes the Reversi board appearance"
+          },
+          "elements": {
+            "classic": "Dark indigo and light pearl with a soft colored sheen",
+            "marble": "Stone pieces with a soft mineral texture",
+            "metal": "Cool polished metal with strong highlights",
+            "neon": "Dark pieces with bright neon outlines",
+            "fallback": "Changes the appearance of Reversi pieces"
+          },
+          "effect": {
+            "placement": "A light ring appears around the piece immediately after the move",
+            "line": "A highlight travels across the pieces that flip along one line",
+            "mass_flip": "Flipped pieces light up one after another and rise in a soft wave",
+            "fallback": "Adds a visual move effect"
+          }
+        }
+      },
+      "go": {
+        "groups": {
+          "theme": {
+            "title": "Boards",
+            "subtitle": "Go board appearance"
+          },
+          "elements": {
+            "title": "Stones",
+            "subtitle": "Black and white stone set"
+          },
+          "effect": {
+            "title": "Effects",
+            "subtitle": ""
+          },
+          "fallback": {
+            "title": "Go",
+            "subtitle": "Game cosmetics"
+          }
+        },
+        "kinds": {
+          "theme": "Go board",
+          "elements": "Stone set",
+          "effect": "Game effect"
+        },
+        "descriptions": {
+          "theme": {
+            "wood": "Pink-cherry wood with a dark grid and a calm Japanese texture",
+            "dark": "Deep dark board with high-contrast lines and a subtle sheen",
+            "stone": "Light stone with natural mineral texture",
+            "neon": "Dark board with cool neon glow on the lines and hoshi points",
+            "fallback": "Changes the Go board appearance"
+          },
+          "elements": {
+            "classic": "Smoky and honey-amber stones with soft highlights and strong depth",
+            "marble": "Marble stones with lively mineral texture",
+            "glass": "Translucent glass with internal highlights and depth",
+            "neon": "Dark and light stones with bright neon outlines",
+            "fallback": "Changes the appearance of Go stones"
+          },
+          "effect": {
+            "placement": "The stone lands on an intersection and flashes with a segmented energy seal",
+            "group_capture": "The captured group collapses into the board with a rotating crown and a burst of particles",
+            "territory_finish": "After the game, territory appears in a cascade of markers and a radial board glow",
+            "fallback": "Adds a visual game effect"
+          }
+        }
+      },
+      "domino": {
+        "groups": {
+          "theme": {
+            "title": "Tables",
+            "subtitle": "Game table appearance"
+          },
+          "elements": {
+            "title": "Tiles",
+            "subtitle": "Domino tile set"
+          },
+          "effect": {
+            "title": "Effects",
+            "subtitle": ""
+          },
+          "fallback": {
+            "title": "Domino",
+            "subtitle": "Game cosmetics"
+          }
+        },
+        "kinds": {
+          "theme": "Game table",
+          "elements": "Tile set",
+          "effect": "Game effect"
+        },
+        "descriptions": {
+          "theme": {
+            "felt": "Deep burgundy felt with a wine-colored edge and soft club depth",
+            "midnight": "Dark blue table with cool lighting and a calm club atmosphere",
+            "walnut": "Warm walnut table with a continuous wooden playing surface and lively grain",
+            "neon": "Deep dark table with a cyan-purple neon edge",
+            "fallback": "Changes the game table appearance"
+          },
+          "elements": {
+            "ivory": "Warm amber tiles with dark pips and a soft dimensional sheen",
+            "ebony": "Classic matte black tiles with light pips",
+            "marble": "Marble tiles with natural mineral texture and crisp pips",
+            "neon": "Dark tiles with bright neon pips and a fine outline",
+            "fallback": "Changes the appearance of domino tiles"
+          },
+          "effect": {
+            "precision_drop": "A compact golden wave and eight particles burst from the placed tile",
+            "stock_pulse": "A fine pulse travels from the stock to the new tile with scattering particles",
+            "chain_finale": "A final sweep along the chain with prism light, aura, and sparks",
+            "fallback": "Adds a visual game effect"
+          }
+        }
+      },
+      "four_in_a_row": {
+        "groups": {
+          "theme": {
+            "title": "Boards",
+            "subtitle": "Game board appearance"
+          },
+          "elements": {
+            "title": "Pieces",
+            "subtitle": "Appearance of red and yellow pieces"
+          },
+          "effect": {
+            "title": "Effects",
+            "subtitle": "Animations for your moves and victories"
+          },
+          "fallback": {
+            "title": "Four in a Row",
+            "subtitle": ""
+          }
+        },
+        "kinds": {
+          "theme": "Game board",
+          "elements": "Piece set",
+          "effect_victory": "Victory effect",
+          "effect_move": "Move effect"
+        },
+        "descriptions": {
+          "theme": {
+            "blue": "Rich purple-plum board with deep tones and soft depth",
+            "dark": "Deep night board with a cool high-contrast grid",
+            "metal": "Steel frame with cool matte metal and dimensional slots",
+            "neon": "Dark board with a bright cyan-purple neon frame",
+            "fallback": "Changes the game board appearance"
+          },
+          "elements": {
+            "classic": "Bright pink-turquoise pair with soft highlights and an arcade feel",
+            "3d": "Deep dimensional pieces with soft light and a pronounced edge",
+            "metal": "Deep burgundy metal and warm brass with a dimensional sheen and no stripes",
+            "neon": "Bright pink and lime pieces with a saturated glowing core and outer glow",
+            "fallback": "Changes the appearance of game pieces"
+          },
+          "effect": {
+            "drop": "Targeting, laser, and a dramatic piece drop.",
+            "four": "Lightning bursts from every one of your moves.",
+            "victory_wave": "The winning four lights up with a powerful finale.",
+            "fallback": "A bright effect for your game."
+          }
+        },
+        "effect_names": {
+          "drop": "Laser Targeting",
+          "four": "Energy Pulse",
+          "victory_wave": "Victory Overdrive",
+          "fallback": "Game effect"
+        }
+      },
+      "battleship": {
+        "groups": {
+          "theme": {
+            "title": "Maps",
+            "subtitle": "Battle map style"
+          },
+          "elements": {
+            "title": "Fleet",
+            "subtitle": "Ship appearance"
+          },
+          "effect": {
+            "title": "Effects",
+            "subtitle": "Targeting, hit, and sinking effects"
+          },
+          "fallback": {
+            "title": "Battleship",
+            "subtitle": ""
+          }
+        },
+        "kinds": {
+          "theme": "Map",
+          "elements": "Fleet",
+          "shot": "Targeting",
+          "hit": "Hit",
+          "destroy": "Sinking",
+          "effect": "Effect"
+        },
+        "descriptions": {
+          "theme": {
+            "sea": "Turquoise water, a bright channel, and a fresh maritime look.",
+            "dark_military": "Dark tactical radar with a military character.",
+            "storm": "Deep sea, rain, and cool storm highlights.",
+            "neon": "Unified dark map with bright cyan neon glow.",
+            "fallback": "A new style for the battle map."
+          },
+          "elements": {
+            "classic": "Light hulls with warm brass trim.",
+            "modern": "Graphite ships with cool blue panels.",
+            "armored": "Heavy armored hulls in dark metal.",
+            "neon": "Dark fleet with a bright cyan-pink outline.",
+            "fallback": "A new look for your fleet."
+          },
+          "effect": {
+            "shot": "The targeting reticle locks onto the cell, followed by a short light shot.",
+            "hit": "A direct hit flashes and expands into an impact ring.",
+            "destroy": "A sunk ship is covered by a large flash and a red shockwave.",
+            "fallback": "A bright battle effect."
           }
         }
       }
