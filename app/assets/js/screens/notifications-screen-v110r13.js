@@ -107,6 +107,12 @@ export function initNotificationsScreen(){
     void refreshNotifications({ announce:false });
   });
 
+  document.addEventListener('mgw:locale-changed', () => {
+    setUnreadCount(unreadHint);
+    if (isNotificationsSheetOpen()) renderNotifications(visibleSheetItems());
+    void refreshNotifications({ announce:false });
+  });
+
   pollTimer = window.setInterval(() => {
     if (document.visibilityState === 'visible') void refreshNotifications({ announce:true });
   }, POLL_MS);
