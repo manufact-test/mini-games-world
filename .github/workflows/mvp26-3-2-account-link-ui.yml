@@ -7,6 +7,7 @@ on:
     paths:
       - 'app/assets/js/api/client.js'
       - 'app/assets/js/screens/profile-screen-v110.js'
+      - 'app/assets/js/screens/home-screen.js'
       - 'app/assets/js/profile/mgw-account-link-ui.js'
       - 'app/runtime/client/version-manifest.php'
       - 'docs/MVP26_3_2_ACCOUNT_LINK_UI.md'
@@ -47,6 +48,7 @@ jobs:
           import fs from 'node:fs';
           const client=fs.readFileSync('app/assets/js/api/client.js','utf8');
           const profile=fs.readFileSync('app/assets/js/screens/profile-screen-v110.js','utf8');
+          const home=fs.readFileSync('app/assets/js/screens/home-screen.js','utf8');
           const ui=fs.readFileSync('app/assets/js/profile/mgw-account-link-ui.js','utf8');
           const manifest=fs.readFileSync('app/runtime/client/version-manifest.php','utf8');
 
@@ -56,9 +58,10 @@ jobs:
           need(client.includes('accountLinkStatus:'), 'status API owner missing');
           need(client.includes('accountLinkFinalize:'), 'finalize API owner missing');
 
-          need(profile.includes('accountLinkProfileMarkup(') && profile.includes("state.profileAuth || { provider:state.user?.mgw_identity_provider || '' }") && profile.includes('identities\n      )'), 'Profile account-link projection missing');
-          need(profile.includes('data-open-account-link'), 'Profile click owner missing');
+          need(home.includes('accountLinkProfileMarkup(') && home.includes("state.profileAuth || { provider:state.user?.mgw_identity_provider || '' }") && home.includes('identities\n    )'), 'Settings account-link projection missing');
+          need(profile.includes("target.closest('[data-open-account-link]')"), 'Shared account-link click owner missing');
           need(profile.includes('initAccountLinkUi()'), 'resume owner missing');
+          need(!profile.includes('accountLinkProfileMarkup('), 'Account-link projection must not duplicate the Settings owner inside Profile');
 
           need(ui.includes("=== 'android_device'"), 'Android-only gate missing');
           need(ui.includes("=== 'telegram'"), 'Telegram identity gate missing');

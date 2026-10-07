@@ -1,7 +1,7 @@
 {
   "_meta": {
     "locale": "en",
-    "version": 36,
+    "version": 37,
     "status": "active"
   },
   "common": {
@@ -78,6 +78,7 @@
     "language": "Language",
     "language_note": "Choose the Mini Games World interface language.",
     "language_ru": "Russian",
+    "language_en": "English",
     "language_saved": "Language saved"
   },
   "rules": {

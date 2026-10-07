@@ -6,7 +6,7 @@ import { openSheet, closeSheet } from '../components/sheet.js?v=68';
 import { renderUser, renderBalances } from '../ui.js?v=89';
 import { canonicalAvatarItemId, mergeCanonicalMgwUser, publicMgwId } from '../profile/mgw-profile-model.js?v=1';
 import { t, formatNumber, formatDate, formatDateTime } from '@mgw/i18n';
-import { accountLinkProfileMarkup, initAccountLinkUi, openAccountLinkSheet } from '../profile/mgw-account-link-ui.js?v=3';
+import { initAccountLinkUi, openAccountLinkSheet } from '../profile/mgw-account-link-ui.js?v=3';
 import { initAccountLinkHomeOnboarding } from '../profile/mgw-account-link-onboarding.js?v=5';
 
 const PROFILE_STATS_CACHE_KEY = 'mgw_profile_stats_v2';
@@ -301,6 +301,22 @@ function bindProfileActions(){
     pendingGameTabScrollCapturedAt = Date.now();
   }, { passive:true });
 
+  document.addEventListener('click', event => {
+    const target = event.target instanceof Element ? event.target : null;
+    if (!target) return;
+    if (target.closest('[data-open-account-link]')) {
+      void openAccountLinkSheet();
+      return;
+    }
+    if (target.closest('[data-open-language-settings]')) {
+      document.dispatchEvent(new CustomEvent('mgw:open-language-settings'));
+      return;
+    }
+    if (target.closest('[data-open-moderation-center]')) {
+      void openModerationCenter();
+    }
+  });
+
   screen.addEventListener('click', async event => {
     const copyButton = event.target.closest('[data-copy-mgw-id]');
     if (copyButton) {
@@ -349,17 +365,6 @@ function bindProfileActions(){
     if (gameCosmeticCard) {
       openGameCosmeticPreview(String(gameCosmeticCard.dataset.profileGameCosmetic || ''));
       return;
-    }
-    if (event.target.closest('[data-open-account-link]')) {
-      void openAccountLinkSheet();
-      return;
-    }
-    if (event.target.closest('[data-open-language-settings]')) {
-      document.dispatchEvent(new CustomEvent('mgw:open-language-settings'));
-      return;
-    }
-    if (event.target.closest('[data-open-moderation-center]')) {
-      void openModerationCenter();
     }
   });
 }
@@ -675,7 +680,6 @@ function renderProfileV2(){
   const mgwId = publicMgwId(profile.public_mgw_id || profile.mgw_id || user.public_mgw_id || user.mgw_id);
   const balance = Number(user.balance || 0);
   const registeredAt = profile.created_at || user.registered_at || null;
-  const identities = Array.isArray(profile.identities) ? profile.identities : [];
   const matches = Array.isArray(history.matches) ? history.matches.slice(0, 6) : [];
   const activeAvatar = currentAvatarItemId();
   const ownedAvatars = ownedAvatarItems(activeAvatar);
@@ -725,18 +729,6 @@ function renderProfileV2(){
     <section class="profile-v2-section">${sectionHead('profile.stats_title','profile.stats_note')}<div class="profile-v2-summary-grid">${summaryStat(stats?.games_played,'profile.games_played')}${summaryStat(stats?.wins,'profile.wins')}${summaryStat(stats?.losses,'profile.losses')}${summaryStat(stats?.draws,'profile.draws')}</div></section>
     <section class="profile-v2-section">${sectionHead('profile.by_game_title','profile.by_game_note')}<div class="profile-v2-games-grid">${GAME_TYPES.map(gameType => gameStatCard(gameType, stats?.by_game?.[gameType])).join('')}</div></section>
     <section class="profile-v2-section">${sectionHead('profile.history_title')}<div class="profile-v2-history">${matches.length ? matches.map(historyRow).join('') : emptyState('profile.history_empty')}</div></section>
-    <section class="profile-v2-section">${sectionHead('profile.account_title','profile.account_note')}<div class="profile-v2-account-card">
-      <button class="profile-v2-setting-row profile-v2-setting-button" type="button" data-open-language-settings><span><strong>${escapeHtml(t('profile.language'))}</strong><small>${escapeHtml(t('profile.language_note'))}</small></span><b>${escapeHtml(t('profile.language_value'))}</b></button>
-      <div class="profile-v2-account-divider"></div>
-      <button class="profile-v2-setting-row profile-v2-setting-button" type="button" data-open-moderation-center><span><strong>${escapeHtml(t('profile.moderation.title'))}</strong><small>${escapeHtml(t('profile.moderation.settings_note'))}</small></span><b>${escapeHtml(t('profile.moderation.open'))}</b></button>
-      <div class="profile-v2-account-divider"></div>
-      ${accountLinkProfileMarkup(
-        state.profileAuth || { provider:state.user?.mgw_identity_provider || '' },
-        identities
-      )}
-      <div class="profile-v2-linked-head"><strong>${escapeHtml(t('profile.linked_accounts'))}</strong><small>${escapeHtml(t('profile.linked_accounts_note'))}</small></div>
-      <div class="profile-v2-linked-list">${identities.length ? identities.map(identityRow).join('') : emptyState('profile.linked_empty')}</div>
-    </div></section>
   `;
   lastProfileRenderSignature = profileRenderSignature(profile, user, stats, history, rating, yearlyMedals, ratingArchive, tournamentRewards);
   restoreProfileScrollState(profileScrollState);
@@ -1569,11 +1561,6 @@ function historyDelta(value){
   if (value === null || value === undefined || !Number.isFinite(Number(value))) return '—';
   const normalized = Math.trunc(Number(value));
   return `${normalized > 0 ? '+' : ''}${normalized}`;
-}
-function identityRow(identity){
-  const provider = String(identity?.provider || '').trim().toLowerCase();
-  const linkedAt = identity?.linked_at || null;
-  return `<div class="profile-v2-linked-row"><span class="profile-v2-provider-mark" aria-hidden="true">${escapeHtml(provider.slice(0,1).toUpperCase() || '•')}</span><span><strong>${escapeHtml(providerName(provider))}</strong><small>${escapeHtml(linkedAt ? t('profile.linked_since',{ date:formatDate(linkedAt) }) : t('profile.linked'))}</small></span><b>${escapeHtml(t('profile.connected'))}</b></div>`;
 }
 function emptyState(key){ return `<div class="profile-v2-empty">${escapeHtml(t(key))}</div>`; }
 function gameName(gameType){ try { return t(`games.${gameType}.name`); } catch (error) { return gameType; } }

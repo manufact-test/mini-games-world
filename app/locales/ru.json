@@ -1,5 +1,5 @@
 {
-  "_meta": {"locale":"ru","version":75},
+  "_meta": {"locale":"ru","version":76},
   "common": {"back":"Назад","close":"Закрыть","retry":"Повторить","loading":"Загрузка…"},
   "entry": {"open_failed":"Не удалось открыть Mini Games World. Попробуйте ещё раз через минуту.","preloader_loading":"Готовим игровую комнату","tagline":"Те самые игры. То самое чувство."},
   "nav": {"home":"Главная","tournaments":"Арена","store":"Магазин","profile":"Профиль"},
@@ -810,7 +810,7 @@
     },
     "archive":{"load_error":"Не удалось загрузить архив турниров.","hall_title":"Зал славы турниров","championships":"Чемпионств","date_unknown":"Дата не указана","podium_unavailable":"Подиум недоступен.","participants":" · {capacity} участников"}
   },
-  "settings": {"title":"Настройки","language":"Язык","language_note":"Выберите язык интерфейса Mini Games World.","language_ru":"Русский","language_saved":"Язык сохранён"},
+  "settings": {"title":"Настройки","language":"Язык","language_note":"Выберите язык интерфейса Mini Games World.","language_ru":"Русский","language_en":"English","language_saved":"Язык сохранён"},
   "setup": {"subtitle":"Выберите условия матча и подтвердите участие.","variant_label":"Размер / вариант","entry_label":"Стоимость участия","entry_value":"{count} коинов","confirm":"Начать поиск","invite":"Пригласить друга","one_on_one":"1 на 1","search_label":"{game} · участие {count} коинов · {variant}","insufficient_title":"Недостаточно коинов","insufficient_note":"Для начала матча нужно {needed} коинов. Сейчас доступно {balance}.","economy_unavailable":"Стоимость участия временно недоступна."},
   "game_invites": {
     "game_titles":{"tictactoe":"Крестики-нолики","four_in_a_row":"4 в ряд","battleship":"Морской бой","checkers":"Шашки","reversi":"Реверси","chess":"Шахматы","go":"Го","domino":"Домино"},

@@ -6,6 +6,11 @@ const ru = JSON.parse(fs.readFileSync('app/locales/ru.json', 'utf8'));
 // Final rerun after historical guard alignment.
 const en = JSON.parse(fs.readFileSync('app/locales/en.json', 'utf8'));
 const manifest = JSON.parse(fs.readFileSync('app/locales/manifest.json', 'utf8'));
+const i18nSource = fs.readFileSync('app/assets/js/localization/i18n.js', 'utf8');
+const homeSource = fs.readFileSync('app/assets/js/screens/home-screen.js', 'utf8');
+const profileSource = fs.readFileSync('app/assets/js/screens/profile-screen-v110.js', 'utf8');
+const apiClientSource = fs.readFileSync('app/assets/js/api/client.js', 'utf8');
+const serverLocalizationSource = fs.readFileSync('bot/localization/ServerLocalization.php', 'utf8');
 
 function assert(condition, message){
   if (!condition) throw new Error(message);
@@ -49,6 +54,26 @@ for (const [game, entry] of Object.entries(manifest.rules?.games || {})) {
   assert(Array.isArray(entry.languages) && entry.languages.includes('ru') && entry.languages.includes('en'),
     `RU/EN rules languages must be active for ${game}.`);
 }
+
+assert(ru.settings?.language_ru === 'Русский' && ru.settings?.language_en === 'English',
+  'RU settings must expose both interface language choices.');
+assert(en.settings?.language_ru === 'Russian' && en.settings?.language_en === 'English',
+  'EN settings must expose both interface language choices.');
+assert(i18nSource.includes("localStorage?.getItem(EXPLICIT_LOCALE_KEY)"),
+  'Explicit locale selection must be restored from local storage on the next Mini App boot.');
+assert(homeSource.includes("languageEnBtn") && homeSource.includes("setExplicitLocale(locale)"),
+  'Settings must expose and activate the English interface option.');
+assert(homeSource.includes("data-open-moderation-center")
+  && homeSource.includes("accountLinkProfileMarkup(")
+  && homeSource.includes("profile.linked_accounts"),
+  'Account/settings ownership must live in the Settings sheet.');
+assert(!profileSource.includes("sectionHead('profile.account_title','profile.account_note')"),
+  'Profile must stay decluttered: Account and settings belongs to the Settings sheet.');
+assert(apiClientSource.includes("'X-MGW-Locale':String(document.documentElement?.lang || 'ru')"),
+  'Mini App API requests must carry the current visible locale.');
+assert(serverLocalizationSource.includes("HTTP_X_MGW_LOCALE")
+  && serverLocalizationSource.includes("self::requestLocale($catalog)"),
+  'Server player-facing localization must resolve from the current Mini App locale.');
 
 const cyrillic = /[А-Яа-яЁё]/u;
 const compatibilityTokenKeys = new Set([
