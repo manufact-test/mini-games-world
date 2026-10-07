@@ -1,7 +1,7 @@
 {
   "_meta": {
     "locale": "en",
-    "version": 18,
+    "version": 19,
     "status": "draft"
   },
   "common": {
@@ -2404,6 +2404,46 @@
       "confirming": "Confirming…",
       "action": "I’m ready",
       "first_match_pair": "First match · pair {pair_no}"
+    },
+    "bracket": {
+      "technical_loss_at_start": "Technical result · opponent was absent.",
+      "both_absent_at_start": "Both participants were absent · no winner assigned.",
+      "technical_bye_vacant_slot": "Technical advance · vacant slot.",
+      "vacant_bracket_slot": "Pair closed with no participants.",
+      "player_left": "Technical result · opponent left the match.",
+      "disconnect_timeout": "Technical result · 60-second return window expired.",
+      "tournament_disconnect_timeout": "Technical result · one player did not return within 3 minutes.",
+      "tournament_both_absent_timeout": "Neither player returned within 3 minutes · no winner assigned.",
+      "technical_restart_scheduled": "The match will restart in 1 minute.",
+      "technical_restart_exhausted": "The match could not continue · it ended without a winner.",
+      "final_round": "Final round",
+      "semifinal": "Semifinal",
+      "round": "Round {round_no}",
+      "pair": "Pair {pair_no}",
+      "final": "Final",
+      "third_place": "3rd-place match",
+      "self": "you",
+      "participant": "participant",
+      "champion": "champion",
+      "second_place": "2nd place",
+      "no_result": "no result",
+      "third_place_status": "3rd place",
+      "fourth_place": "4th place",
+      "advanced": "advanced",
+      "eliminated": "eliminated",
+      "self_playing": "you · playing",
+      "playing": "playing",
+      "vacant_slot": "Vacant slot",
+      "no_participant": "no participant",
+      "waiting": "Waiting to start.",
+      "final_done": "Final completed.",
+      "third_done": "3rd-place match completed.",
+      "winner_advances": "{nickname} advances.",
+      "done_no_winner": "Match completed · no winner assigned.",
+      "running": "Match in progress.",
+      "restart_minute": "The match will restart in 1 minute.",
+      "round_break": "Break between rounds.",
+      "round_completed": "{completed}/{total} completed"
     }
   }
 }

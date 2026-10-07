@@ -143,6 +143,7 @@ const completeScopes = [
   'arena.registration',
   'arena.hall',
   'arena.ready',
+  'arena.bracket',
 ];
 
 for (const scope of completeScopes) {
