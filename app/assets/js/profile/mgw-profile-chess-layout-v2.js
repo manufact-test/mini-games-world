@@ -4,7 +4,7 @@ import { initProfileReversiParity } from './mgw-profile-reversi-parity.js?v=3&mv
 import { initProfileReversiHardSquare } from './mgw-profile-reversi-hard-square-v1.js?v=1&mvp19_7=profile-hard-square-v1';
 import { initProfileGoParity } from './mgw-profile-go-parity.js?v=3&mvp19_8=go-profile-corrective-v2&mvp27_1=localized-v1';
 import { initProfileGoHardSquare } from './mgw-profile-go-hard-square-v1.js?v=1&mvp19_8=go-profile-hard-square-v1';
-import { initProfileDominoParity } from './mgw-profile-domino-parity.js?v=2&mvp19_9=store-profile-parity-8x5-v1&mvp27_1=localized-v1';
+import { initProfileDominoParity } from './mgw-profile-domino-parity.js?v=3&mvp19_9=store-profile-parity-8x5-v1&mvp27_1=localized-v1';
 import { initProfileDominoHardRatio } from './mgw-profile-domino-hard-ratio-v1.js?v=1&mvp19_9=hard-8x5-v1';
 import { initProfileFourInARowParity } from './mgw-profile-four-in-a-row-parity.js?v=9&four_profile=live-previews-v3&four_module=export-v11&geometry=7x6&fx=victory-test-exact-v3&effect2=random-chain-v4&victory=overdrive-v3&copy=compact-v3&mvp27_1=localized-v1';
 import { initProfileBattleshipParity } from './mgw-profile-battleship-parity.js?v=15&mvp19_12=profile-four-parity-v3&store=preview-parity-v14&geometry=square&header=steel-ship&neon_fleet=tube-v4&fleet_preview=svg-models-v3&neon_map_ships=white-v1&preview_geometry=svg-circles-v6&hydration=observer-v1&inline_owner=svg-v5&effects=live-parity-destroy-v3&copy=four-pattern&mvp27_1=localized-v1';
@@ -142,7 +142,7 @@ function ensureProfileChessLayoutStyles(){
 }
 
 function ensureProfileGameCosmeticsRepairStyles(){
-  const href = new URL('../../css/screens/profile-game-cosmetics-parity-v1.css?v=5&mvp19_6=profile-card-visual-repair-v3&manual_acceptance=native-no-arrows-v2', import.meta.url).href;
+  const href = new URL('../../css/screens/profile-game-cosmetics-parity-v1.css?v=6&mvp19_6=profile-card-visual-repair-v3&manual_acceptance=tab-icons-corrective-v1', import.meta.url).href;
   const existing = document.querySelector('link[data-mgw-profile-game-cosmetics-parity]');
   if (existing instanceof HTMLLinkElement) {
     if (existing.href !== href) existing.href = href;
