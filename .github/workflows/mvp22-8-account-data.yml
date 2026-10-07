@@ -121,7 +121,9 @@ jobs:
               bot/android-reauth.php \
               bot/account-data-website-hook.php
           else
-            git diff --exit-code "${baseline}" HEAD -- \
+            base='${{ github.event.pull_request.base.sha }}'
+            echo 'Successor PR: protect accepted Account Data owners against the current PR base.'
+            git diff --exit-code "${base}" HEAD -- \
               bot/accounts \
               bot/account-data-website-hook.php
           fi
