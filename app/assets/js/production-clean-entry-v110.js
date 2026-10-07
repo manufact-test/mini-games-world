@@ -364,6 +364,9 @@ function applyStoreAvatarOptimistic(itemId){
     state.user = mergeCanonicalMgwUser(state.user, {}, state.mgwProfile);
   }
   decorateStoreAvatarCards();
+  document.dispatchEvent(new CustomEvent('mgw:avatar-selection-changed', {
+    detail:{ itemId, source:'store', confirmed:false },
+  }));
 }
 
 function restoreStoreAvatarConfirmed(){
@@ -384,6 +387,9 @@ function restoreStoreAvatarConfirmed(){
   }
   decorateStoreAvatarCards();
   if (state.user) renderUser(state.user);
+  document.dispatchEvent(new CustomEvent('mgw:avatar-selection-changed', {
+    detail:{ itemId, source:'store', confirmed:false },
+  }));
 }
 
 async function drainStoreAvatarSelectionQueue(){
@@ -413,10 +419,10 @@ async function drainStoreAvatarSelectionQueue(){
         else decorateStoreAvatarCards();
 
         if (state.user) renderUser(state.user);
-        if (!pending) {
-          haptic('success');
-          toast(intent.removed ? t('store.profile_selection.avatar.toast.removed') : t('store.profile_selection.avatar.toast.selected'));
-        }
+        document.dispatchEvent(new CustomEvent('mgw:avatar-selection-changed', {
+          detail:{ itemId:confirmedItemId, source:'store', confirmed:true },
+        }));
+        if (!pending) haptic('success');
       } catch (error) {
         if (storeAvatarQueuedIntent?.itemId) {
           applyStoreAvatarOptimistic(storeAvatarQueuedIntent.itemId);
@@ -424,7 +430,6 @@ async function drainStoreAvatarSelectionQueue(){
         }
         restoreStoreAvatarConfirmed();
         haptic('error');
-        toast(error?.message || (intent.removed ? t('store.profile_selection.avatar.errors.remove') : t('store.profile_selection.avatar.errors.select')));
       }
     }
   } finally {
