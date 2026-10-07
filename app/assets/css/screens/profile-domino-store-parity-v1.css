@@ -32,7 +32,7 @@
   font-size:0!important;
   overflow:visible!important;
 }
-#screen-profile .profile-v2-game-tab[data-profile-game-tab="domino"] .mgw-domino-profile-tab-mark::before{
+#screen-profile .profile-v2-game-tab[data-profile-game-tab="domino"] .profile-v2-game-tab-mark::before{
   content:""!important;
   position:absolute!important;
   left:1.5px!important;
@@ -48,7 +48,7 @@
   box-shadow:0 2px 6px rgba(0,0,0,.52),inset 0 0 0 1px rgba(255,255,255,.5)!important;
   transform:none!important;
 }
-#screen-profile .profile-v2-game-tab.active[data-profile-game-tab="domino"] .mgw-domino-profile-tab-mark::before{
+#screen-profile .profile-v2-game-tab.active[data-profile-game-tab="domino"] .profile-v2-game-tab-mark::before{
   border-color:#43e6ae!important;
   box-shadow:0 0 0 1px rgba(67,230,174,.24),0 0 9px rgba(67,230,174,.42),0 2px 6px rgba(0,0,0,.52),inset 0 0 0 1px rgba(255,255,255,.5)!important;
 }

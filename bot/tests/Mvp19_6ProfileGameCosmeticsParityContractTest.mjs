@@ -67,7 +67,7 @@ expect(!exactCheckersCss.includes('data-profile-game-panel'), 'final Checkers bo
 expect(exactCheckersCss.includes('height:auto!important') && exactCheckersCss.includes('aspect-ratio:1 / 1!important'), 'final Checkers media owner must force full Store-square geometry');
 expect(exactCheckersCss.includes('grid-template-rows:repeat(8,minmax(0,1fr))!important'), 'final board/effect geometry must preserve all eight Store rows');
 expect(exactCheckersCss.includes('border-radius:8px!important') && exactCheckersCss.includes('border-radius:18px!important'), 'final board/effect owner must preserve accepted Store radii');
-expect(layout.includes('profile-game-cosmetics-parity-v1.css?v=5&mvp19_6=profile-card-visual-repair-v3&manual_acceptance=native-no-arrows-v2'), 'Active Profile wrapper must retain accepted game-card parity without arrow UI');
+expect(layout.includes('profile-game-cosmetics-parity-v1.css?v=6&mvp19_6=profile-card-visual-repair-v3&manual_acceptance=tab-icons-corrective-v1'), 'Active Profile wrapper must retain accepted game-card parity without arrow UI');
 expect(layout.includes('profile-game-cosmetics-manual-repair-v3.css?v=4&mvp19_6=checkers-store-parity-exact-v1'), 'Profile wrapper must retain the manual repair layer');
 expect(layout.includes('profile-checkers-store-exact-v2.css?v=1&mvp19_6=board-effect-full-square-v1'), 'Profile wrapper must load the final direct Checkers Store-square owner');
 expect(layout.indexOf('ensureProfileCheckersStoreExactStyles();') > layout.indexOf('ensureProfileGameCosmeticsManualRepairStyles();'), 'final direct Checkers Store-square owner must be appended after older Profile repair styles');
@@ -118,9 +118,9 @@ expect(activeProfile.includes('id="mgwProfileAvatarEquip"')
   && !activeProfile.includes('id="mgwAvatarEquip"'), 'Active Profile avatar action must not collide with the global Store avatar delegate');
 expect(activeProfile.includes("document.addEventListener('mgw:avatar-selection-changed'")
   && !activeProfile.includes("toast(error.message || t('profile.avatar_save_error'))"), 'Profile avatar state must synchronize silently without delayed selection/remove feedback');
-expect(manifest.includes("'./assets/js/screens/profile-screen-v110.js?v=1109' => './assets/js/profile/mgw-profile-chess-layout-v2.js?v=44")
-  && manifest.includes('manual_acceptance=native-no-arrows-v2')
-  && manifest.includes('game_tab_icons=normalized-v3')
+expect(manifest.includes("'./assets/js/screens/profile-screen-v110.js?v=1109' => './assets/js/profile/mgw-profile-chess-layout-v2.js?v=45")
+  && manifest.includes('manual_acceptance=tab-icons-corrective-v1')
+  && manifest.includes('game_tab_icons=normalized-v4')
   && manifest.includes('four_profile=live-previews-v3')
   && manifest.includes('battleship_profile=four-parity-v3'), 'Manifest must publish the accepted full Profile game-parity chain for factual v110');
 
@@ -132,6 +132,7 @@ expect(manualRepairCss.includes('content:""!important'), 'Tic-Tac-Toe final pseu
 for (const game of ['checkers','chess']) {
   expect(css.includes(`data-profile-game-tab="${game}"`), `${game} tab must retain an explicit normalized icon owner`);
 }
+expect(css.includes('width:13px;') && css.includes('height:13px;') && css.includes('width:8px;') && css.includes('height:8px;'), 'Russian Checkers tab must keep a compact checker icon aligned with the other game marks');
 expect(css.includes('content:"♞"'), 'Chess tab must use a readable chess identity');
 
 // Chess Profile board artwork should already be decoded and every card primitive must be explicitly centered.

@@ -139,6 +139,8 @@ $assertTrue(str_contains($previewComponentCss, 'v48 canonical effect-tile face')
 $assertTrue(!str_contains($previewComponentCss, 'opacity:0!important'), 'Animated preview opacity must not be locked by !important');
 $assertTrue(!str_contains($previewComponentCss, 'left:var(--sx)!important') && !str_contains($previewComponentCss, 'top:var(--sy)!important'), 'Animated particle positions must not be locked by !important');
 $assertTrue(!str_contains($previewComponentCss, 'transform:rotate(27deg) scaleX(0)!important') && !str_contains($previewComponentCss, 'transform:translateX(-44%) skewX(-4deg)!important'), 'Animated beam/sweep transforms must remain keyframe-owned');
+$assertTrue(str_contains($profileCss, 'data-profile-game-tab="domino"] .profile-v2-game-tab-mark::before') && !str_contains($profileCss, '.mgw-domino-profile-tab-mark::before'), 'Domino tab icon must render from the canonical Profile mark even before the Domino repair module rewrites tab markup');
+$assertTrue(str_contains($profileModule, 'profile-domino-store-parity-v1.css?v=5&mvp19_9=domino-profile-tab-icon-fallback-v1'), 'Domino Profile module must publish the repaired tab icon stylesheet cache identity');
 $assertTrue(!str_contains($profileCss, 'animation:none!important'), 'Profile CSS must not freeze Domino effect previews');
 $assertTrue(str_contains($baseStore, "store-screen-domino-store-v1.js?v=14&mvp19_9=domino-svg-pips-v48"), 'Base Store must directly import SVG-pip v48 instead of relying on wrapper repair');
 $assertTrue(!str_contains($effectCss, 'mgw-domino-v12-') && !str_contains($effectCss, 'repeating-conic-gradient') && !str_contains($effectCss, 'mix-blend-mode:screen'), 'Rejected v12/rainbow/light-show language must remain absent');
