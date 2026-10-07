@@ -111,7 +111,13 @@ function currentBackgroundItemId(){
 }
 
 function backgroundMeta(item){ return item?.metadata && typeof item.metadata === 'object' ? item.metadata : {}; }
-function backgroundName(item){ return String(backgroundMeta(item).display_name || item?.item_id || backgroundText('fallback_name')); }
+function backgroundName(item){
+  const itemId = String(item?.item_id || '');
+  if (itemId) {
+    try { return t(`store.products.${itemId}`); } catch (error) {}
+  }
+  return String(backgroundMeta(item).display_name || itemId || backgroundText('fallback_name'));
+}
 function backgroundPrice(item){ return Math.max(0, Number(backgroundMeta(item).price_coins || 0)); }
 function backgroundOfferId(item){ return String(backgroundMeta(item).offer_id || String(item?.item_id || '').replace(/^profile-/, '')); }
 function backgroundTierLabel(item){
