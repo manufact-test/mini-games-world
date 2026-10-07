@@ -95,6 +95,41 @@
   line-height:1;
   transform:translateY(-1px);
 }
+
+/* Manual QA: Checkers must be a real compact checker token, not the old oversized
+   generic gradient dot. The icon is now part of the canonical base tab markup so
+   later Profile rerenders cannot replace it with a plain circle. */
+#screen-profile .profile-v2-game-tab[data-profile-game-tab="checkers"] .profile-v2-game-tab-mark{
+  flex-basis:18px!important;
+  width:18px!important;
+  height:18px!important;
+}
+#screen-profile .profile-v2-game-tab[data-profile-game-tab="checkers"] .profile-v2-game-tab-mark::before,
+#screen-profile .profile-v2-game-tab[data-profile-game-tab="checkers"] .profile-v2-game-tab-mark::after{
+  content:none!important;
+  display:none!important;
+}
+#screen-profile .profile-v2-game-tab[data-profile-game-tab="checkers"] .mgw-profile-tab-checker{
+  display:block!important;
+  width:14px!important;
+  height:14px!important;
+  overflow:visible!important;
+  filter:drop-shadow(0 1px 2px rgba(0,0,0,.34));
+}
+#screen-profile .profile-v2-game-tab[data-profile-game-tab="checkers"] .mgw-profile-tab-checker-face{
+  fill:#aab4c1!important;
+  stroke:#dfe5ec!important;
+  stroke-width:1.15!important;
+}
+#screen-profile .profile-v2-game-tab[data-profile-game-tab="checkers"] .mgw-profile-tab-checker-ring{
+  fill:none!important;
+  stroke:#66717f!important;
+  stroke-width:1.15!important;
+}
+#screen-profile .profile-v2-game-tab.active[data-profile-game-tab="checkers"] .mgw-profile-tab-checker-face{
+  fill:#c3ccd7!important;
+  stroke:#ffffff!important;
+}
 .profile-v2-game-tab.active[data-profile-game-tab="tictactoe"] .profile-v2-game-tab-mark::before,
 .profile-v2-game-tab.active[data-profile-game-tab="tictactoe"] .profile-v2-game-tab-mark::after,
 .profile-v2-game-tab.active[data-profile-game-tab="chess"] .profile-v2-game-tab-mark::before{color:#fff}
