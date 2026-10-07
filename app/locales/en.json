@@ -1,7 +1,7 @@
 {
   "_meta": {
     "locale": "en",
-    "version": 5,
+    "version": 6,
     "status": "draft"
   },
   "common": {
@@ -198,6 +198,55 @@
       "draw_text": "A draw can result from stalemate, insufficient material, threefold repetition, or 50 moves by each player without a pawn move or capture.",
       "timer_title": "Timer",
       "timer_text": "You have 60 seconds per turn. Leaving an active game or running out of time results in a technical loss."
+    },
+    "domino": {
+      "title": "Domino",
+      "subtitle": "Match equal numbers and be the first to play all your tiles.",
+      "start_title": "Starting the game",
+      "start_text": "Each player receives 7 tiles, and the rest stay face down in the stock. The highest double is placed automatically, then the second player moves.",
+      "match_title": "Match equal numbers",
+      "match_text": "You may place a tile at either end of the chain if one of its numbers matches the open number.",
+      "side_title": "Choosing an end",
+      "side_text": "If a tile can be played at either end, select the tile first, then tap one of the two highlighted positions on the table.",
+      "doubles_title": "Doubles",
+      "doubles_text": "Tiles with matching numbers are placed across the chain. Playing a double does not grant an extra turn.",
+      "draw_title": "Drawing and passing",
+      "draw_text": "If you have no playable tile, tap “Draw”. Each tap draws one tile. If it still cannot be played, tap “Draw” again. When the stock is empty, your turn is passed automatically.",
+      "win_title": "Winning and blocked games",
+      "win_text": "You win by playing your last tile. If nobody can move and the stock is empty, the lower pip total wins. Equal totals result in a draw.",
+      "timer_title": "Timer",
+      "timer_text": "You have 60 seconds per turn. Leaving an active game or running out of time results in a technical loss.",
+      "scene_start_double": "Highest double",
+      "scene_match": "Number 1 matches",
+      "scene_both_ends": "Playable at both ends",
+      "scene_double_cross": "Double placed across the chain",
+      "scene_draw_one": "One tap — one tile",
+      "scene_you": "You",
+      "scene_you_points": "6 points",
+      "scene_less": "less",
+      "scene_opponent": "Opponent",
+      "scene_opponent_points": "17 points"
+    },
+    "battleship": {
+      "title": "Battleship",
+      "subtitle": "Sink your opponent’s entire fleet before they destroy yours.",
+      "fleet_title": "Your fleet",
+      "fleet_text": "Place 10 ships on the 10×10 board, occupying 20 cells in total.",
+      "placement_title": "Placement",
+      "placement_text": "Choose a ship and tap the required number of adjacent cells in a straight line. Ships cannot overlap or touch, even diagonally.",
+      "valid": "Valid",
+      "invalid": "Invalid",
+      "setup_time_title": "2 minutes to place your fleet",
+      "setup_time_text": "You can use “Randomize fleet” as many times as you like, or place ships manually. If time runs out, ships already placed stay where they are and the system adds only the missing ships.",
+      "shot_title": "How to shoot",
+      "shot_text": "Choose a cell on your opponent’s board. A miss passes the turn. After a hit or sinking a ship, you shoot again.",
+      "miss": "Miss",
+      "hit": "Hit",
+      "sunk": "Sunk",
+      "timer_title": "60 seconds per shot",
+      "timer_text": "The timer restarts after every shot. If your turn timer expires, the match is recorded as a technical loss.",
+      "win_title": "How to win",
+      "win_text": "Be the first to destroy all 10 of your opponent’s ships."
     }
   },
   "home": {
@@ -840,6 +889,168 @@
             "pawn": "Black pawn",
             "piece": "Black piece"
           }
+        }
+      }
+    },
+    "domino": {
+      "name": "Domino",
+      "ui": {
+        "game_fallback": "Game",
+        "meta": "{room} · {bet} coins · classic domino",
+        "player": {
+          "tiles": "{count} {tiles}"
+        },
+        "tiles": {
+          "nominative": {
+            "one": "tile",
+            "few": "tiles",
+            "many": "tiles"
+          },
+          "accusative": {
+            "one": "tile",
+            "few": "tiles",
+            "many": "tiles"
+          }
+        },
+        "status": {
+          "draw": "Draw",
+          "win": "Victory",
+          "loss": "Defeat",
+          "draw_required": "No move — draw a tile",
+          "your_turn": "Your turn",
+          "opponent_turn": "Opponent’s turn"
+        },
+        "table": {
+          "choose_end": "Choose one of the highlighted ends of the chain.",
+          "open_ends": "Open ends: {left} and {right}",
+          "stock": "Stock: {count}"
+        },
+        "hand": {
+          "title": "Your tiles",
+          "tile_aria": "Tile {a}–{b}"
+        },
+        "actions": {
+          "wait_opponent": "Waiting for your opponent’s move.",
+          "draw": "Draw from stock",
+          "choose_end": "Tap a highlighted end of the chain.",
+          "playable_hint": "Playable tiles have a green border."
+        },
+        "final": {
+          "remaining_points": "Remaining pips: {mine} : {theirs}",
+          "blocked": "The chain is blocked — the lower pip total wins.",
+          "finished": "Game over.",
+          "opponent_tiles": "Opponent’s tiles"
+        },
+        "event": {
+          "finished": "Game over — counting remaining pips",
+          "start": "Starting tile {a}–{b} is already on the table",
+          "draw_self": "You drew {count} {tiles}",
+          "draw_opponent": "Opponent drew {count} {tiles}",
+          "pass_self": "You have no move — pass",
+          "pass_opponent": "Opponent has no move — pass",
+          "play_self": "You played {a}–{b}",
+          "play_opponent": "Opponent played {a}–{b}",
+          "your_turn": "Your turn — choose a tile",
+          "opponent_turn": "Opponent’s turn"
+        },
+        "qa": {
+          "test": "“Chain Finish” test",
+          "aria": "Run the local Chain Finish effect test without ending the game",
+          "running": "Chain Finish is running…",
+          "repeat": "Repeat “Chain Finish”"
+        },
+        "errors": {
+          "tile_not_playable": "This tile does not match either open end."
+        },
+        "placement": {
+          "aria": "Place tile {a}–{b} at the {side} end of the chain",
+          "first": "first",
+          "second": "second"
+        }
+      }
+    },
+    "battleship": {
+      "name": "Battleship",
+      "ui": {
+        "game_fallback": "Game",
+        "meta": "{room} · {bet} coins · 10×10",
+        "player": {
+          "ready": "⚓ ready",
+          "fleet": "⚓ fleet"
+        },
+        "status": {
+          "finished": "Game over",
+          "starting": "Starting battle…",
+          "waiting_opponent": "Waiting for opponent",
+          "place_ships": "Place your ships",
+          "your_shot": "Your shot",
+          "opponent_turn": "Opponent’s turn"
+        },
+        "setup": {
+          "title": "Place your fleet",
+          "ship_count": "{count}/10 ships",
+          "fleet_ready": "Fleet ready",
+          "placing": "Placing",
+          "ready_title": "Fleet ready for battle",
+          "ready_note": "All 10 ships are placed. Confirm your setup.",
+          "ready_button": "Ready for battle",
+          "remaining": "{count} left",
+          "done": "done",
+          "guide_ship": "Ship: {size} {cells}",
+          "guide_next": "Choose the next ship",
+          "guide_selected": "{selected}/{size} selected. Selected cells are highlighted in purple.",
+          "guide_press": "Tap {size} adjacent {cells} horizontally or vertically.",
+          "guide_choose_remaining": "Choose a ship that is still available in your fleet.",
+          "randomize": "🎲 Randomize fleet",
+          "clear": "↺ Clear board",
+          "note": "Choose a ship and mark its cells directly on the board. Tap an already placed ship to remove the whole ship."
+        },
+        "errors": {
+          "selection_reset": "Cell selection was reset. Start placing the ship again.",
+          "straight_no_gaps": "The ship must form a straight line with no gaps.",
+          "too_many_cells": "You have already selected all cells for this ship.",
+          "straight_continuous": "Invalid placement: the ship must be a straight continuous line.",
+          "touching": "Invalid placement: ships cannot touch, even diagonally."
+        },
+        "battle": {
+          "my_fleet": "Your fleet",
+          "opponent": "Opponent",
+          "enemy_field": "Opponent’s board",
+          "own_field": "My board",
+          "legend_miss": "miss",
+          "legend_hit": "hit",
+          "legend_sunk": "sunk"
+        },
+        "shot": {
+          "self_miss": "Miss — opponent’s turn",
+          "self_hit": "Hit! Shoot again",
+          "self_sunk": "Ship sunk! Shoot again",
+          "opponent_miss": "Opponent missed — your turn",
+          "opponent_hit": "Your ship was hit — opponent shoots again",
+          "opponent_sunk": "Your ship was sunk — opponent shoots again"
+        },
+        "turn": {
+          "your_choose": "Your turn — choose a cell",
+          "your_open_enemy": "Your turn — open the opponent’s board",
+          "opponent": "Opponent’s turn",
+          "opponent_own_field": "Opponent’s turn — watch your board"
+        },
+        "aria": {
+          "cell": "Cell {coord}: {state}",
+          "selected_for_ship": "selected for ship"
+        },
+        "cell": {
+          "ship": "your ship",
+          "miss": "miss",
+          "hit": "hit",
+          "sunk": "sunk ship",
+          "water": "water",
+          "unknown": "unknown"
+        },
+        "cell_word": {
+          "one": "cell",
+          "few": "cells",
+          "many": "cells"
         }
       }
     }
