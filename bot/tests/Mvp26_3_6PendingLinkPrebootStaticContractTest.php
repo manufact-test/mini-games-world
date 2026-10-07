@@ -5,10 +5,11 @@ $root = dirname(__DIR__, 2);
 $ui = file_get_contents($root . '/app/assets/js/profile/mgw-account-link-ui.js');
 $main = file_get_contents($root . '/app/assets/js/main-v110-handoff-shell.js');
 $profile = file_get_contents($root . '/app/assets/js/screens/profile-screen-v110.js');
+$profileChess = file_get_contents($root . '/app/assets/js/profile/mgw-profile-chess-parity.js');
 $manifest = file_get_contents($root . '/app/runtime/client/version-manifest.php');
 $locale = json_decode((string)file_get_contents($root . '/app/locales/ru.json'), true, 512, JSON_THROW_ON_ERROR);
 
-foreach (['ui'=>$ui,'main'=>$main,'profile'=>$profile,'manifest'=>$manifest] as $name=>$content) {
+foreach (['ui'=>$ui,'main'=>$main,'profile'=>$profile,'profile_chess'=>$profileChess,'manifest'=>$manifest] as $name=>$content) {
     if (!is_string($content) || $content === '') {
         throw new RuntimeException('Missing client source: ' . $name);
     }
@@ -76,18 +77,36 @@ $assert(
     preg_match('/main-v110-handoff-shell\\.js\\?v=\\d+[^\\n]*mvp26_3_6=pending-link-preboot-v1/', $manifest) === 1,
     'Active v110 shell cache identity must include the pending-link corrective.'
 );
-$profileAliasMatch = [];
-$profileAliasOk = preg_match(
+$directProfileAlias = [];
+$directProfileAliasOk = preg_match(
     "~'\\./assets/js/screens/profile-screen-v110\\.js\\?v=1109'\\s*=>\\s*'\\./assets/js/screens/profile-screen-v110\\.js\\?v=(\\d+)([^']*)'~",
     $manifest,
-    $profileAliasMatch
-) === 1;
+    $directProfileAlias
+) === 1
+    && (int)($directProfileAlias[1] ?? 0) >= 1142
+    && str_contains((string)($directProfileAlias[2] ?? ''), 'mvp27_1=profile-localized-v1');
+
+$wrapperProfileAlias = [];
+$wrapperProfileAliasOk = preg_match(
+    "~'\\./assets/js/screens/profile-screen-v110\\.js\\?v=1109'\\s*=>\\s*'\\./assets/js/profile/mgw-profile-chess-layout-v2\\.js\\?v=(\\d+)([^']*)'~",
+    $manifest,
+    $wrapperProfileAlias
+) === 1
+    && (int)($wrapperProfileAlias[1] ?? 0) >= 44
+    && str_contains((string)($wrapperProfileAlias[2] ?? ''), 'mvp27_1=profile-chain-localized-v1')
+    && str_contains($profileChess, "../screens/profile-screen-v110.js?v=1126&profile_base=accepted-game-cosmetics")
+    && preg_match(
+        "~'\\./assets/js/screens/profile-screen-v110\\.js\\?v=1126&profile_base=accepted-game-cosmetics'\\s*=>\\s*'\\./assets/js/screens/profile-screen-v110\\.js\\?v=(\\d+)([^']*)'~",
+        $manifest,
+        $profileBaseAlias
+    ) === 1
+    && (int)($profileBaseAlias[1] ?? 0) >= 1142
+    && str_contains((string)($profileBaseAlias[2] ?? ''), 'mvp27_1=profile-localized-v1');
+
 $assert(
     str_contains($manifest, "'./assets/js/profile/mgw-account-link-ui.js?v=3' => './assets/js/profile/mgw-account-link-ui.js?v=4&mvp27_1=localized-v1'")
-    && $profileAliasOk
-    && (int)($profileAliasMatch[1] ?? 0) >= 1142
-    && str_contains((string)($profileAliasMatch[2] ?? ''), 'mvp27_1=profile-localized-v1'),
-    'Active Profile graph must preserve one accepted v3 account-link specifier and resolve it to the localized canonical owner or a newer successor.'
+    && ($directProfileAliasOk || $wrapperProfileAliasOk),
+    'Active Profile graph must preserve one accepted v3 account-link specifier and resolve it through either the direct localized base or the accepted localized game-parity wrapper.'
 );
 $assert(
     !str_contains($ui, 'LedgerWriteService')
