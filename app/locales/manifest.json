@@ -3,9 +3,13 @@
   "foundation_version": "mvp16.2-v1",
   "default_locale": "ru",
   "fallback_locale": "ru",
-  "supported_locales": ["ru"],
+  "supported_locales": [
+    "ru",
+    "en"
+  ],
   "catalogs": {
-    "ru": "ru.json"
+    "ru": "ru.json",
+    "en": "en.json"
   },
   "formats": {
     "ru": {
@@ -14,26 +18,136 @@
         "maximumFractionDigits": 0
       },
       "date": {
-        "short": {"day": "2-digit", "month": "2-digit", "year": "numeric"},
-        "long": {"day": "numeric", "month": "long", "year": "numeric"}
+        "short": {
+          "day": "2-digit",
+          "month": "2-digit",
+          "year": "numeric"
+        },
+        "long": {
+          "day": "numeric",
+          "month": "long",
+          "year": "numeric"
+        }
       },
       "datetime": {
-        "short": {"day": "2-digit", "month": "2-digit", "year": "numeric", "hour": "2-digit", "minute": "2-digit"},
-        "long": {"day": "numeric", "month": "long", "year": "numeric", "hour": "2-digit", "minute": "2-digit"}
+        "short": {
+          "day": "2-digit",
+          "month": "2-digit",
+          "year": "numeric",
+          "hour": "2-digit",
+          "minute": "2-digit"
+        },
+        "long": {
+          "day": "numeric",
+          "month": "long",
+          "year": "numeric",
+          "hour": "2-digit",
+          "minute": "2-digit"
+        }
+      }
+    },
+    "en": {
+      "intl_locale": "en-US",
+      "number": {
+        "maximumFractionDigits": 0
+      },
+      "date": {
+        "short": {
+          "year": "numeric",
+          "month": "2-digit",
+          "day": "2-digit"
+        },
+        "long": {
+          "year": "numeric",
+          "month": "long",
+          "day": "numeric"
+        }
+      },
+      "datetime": {
+        "short": {
+          "year": "numeric",
+          "month": "2-digit",
+          "day": "2-digit",
+          "hour": "2-digit",
+          "minute": "2-digit"
+        },
+        "long": {
+          "year": "numeric",
+          "month": "long",
+          "day": "numeric",
+          "hour": "2-digit",
+          "minute": "2-digit"
+        }
       }
     }
   },
   "rules": {
     "schema_version": 1,
     "games": {
-      "tictactoe": {"version": 2, "languages": ["ru"], "title_key": "games.tictactoe.name"},
-      "four_in_a_row": {"version": 2, "languages": ["ru"], "title_key": "games.four_in_a_row.name"},
-      "battleship": {"version": 1, "languages": ["ru"], "title_key": "games.battleship.name"},
-      "checkers": {"version": 1, "languages": ["ru"], "title_key": "games.checkers.name"},
-      "reversi": {"version": 2, "languages": ["ru"], "title_key": "games.reversi.name"},
-      "chess": {"version": 1, "languages": ["ru"], "title_key": "games.chess.name"},
-      "go": {"version": 2, "languages": ["ru"], "title_key": "games.go.name"},
-      "domino": {"version": 1, "languages": ["ru"], "title_key": "games.domino.name"}
+      "tictactoe": {
+        "version": 2,
+        "languages": [
+          "ru",
+          "en"
+        ],
+        "title_key": "games.tictactoe.name"
+      },
+      "four_in_a_row": {
+        "version": 2,
+        "languages": [
+          "ru",
+          "en"
+        ],
+        "title_key": "games.four_in_a_row.name"
+      },
+      "battleship": {
+        "version": 1,
+        "languages": [
+          "ru",
+          "en"
+        ],
+        "title_key": "games.battleship.name"
+      },
+      "checkers": {
+        "version": 1,
+        "languages": [
+          "ru",
+          "en"
+        ],
+        "title_key": "games.checkers.name"
+      },
+      "reversi": {
+        "version": 2,
+        "languages": [
+          "ru",
+          "en"
+        ],
+        "title_key": "games.reversi.name"
+      },
+      "chess": {
+        "version": 1,
+        "languages": [
+          "ru",
+          "en"
+        ],
+        "title_key": "games.chess.name"
+      },
+      "go": {
+        "version": 2,
+        "languages": [
+          "ru",
+          "en"
+        ],
+        "title_key": "games.go.name"
+      },
+      "domino": {
+        "version": 1,
+        "languages": [
+          "ru",
+          "en"
+        ],
+        "title_key": "games.domino.name"
+      }
     }
   }
 }
