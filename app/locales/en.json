@@ -1,0 +1,220 @@
+{
+  "_meta": {
+    "locale": "en",
+    "version": 1,
+    "status": "draft"
+  },
+  "common": {
+    "back": "Back",
+    "close": "Close",
+    "retry": "Retry",
+    "loading": "Loading…"
+  },
+  "entry": {
+    "open_failed": "Mini Games World could not be opened. Please try again in a minute.",
+    "preloader_loading": "Preparing your game room",
+    "tagline": "The games you know. The feeling you remember."
+  },
+  "nav": {
+    "home": "Home",
+    "tournaments": "Arena",
+    "store": "Store",
+    "profile": "Profile"
+  },
+  "topbar": {
+    "balance": "Balance",
+    "notifications": "Notifications"
+  },
+  "shell": {
+    "navigation_label": "Main navigation",
+    "tournaments_title": "Competitions",
+    "tournaments_note": "Player rankings and Mini Games World tournaments.",
+    "competition_rating": "Rating",
+    "competition_tournaments": "Tournaments",
+    "competition_archive_title": "Rating archive",
+    "competition_archive_note": "Results of completed official seasons.",
+    "competition_archive_seasons": "Seasons",
+    "competition_archive_tournaments": "Tournaments",
+    "competition_hall_of_fame": "Hall of Fame",
+    "competition_archive_empty": "The archive will appear after the first official season is completed.",
+    "competition_archive_tournaments_empty": "The tournament archive will appear after official tournaments launch.",
+    "competition_archive_top100": "Top 100",
+    "competition_tournaments_note": "Separate tournament events, schedules, and their own results will appear here.",
+    "store_title": "Store",
+    "store_note": "Open the current Mini Games World storefront.",
+    "store_open": "Open Store",
+    "profile_date_pending": "Registration date will appear after sign-in",
+    "match_terms_unavailable": "Server terms for regular matches are unavailable.",
+    "store_load_failed": "Could not load the Store.",
+    "boot": {
+      "profile_unloaded": "Profile not loaded",
+      "load_failed": "Could not load your profile",
+      "reopen_telegram": "Close Mini Games World and open it again from Telegram."
+    }
+  },
+  "runtime_status": {
+    "maintenance_default": "Maintenance is in progress.",
+    "maintenance_default_full": "Maintenance is in progress. Mini Games World will be back soon.",
+    "matchmaking_disabled": "Matchmaking is temporarily disabled.",
+    "new_matches_read_only": "New matches are temporarily unavailable. Active games can still be finished.",
+    "new_matches_read_only_full": "New matches are temporarily unavailable. Games already in progress can still be finished.",
+    "game_unavailable": "This game is temporarily unavailable. Choose another game.",
+    "invitations_disabled": "Invitations are temporarily disabled.",
+    "finance_read_only": "Financial operations are temporarily available in view-only mode.",
+    "finance_read_only_full": "Financial operations are temporarily in read-only mode.",
+    "payments_disabled": "Top-ups are temporarily disabled.",
+    "shop_disabled": "Order placement is temporarily disabled.",
+    "banner": {
+      "maintenance_title": "Maintenance",
+      "maintenance_message": "New actions are temporarily unavailable.",
+      "restriction_title": "Temporary restriction",
+      "restriction_message": "New matches and financial operations are paused. Active games can still be finished.",
+      "partial_title": "Some features are temporarily unavailable",
+      "partial_message": "Available games continue to work normally."
+    }
+  },
+  "settings": {
+    "title": "Settings",
+    "language": "Language",
+    "language_note": "Choose the Mini Games World interface language.",
+    "language_ru": "Russian",
+    "language_saved": "Language saved"
+  },
+  "rules": {
+    "open": "Rules",
+    "version": "Rules version: {version}",
+    "understood": "Got it"
+  },
+  "home": {
+    "stats": {
+      "online_players": "Players online",
+      "active_matches": "Active matches"
+    },
+    "menu": {
+      "title": "Menu",
+      "feedback": "Feedback",
+      "idea": "Suggest an idea",
+      "report": "Report a player",
+      "tickets": "My requests",
+      "balance_history": "Balance history",
+      "match_history": "Match history"
+    },
+    "history": {
+      "balance_title": "Balance history",
+      "match_title": "Match history",
+      "operation": "Operation",
+      "coin_amount": "{count} coins",
+      "operations_empty": "No operations yet.",
+      "operations_title": "Balance operations",
+      "match": "Match",
+      "opponent": "Opponent",
+      "opponent_line": "Opponent: {opponent}",
+      "matches_empty": "No match history yet.",
+      "latest_games": "Recent games"
+    },
+    "rules_guide": {
+      "coin_amount": "{count} coins",
+      "current_amount": "current amount",
+      "title": "How regular matches work",
+      "subtitle": "A quick guide to matchmaking, coins, wins, draws, and match history.",
+      "start_title": "1. How to start a game",
+      "start_text_1": "Choose a game on the Home screen, configure the available options, and start searching for an opponent. Coins are not deducted while you are searching. The entry fee is charged only when a match is actually created.",
+      "start_text_2": "The system first tries to find another player with compatible settings. If no suitable player is found for a while, a bot may become your opponent in regular matchmaking.",
+      "start_text_3": "To play with a specific person, open {friends}, find them by nickname or MGW-ID, open the {more} menu, and choose {invite}.",
+      "friends": "Friends",
+      "more": "…",
+      "invite": "Invite to a game",
+      "cost_title": "2. How much a match costs",
+      "cost_text": "Each player pays {entry} to enter. The total pot for a regular match is therefore currently {pot}.",
+      "calculation_label": "Regular match calculation",
+      "entry_label": "Player entry fee",
+      "pot_label": "Match pot",
+      "winner_label": "Winner receives",
+      "commission_label": "System fee",
+      "cost_example": "For example, under the current terms, the winner gets their entry fee back together with the winnings: {winner_reward} is credited to the balance. The winner’s net result compared with the balance before the match is {winner_net}.",
+      "result_title": "3. Win, loss, and draw",
+      "win_label": "Win:",
+      "win_text": "{label} the winner receives {winner_reward} from the total pot, while {commission} is the system fee.",
+      "loss_label": "Loss:",
+      "loss_text": "{label} the entry fee for this match is not refunded.",
+      "draw_label": "Draw:",
+      "draw_text": "{label} each player gets their entry fee back — currently {draw_refund}. There is no fee on a draw.",
+      "leave_title": "4. Do not leave an unfinished match",
+      "leave_text": "If a match has already started and you leave it manually before it ends, the app will warn you about the consequences. Leaving may count as a technical loss, so it is better to finish the game or return after a temporary connection drop.",
+      "game_rules_title": "5. Rules for a specific game",
+      "game_rules_text": "Each game has its own rules, board sizes, and available variants. Before a match or from the game interface, open {rules} to see the rules for the selected game. This section explains the general rules for regular matches and coins.",
+      "history_title": "6. Where to check the result",
+      "history_text": "The {more} menu includes {balance_history} and {match_history}. There you can review entry deductions, draw refunds, win rewards, and your latest played matches.",
+      "bonus_title": "7. Bonuses and tournaments",
+      "bonus_text": "The current weekly free-bonus terms are shown separately on the balance card. Use {weekly_bonus} to view the current conditions.",
+      "weekly_bonus": "Weekly bonus",
+      "tournaments_text": "Tournaments are a separate mode with their own registration, match, and reward rules. The regular-match rules in this window do not replace the rules of a specific tournament.",
+      "problems_title": "8. If something goes wrong",
+      "problems_text": "If your balance, match result, or another action looks wrong, open {more_feedback}. To report another player, use the separate {report} item."
+    }
+  },
+  "weekly_match": {
+    "button": "Bonuses",
+    "button_aria": "Open Mini Games World bonuses",
+    "subtitle": "Free coins for playing games.",
+    "loading_title": "Loading bonuses",
+    "loading_note": "Counting completed games.",
+    "weekly_title": "Weekly bonus",
+    "next_credit": "Next credit",
+    "bonus_amount": "Bonus amount",
+    "bonus_value": "+{amount} coins",
+    "games_week": "Games this week",
+    "progress": "{completed} of {required}",
+    "new_games_title": "Bonuses for new games",
+    "new_games_note": "+{amount} coins for the first completed match in each new game.",
+    "games_mastered": "Games mastered",
+    "load_error": "Could not load progress.",
+    "retry_note": "Try opening this section again.",
+    "retry": "Try again",
+    "schedule_fallback": "Next Monday, 12:00",
+    "details": "Details",
+    "details_aria": "Learn more about the weekly free-coin bonus"
+  },
+  "game_cards": {
+    "rules_aria": "Rules for {game}",
+    "meta": {
+      "tictactoe": {
+        "title": "Tic-Tac-Toe",
+        "description": "Complete a line with your marks before your opponent does."
+      },
+      "four_in_a_row": {
+        "title": "Four in a Row",
+        "description": "Connect four of your pieces before your opponent does."
+      },
+      "battleship": {
+        "title": "Battleship",
+        "description": "Find and sink every enemy ship before your fleet is destroyed."
+      },
+      "checkers": {
+        "title": "Checkers",
+        "description": "Capture all enemy pieces or block every legal move."
+      },
+      "reversi": {
+        "title": "Reversi",
+        "description": "Flip your opponent’s pieces and finish with the majority."
+      },
+      "chess": {
+        "title": "Chess",
+        "description": "Checkmate your opponent’s king."
+      },
+      "go": {
+        "title": "Go",
+        "description": "Surround enemy stones and claim territory."
+      },
+      "domino": {
+        "title": "Domino",
+        "description": "Match equal numbers and be the first to play all your tiles."
+      }
+    }
+  },
+  "profile": {
+    "player": "Player",
+    "member_since": "Member since {date}",
+    "save_error": "Could not save your MGW profile."
+  }
+}
