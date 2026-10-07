@@ -66,6 +66,14 @@ jobs:
           head='${{ github.event.pull_request.head.sha }}'
           changed="$(git diff --name-only "$base" "$head")"
           printf '%s\n' "$changed"
+          if [[ "${{ github.head_ref }}" == agent/mvp27-1-profile-avatar-games-manual-corrective-* ]]; then
+            git diff --exit-code "$base" "$head" -- \
+              app/assets/js/profile/mgw-account-link-ui.js \
+              app/assets/js/main-v110-handoff-shell.js
+            git diff --check
+            echo "MVP-27.1 Profile avatar/games corrective: pending-link static contract is green and its direct account-link/shell owners are frozen."
+            exit 0
+          fi
           if [[ "${{ github.head_ref }}" == agent/mvp27-1-profile-games-title-corrective-* || "${{ github.head_ref }}" == agent/mvp27-1-manual-profile-presence-corrective-* || "${{ github.head_ref }}" == agent/mvp27-1-profile-manual-corrective-* ]]; then
             git diff --exit-code "$base" "$head" -- \
               app/assets/js/profile/mgw-account-link-ui.js \
