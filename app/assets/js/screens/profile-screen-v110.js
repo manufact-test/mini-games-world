@@ -582,6 +582,29 @@ async function drainAvatarSelectionQueue(){
   }
 }
 
+function captureProfileScrollState(root){
+  if (currentScreen() !== 'profile' || !(root instanceof HTMLElement)) return null;
+  const host = root.closest('.content');
+  if (!(host instanceof HTMLElement)) return null;
+  host.style.overflowAnchor = 'none';
+  return { host, top:host.scrollTop, left:host.scrollLeft };
+}
+
+function restoreProfileScrollState(snapshot){
+  const host = snapshot?.host;
+  if (!(host instanceof HTMLElement) || !host.isConnected || currentScreen() !== 'profile') return;
+  host.scrollTop = Number(snapshot.top || 0);
+  host.scrollLeft = Number(snapshot.left || 0);
+  if (typeof globalThis.requestAnimationFrame !== 'function') return;
+  globalThis.requestAnimationFrame(() => {
+    if (!host.isConnected || currentScreen() !== 'profile') return;
+    const targetTop = Number(snapshot.top || 0);
+    const targetLeft = Number(snapshot.left || 0);
+    if (Math.abs(host.scrollTop - targetTop) > 1) host.scrollTop = targetTop;
+    if (Math.abs(host.scrollLeft - targetLeft) > 1) host.scrollLeft = targetLeft;
+  });
+}
+
 function renderProfileV2(){
   const root = ensureProfileRoot();
   if (!root) return;
@@ -616,6 +639,7 @@ function renderProfileV2(){
     activeTournamentRewardCodes.has('bronze_mark') ? ' has-tournament-bronze-mark' : '',
   ].join('');
 
+  const profileScrollState = captureProfileScrollState(root);
   root.innerHTML = `
     <header class="profile-v2-head"><div><h1>${escapeHtml(t('profile.title'))}</h1></div></header>
     <section class="profile-v2-identity${tournamentIdentityClasses}" data-tournament-temporary-style="${escapeHtml(Array.from(activeTournamentRewardCodes).join(' '))}">
@@ -662,6 +686,7 @@ function renderProfileV2(){
     </div></section>
   `;
   lastProfileRenderSignature = profileRenderSignature(profile, user, stats, history, rating, yearlyMedals, ratingArchive, tournamentRewards);
+  restoreProfileScrollState(profileScrollState);
 }
 
 function ownedAvatarItems(activeAvatar = currentAvatarItemId()){
