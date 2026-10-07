@@ -148,6 +148,7 @@ const completeScopes = [
   'arena.progression',
   'arena.card',
   'arena.archive',
+  'arena',
 ];
 
 for (const scope of completeScopes) {
