@@ -100,6 +100,10 @@ const completeScopes = [
   'games.chess',
   'rules.checkers',
   'rules.chess',
+  'games.domino',
+  'games.battleship',
+  'rules.domino',
+  'rules.battleship',
 ];
 
 for (const scope of completeScopes) {
