@@ -23,8 +23,11 @@ assert.ok(main.includes("import './main-v110-handoff-shell.js?v=1137&ux=1&sk=3&i
   'Factual main-v110 must still delegate to the accepted handoff shell');
 assert.ok(shell.includes("import { initProfileScreen } from './screens/profile-screen-v110.js?v=1109';"),
   'Factual v110 shell must keep the accepted Profile owner specifier');
-assert.ok(manifest.includes("'./assets/js/screens/profile-screen-v110.js?v=1109' => './assets/js/screens/profile-screen-v110.js?v=1142"),
-  'Accepted Profile specifier must still resolve to the current canonical v110 owner');
+assert.match(
+  manifest,
+  /'\.\/assets\/js\/screens\/profile-screen-v110\.js\?v=1109'\s*=>\s*'\.\/assets\/js\/screens\/profile-screen-v110\.js\?v=\d+[^']*mvp27_1=profile-localized-v1[^']*'/,
+  'Accepted Profile specifier must still resolve to the current localized canonical v110 owner'
+);
 assert.ok(profile.includes("import { initAccountLinkHomeOnboarding } from '../profile/mgw-account-link-onboarding.js?v=5';"),
   'Profile must keep the accepted Account Link Home onboarding specifier');
 assert.ok(profile.includes('initAccountLinkHomeOnboarding();'),
