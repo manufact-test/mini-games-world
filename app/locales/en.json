@@ -1,7 +1,7 @@
 {
   "_meta": {
     "locale": "en",
-    "version": 15,
+    "version": 16,
     "status": "draft"
   },
   "common": {
@@ -805,6 +805,53 @@
         "elements": "Marks",
         "effect": "Effects"
       }
+    },
+    "moderation": {
+      "title": "Restrictions and appeals",
+      "note": "Moderation decisions and their status appear here.",
+      "action_types": {
+        "warning": "Warning",
+        "restriction": "Restriction",
+        "permanent_ban": "Permanent ban",
+        "fallback": "Decision"
+      },
+      "action_statuses": {
+        "active": "Active",
+        "pending_second_review": "Pending second review",
+        "confirmed": "Confirmed",
+        "rejected": "Rejected",
+        "revoked": "Revoked",
+        "expired": "Expired"
+      },
+      "appeal_statuses": {
+        "open": "Submitted",
+        "reviewing": "Under review",
+        "accepted": "Accepted",
+        "rejected": "Rejected"
+      },
+      "until": "until {date}",
+      "no_comment": "No comment.",
+      "appeal_action": "Submit an appeal",
+      "actions_empty": "No moderation decisions.",
+      "appeal_label": "Appeal",
+      "response_prefix": "Response:",
+      "appeals_empty": "No appeals yet.",
+      "account_banned": "Account banned after manual review.",
+      "account_has_actions": "This account has active moderation decisions.",
+      "account_clear": "No active restrictions.",
+      "actions_title": "Moderation decisions",
+      "appeals_title": "Appeals",
+      "load_error": "Could not load the data.",
+      "retry_later": "Try again later.",
+      "appeal_form_title": "Submit an appeal",
+      "appeal_form_note": "Briefly explain why the decision should be reviewed.",
+      "appeal_placeholder": "Describe the reason for your appeal",
+      "appeal_send": "Submit appeal",
+      "appeal_validation": "Describe the reason for your appeal.",
+      "appeal_sent": "Appeal submitted.",
+      "appeal_error": "Could not submit the appeal.",
+      "settings_note": "Warnings, restrictions, and moderation decisions",
+      "open": "Open"
     }
   },
   "acceptance_runtime": {

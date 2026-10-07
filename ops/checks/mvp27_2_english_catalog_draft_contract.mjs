@@ -133,6 +133,7 @@ const completeScopes = [
   'profile.backgrounds',
   'profile.reactions',
   'profile.collection',
+  'profile.moderation',
 ];
 
 for (const scope of completeScopes) {
