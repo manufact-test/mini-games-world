@@ -95,6 +95,8 @@ const completeScopes = [
   'server.identity_policy',
   'server.notifications',
   'server.history',
+  'server.invites',
+  'server.invite_chain',
   'settings',
   'account_data',
   'account_link',

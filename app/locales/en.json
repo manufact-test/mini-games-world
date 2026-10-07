@@ -1,7 +1,7 @@
 {
   "_meta": {
     "locale": "en",
-    "version": 31,
+    "version": 32,
     "status": "draft"
   },
   "common": {
@@ -3317,6 +3317,97 @@
       "rooms": {
         "gold": "Gold room",
         "match": "Match room"
+      }
+    },
+    "invites": {
+      "domino_variant": "Classic 0–6",
+      "player_fallback": "Player",
+      "game_fallback": "Game",
+      "game_lower_fallback": "game",
+      "share_text": "🎮 Mini Games World invitation\n\n{name} invites you to play!\n\n🎲 Game: {game}\n📐 Variant: {board}\n🪙 Entry: {bet} coins\n\nOpen the invitation and accept the challenge 👇",
+      "prepared_title": "Mini Games World invitation",
+      "open_button": "🎮 Open invitation",
+      "rematch_message": "🎮 Rematch invitation\n\n{name} is waiting for a rematch in “{game}”.\n\n{board} · {bet} coins",
+      "direct_message": "🎮 You were invited to play\n\n{name} invites you to “{game}”.\n\n{board} · {bet} coins",
+      "invalid_request": "Invalid request.",
+      "user_not_found": "User not found.",
+      "social_unavailable": "Social invitations are temporarily unavailable.",
+      "player_unavailable": "The player is no longer available.",
+      "unknown_action": "Unknown invitation action.",
+      "telegram_prepare_failed": "Could not prepare the Telegram invitation.",
+      "start_text": "🎮 You were invited to play in Mini Games World.\n\nOpen the invitation using the button below.",
+      "start_button": "🎮 Open invitation"
+    },
+    "invite_chain": {
+      "errors": {
+        "other_player": "This invitation is intended for another player.",
+        "invite_unavailable": "This invitation is no longer available.",
+        "inviter_unavailable": "The inviting player is no longer available.",
+        "finish_search_or_game": "Finish your current search or game first.",
+        "inviter_busy_other_game": "The inviting player is currently busy in another game.",
+        "start_owner_only": "Only the inviting player can start the match.",
+        "not_participant_invite": "You are not a participant in this invitation.",
+        "use_decline_button": "Use the “Decline” button.",
+        "rematch_finished_only": "A rematch is available only after a completed game.",
+        "rematch_human_only": "A rematch is available only with a human opponent.",
+        "not_participant_match": "You are not a participant in this match.",
+        "rematch_opponent_unavailable": "The opponent is unavailable for a rematch.",
+        "finish_search_match_invite": "Finish your current search, match, or invitation first.",
+        "opponent_busy_search_match_invite": "The opponent is currently busy with a search, match, or another invitation.",
+        "opponent_not_confirmed": "The opponent has not confirmed the invitation yet.",
+        "participant_unavailable": "One of the players is no longer available.",
+        "invitee_busy_other_game": "The invited player is currently busy in another game.",
+        "private_match_failed": "Could not create a private match.",
+        "insufficient_accept_balance": "Not enough coins to accept the invitation.",
+        "inviter_insufficient_balance": "The inviting player does not have enough coins.",
+        "invite_not_found": "Invitation not found or no longer available.",
+        "select_other_player": "Choose another player.",
+        "direct_invite_exists": "Another invitation has already been sent to this player.",
+        "player_busy_search_match_invite": "The player is currently busy with a search, match, or another invitation.",
+        "share_owner_only": "Only the invitation creator can confirm sending it.",
+        "draft_unavailable": "This invitation draft is no longer available.",
+        "finish_search_match_other_invite": "Finish your current search, match, or other invitation first.",
+        "not_owner": "You did not create this invitation.",
+        "self_open_forbidden": "You cannot open your own invitation as an opponent.",
+        "already_bound_other_player": "This invitation is already assigned to another player.",
+        "finish_other_invite": "Finish the other invitation first.",
+        "inviter_busy_other_invite": "The inviting player is already busy with another invitation.",
+        "game_unavailable": "This game is currently unavailable.",
+        "insufficient_bet": "Not enough coins for the selected entry fee.",
+        "inviter_started_other_match": "The inviting player has already started another match.",
+        "rematch_bot_unavailable": "Rematch is currently unavailable. Choose “Play again”."
+      },
+      "notifications": {
+        "accepted_title": "Opponent accepted",
+        "accepted_message": "{name} is ready to play “{game}”.",
+        "declined_message": "{name} declined the “{game}” match.",
+        "owner_cancelled_message": "The “{game}” match did not start.",
+        "invitee_cancelled_message": "{name} cancelled participation in the match.",
+        "received_rematch_title": "You have a rematch invitation",
+        "received_direct_title": "You were invited to play",
+        "received_rematch_message": "{name} offers a rematch in “{game}”.",
+        "received_direct_message": "{name} invites you to “{game}”."
+      },
+      "status": {
+        "draft": "Link ready",
+        "pending": "Waiting for response",
+        "awaiting_start": "Waiting to start",
+        "starting": "Match starting",
+        "active": "Match started",
+        "declined": "Rejected",
+        "cancelled": "Revoked",
+        "expired": "Expired",
+        "timed_out": "Waiting time expired",
+        "unavailable": "Unavailable"
+      },
+      "opponents": {
+        "playing": "playing now",
+        "searching": "looking for an opponent",
+        "online": "online",
+        "recent": "recently active",
+        "week": "active this week",
+        "recent_player": "recent player",
+        "friend": "friend"
       }
     }
   }
