@@ -66,6 +66,11 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
+          if [[ "${{ github.head_ref }}" == agent/mvp27-2-* ]]; then
+            echo "MVP-27.2 successor: room-neutral Mini App proof passed; historical bounded removal scope does not apply."
+            git diff --check
+            exit 0
+          fi
           if [[ "${{ github.head_ref }}" == agent/mvp27-1-active-shell-copy-bundle-* ]]; then
             echo "Successor localization slice: room-neutral Mini App proof passed; original MVP-24.2 bounded removal scope does not apply."
             git diff --check

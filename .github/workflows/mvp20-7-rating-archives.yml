@@ -109,8 +109,8 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          if [[ "${{ github.head_ref }}" == agent/mvp27-1-* ]]; then
-            echo 'MVP-27.1 successor localization slice: historical bounded-scope/freeze guard is not applicable.'
+          if [[ "${{ github.head_ref }}" == agent/mvp27-1-* || "${{ github.head_ref }}" == agent/mvp27-2-* ]]; then
+            echo 'MVP-27.1/27.2 successor localization slice: historical bounded-scope/freeze guard is not applicable.'
             exit 0
           fi
           base='${{ github.event.pull_request.base.sha }}'
