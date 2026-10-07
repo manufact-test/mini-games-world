@@ -132,6 +132,7 @@ const completeScopes = [
   'profile.frames',
   'profile.backgrounds',
   'profile.reactions',
+  'profile.collection',
 ];
 
 for (const scope of completeScopes) {
