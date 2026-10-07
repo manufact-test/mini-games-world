@@ -57,11 +57,16 @@ export function initProfileScreen(){
   initAccountLinkHomeOnboarding();
   renderProfileV2();
   document.addEventListener('mgw:open-profile', openProfile);
+  document.addEventListener('mgw:avatar-selection-changed', syncProfileAvatarSelection);
   const warm = () => warmProfileSnapshot();
   // Start the read immediately after the current boot task. It is read-only,
   // coalesced by the API client and never awaited by bootstrap, so Home/Game
   // remain nonblocking while Profile gets a head start before the first tap.
   globalThis.setTimeout(warm, 0);
+}
+
+function syncProfileAvatarSelection(){
+  renderProfileV2();
 }
 
 function isMobileProfilePresentation(){
