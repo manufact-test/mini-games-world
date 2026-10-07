@@ -1,7 +1,7 @@
 {
   "_meta": {
     "locale": "en",
-    "version": 25,
+    "version": 26,
     "status": "draft"
   },
   "common": {
@@ -2868,5 +2868,77 @@
       "kb": "{value} KB",
       "mb": "{value} MB"
     }
+  },
+  "account_link": {
+    "title": "Telegram linking",
+    "profile": {
+      "title": "Link Telegram account",
+      "note": "Use your existing MGW profile from Telegram on Android",
+      "connect": "Connect"
+    },
+    "onboarding": {
+      "close_aria": "Close",
+      "eyebrow": "ANDROID · ONE PROFILE",
+      "title": "Already play MINI GAMES WORLD in Telegram?",
+      "note": "Connect Telegram and continue on Android with the same game profile.",
+      "bridge_aria": "One profile in Telegram and Android",
+      "balance_purchases": "Balance and purchases",
+      "stats_rating": "Stats and rating",
+      "friends_progress": "Friends and progress",
+      "starter_coin_note": "After linking, Android will use your existing Telegram profile. Temporary Android starter coins will not be added to it.",
+      "connect": "Link Telegram",
+      "later": "Later"
+    },
+    "errors": {
+      "server_unconfirmed": "The server did not confirm that linking was completed.",
+      "android_only": "Telegram linking is available only in the Android app.",
+      "already_linked": "Telegram is already linked to this MGW profile.",
+      "invalid_server_link": "The server returned an invalid linking URL.",
+      "create_failed": "Could not create a linking URL.",
+      "check_failed": "Could not check linking status.",
+      "finalize_failed": "Could not complete linking.",
+      "finalize_telegram_failed": "Could not complete Telegram linking.",
+      "invalid_telegram_link": "The Telegram link is invalid."
+    },
+    "loading": {
+      "checking_state": "Checking linking status…",
+      "creating_safe_link": "Creating a secure link…",
+      "finalizing_profile": "Finishing profile linking…",
+      "checking_telegram": "Checking confirmation in Telegram…",
+      "wait": "Wait a few seconds…"
+    },
+    "restart": {
+      "expired": "Link expired. Create a new attempt.",
+      "cancelled": "The previous linking attempt was cancelled.",
+      "inactive": "The linking attempt is no longer active. Create a new one."
+    },
+    "intro": {
+      "title": "Link Telegram",
+      "note": "Android will use your existing MGW profile from Telegram.",
+      "saved_title": "What will be kept",
+      "saved_note": "Your Telegram profile's balance, purchases, stats, rating, friends, and tournament progress.",
+      "not_moved_title": "What is not transferred",
+      "not_moved_note": "The temporary 1,000 starter coins from the new Android profile are not added to your balance.",
+      "open_confirm": "Open Telegram and confirm"
+    },
+    "pending": {
+      "lead_claimed": "Telegram profile found. Tap “Confirm linking” in the bot message, then return here.",
+      "lead_fresh": "Link ready. Telegram will open automatically. Confirm the linking with the bot and return to the app.",
+      "lead_waiting": "This attempt has not been confirmed yet. If Telegram did not open or the app restarted, create a new link.",
+      "status_label": "Status",
+      "status_claimed_note": "Waiting for confirmation in Telegram",
+      "status_pending_note": "Waiting for Telegram to open",
+      "status_claimed_badge": "Telegram opened",
+      "status_pending_badge": "Waiting",
+      "open_telegram": "Open Telegram",
+      "confirmed": "I confirmed in Telegram",
+      "restart": "Create a new link"
+    },
+    "error_title": "Could not complete linking",
+    "retry": {
+      "keep": "Check again",
+      "again": "Try again"
+    },
+    "success": "Telegram account linked. Loading your profile…"
   }
 }
