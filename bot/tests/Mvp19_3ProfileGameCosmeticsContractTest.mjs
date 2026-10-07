@@ -49,7 +49,7 @@ const gameTabBranch = gameTabBranchStart >= 0 && gameTabBranchEnd > gameTabBranc
   : '';
 expect(gameTabBranch.includes('switchProfileGameCollection(nextGame, captured)'), 'Profile game-tab click must delegate to the bounded panel switch owner with captured scroll state');
 expect(!gameTabBranch.includes('renderProfileV2()'), 'Profile game-tab click must not rebuild the full Profile DOM');
-expect(profile.includes('function switchProfileGameCollection(nextGame)'), 'Profile must own a bounded game-panel switch helper');
+expect(profile.includes('function switchProfileGameCollection(nextGame, scrollState = null)'), 'Profile must own the scroll-safe bounded game-panel switch helper');
 expect(profile.includes("const panel = collection?.querySelector('.profile-v2-game-panel');"), 'bounded game switch must target the existing game panel');
 expect(profile.includes("button.setAttribute('aria-selected', active ? 'true' : 'false');"), 'bounded game switch must keep tab accessibility state in sync');
 expect(profile.includes('panel.innerHTML = renderGameCosmeticGroups(activeGame);'), 'bounded game switch must replace only the active game panel contents');
