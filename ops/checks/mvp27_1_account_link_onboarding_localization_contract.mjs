@@ -23,11 +23,20 @@ assert.ok(main.includes("import './main-v110-handoff-shell.js?v=1137&ux=1&sk=3&i
   'Factual main-v110 must still delegate to the accepted handoff shell');
 assert.ok(shell.includes("import { initProfileScreen } from './screens/profile-screen-v110.js?v=1109';"),
   'Factual v110 shell must keep the accepted Profile owner specifier');
-assert.match(
-  manifest,
-  /'\.\/assets\/js\/screens\/profile-screen-v110\.js\?v=1109'\s*=>\s*'\.\/assets\/js\/screens\/profile-screen-v110\.js\?v=\d+[^']*mvp27_1=profile-localized-v1[^']*'/,
-  'Accepted Profile specifier must still resolve to the current localized canonical v110 owner'
-);
+const directProfileAlias = manifest.match(/'\.\/assets\/js\/screens\/profile-screen-v110\.js\?v=1109'\s*=>\s*'\.\/assets\/js\/screens\/profile-screen-v110\.js\?v=(\d+)([^']*)'/);
+const wrappedProfileAlias = manifest.match(/'\.\/assets\/js\/screens\/profile-screen-v110\.js\?v=1109'\s*=>\s*'\.\/assets\/js\/profile\/mgw-profile-chess-layout-v2\.js\?v=(\d+)([^']*)'/);
+const profileBaseAlias = manifest.match(/'\.\/assets\/js\/screens\/profile-screen-v110\.js\?v=1126&profile_base=accepted-game-cosmetics'\s*=>\s*'\.\/assets\/js\/screens\/profile-screen-v110\.js\?v=(\d+)([^']*)'/);
+const directProfileOk = directProfileAlias
+  && Number(directProfileAlias[1]) >= 1142
+  && directProfileAlias[2].includes('mvp27_1=profile-localized-v1');
+const wrappedProfileOk = wrappedProfileAlias
+  && Number(wrappedProfileAlias[1]) >= 44
+  && wrappedProfileAlias[2].includes('mvp27_1=profile-chain-localized-v1')
+  && profileBaseAlias
+  && Number(profileBaseAlias[1]) >= 1142
+  && profileBaseAlias[2].includes('mvp27_1=profile-localized-v1');
+assert.ok(Boolean(directProfileOk || wrappedProfileOk),
+  'Accepted Profile specifier must resolve to the current localized canonical v110 owner or wrapped parity successor');
 assert.ok(profile.includes("import { initAccountLinkHomeOnboarding } from '../profile/mgw-account-link-onboarding.js?v=5';"),
   'Profile must keep the accepted Account Link Home onboarding specifier');
 assert.ok(profile.includes('initAccountLinkHomeOnboarding();'),
