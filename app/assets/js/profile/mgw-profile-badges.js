@@ -110,7 +110,11 @@ function badgeMeta(item){
 }
 
 function badgeName(item){
-  return String(badgeMeta(item).display_name || item?.item_id || badgeText('fallback_name'));
+  const itemId = String(item?.item_id || '');
+  if (itemId) {
+    try { return t(`store.products.${itemId}`); } catch (error) {}
+  }
+  return String(badgeMeta(item).display_name || itemId || badgeText('fallback_name'));
 }
 
 function badgeTierLabel(item){
