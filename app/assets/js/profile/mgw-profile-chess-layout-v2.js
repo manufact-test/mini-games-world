@@ -142,7 +142,7 @@ function ensureProfileChessLayoutStyles(){
 }
 
 function ensureProfileGameCosmeticsRepairStyles(){
-  const href = new URL('../../css/screens/profile-game-cosmetics-parity-v1.css?v=6&mvp19_6=profile-card-visual-repair-v3&manual_acceptance=tab-icons-corrective-v1', import.meta.url).href;
+  const href = new URL('../../css/screens/profile-game-cosmetics-parity-v1.css?v=7&mvp19_6=profile-card-visual-repair-v3&manual_acceptance=canonical-tab-icons-v1', import.meta.url).href;
   const existing = document.querySelector('link[data-mgw-profile-game-cosmetics-parity]');
   if (existing instanceof HTMLLinkElement) {
     if (existing.href !== href) existing.href = href;

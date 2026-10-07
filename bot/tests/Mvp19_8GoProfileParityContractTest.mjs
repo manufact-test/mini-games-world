@@ -116,7 +116,7 @@ assert.ok(storeWrapper.includes('const signature = `${layer}:${variant}:v2`'), '
 const activeProfileOwner = manifest.match(/mgw-profile-chess-layout-v2\.js\?v=(\d+)/);
 assert.ok(activeProfileOwner && Number(activeProfileOwner[1]) >= 19, 'Active Profile owner must stay at or beyond the accepted Go corrective cache identity');
 assert.ok(manifest.includes('mvp19_8=go-profile-corrective-v2'), 'Active Profile URL must publish Go Profile corrective v2');
-assert.ok(manifest.includes('game_tab_icons=normalized-v3'), 'Active Profile URL must publish normalized game-tab marks');
+assert.ok(manifest.includes('game_tab_icons=canonical-v5'), 'Active Profile URL must publish canonical game-tab marks');
 assert.ok(manifest.includes('go_card_runtime=hard-square-v1'), 'Active Profile URL must retain Go hard-square runtime');
 const activeStoreOwner = manifest.match(/store-screen-checkers-board-source-wrapper\.js\?v=(\d+)/);
 assert.ok(activeStoreOwner && Number(activeStoreOwner[1]) >= 7, 'Active Store outer wrapper must stay at or beyond the accepted Go cache identity');
