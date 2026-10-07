@@ -2,6 +2,7 @@ import fs from 'node:fs';
 
 const ru = JSON.parse(fs.readFileSync('app/locales/ru.json', 'utf8'));
 // MVP-27.2 activation gate: RU stays default/fallback while completed EN is a supported runtime catalog.
+// Final successor-safe regression retrigger.
 const en = JSON.parse(fs.readFileSync('app/locales/en.json', 'utf8'));
 const manifest = JSON.parse(fs.readFileSync('app/locales/manifest.json', 'utf8'));
 
