@@ -41,7 +41,14 @@ $expireLease = static function (string $accountId, string $sessionId, string $le
 try {
     $presence->touch('100', 'observer-device', 'observer-page');
     $presence->touch('200', 'phone-device', 'old-page');
-    $assert($stats->build($db)['online_players'] === 2, 'Two active accounts must initially be online.');
+    $assert($stats->build($db)['online_players'] === 2, 'Two foreground accounts must initially be online.');
+
+    $presence->background('200', 'phone-device', 'old-page');
+    $assert($stats->build($db)['online_players'] === 1,
+        'A background document must leave the public online count immediately.');
+    $presence->touch('200', 'phone-device', 'old-page');
+    $assert($stats->build($db)['online_players'] === 2,
+        'A fresh foreground heartbeat must restore the public online account.');
 
     $presence->touch('200', 'phone-device', 'new-page');
     $presence->leave('200', 'phone-device', 'old-page');
@@ -55,8 +62,8 @@ try {
         'The account may leave only after its final live document lease expires.');
 
     $presence->touch('200', 'legacy-device');
-    $assert($stats->build($db)['online_players'] === 2,
-        'Legacy two-argument presence calls must remain compatible.');
+    $assert($stats->build($db)['online_players'] === 1,
+        'Legacy bootstrap presence must remain gameplay-compatible without becoming public online.');
 
     $client = $read('app/assets/js/production-v110-presence.js');
     $endpoint = $read('bot/presence.php');
@@ -67,7 +74,7 @@ try {
         && str_contains($client, 'presenceLeaseId,')
         && str_contains($client, 'function createPresenceLeaseId()'),
         'The canonical client presence owner must keep one unique lease for each app document.');
-    $assert(str_contains($client, "// Presence transport starts before the profile bootstrap.")
+    $assert(str_contains($client, "Presence transport starts before profile/bootstrap reads.")
         && str_contains($client, "  startPresence();\n}")
         && str_contains($client, "if (runtime.pingBusy || document.visibilityState !== 'visible') return false;")
         && !str_contains($client, "runtime.pingBusy || !runtime.appReady"),
@@ -78,8 +85,10 @@ try {
         'The endpoint must route ping and leave through the same document lease.');
     $assert(str_contains($service, 'string $presenceLeaseId = \'\'')
         && str_contains($service, '$sessionId . "\\0presence:" . $presenceLeaseId')
+        && str_contains($service, 'private const PUBLIC_ONLINE_WINDOW_SEC = 15;')
+        && str_contains($service, "['mode'] ?? 'foreground') !== 'foreground'")
         && str_contains($service, 'private const LEAVE_GRACE_SEC = 12;'),
-        'Presence storage must isolate documents and keep a bounded Telegram handoff grace.');
+        'Presence storage must isolate documents, count only fresh foreground leases publicly, and keep bounded Telegram handoff grace.');
     $assert(str_contains($shell, 'production-v110-presence.js?v=1121'),
         'The active shell must load the document-scoped presence owner through the current statistics revision.');
 } finally {

@@ -2,6 +2,8 @@ import fs from 'node:fs';
 
 const checkers = fs.readFileSync('app/assets/js/profile/mgw-profile-checkers-parity.js', 'utf8');
 const layout = fs.readFileSync('app/assets/js/profile/mgw-profile-chess-layout-v2.js', 'utf8');
+const activeProfile = fs.readFileSync('app/assets/js/screens/profile-screen-v110.js', 'utf8');
+const activeProfileCss = fs.readFileSync('app/assets/css/screens/profile-game-tabs-active-v1.css', 'utf8');
 const hardSquare = fs.readFileSync('app/assets/js/profile/mgw-profile-checkers-hard-square-v1.js', 'utf8');
 const chess = fs.readFileSync('app/assets/js/profile/mgw-profile-chess-parity.js', 'utf8');
 const api = fs.readFileSync('app/assets/js/api/client.js', 'utf8');
@@ -66,7 +68,7 @@ expect(!exactCheckersCss.includes('data-profile-game-panel'), 'final Checkers bo
 expect(exactCheckersCss.includes('height:auto!important') && exactCheckersCss.includes('aspect-ratio:1 / 1!important'), 'final Checkers media owner must force full Store-square geometry');
 expect(exactCheckersCss.includes('grid-template-rows:repeat(8,minmax(0,1fr))!important'), 'final board/effect geometry must preserve all eight Store rows');
 expect(exactCheckersCss.includes('border-radius:8px!important') && exactCheckersCss.includes('border-radius:18px!important'), 'final board/effect owner must preserve accepted Store radii');
-expect(layout.includes('profile-game-cosmetics-parity-v1.css?v=3&mvp19_6=profile-card-visual-repair-v3'), 'Profile wrapper must retain the shared parity stylesheet');
+expect(layout.includes('profile-game-cosmetics-parity-v1.css?v=4&mvp19_6=profile-card-visual-repair-v3&manual_acceptance=scroll-arrows-v1'), 'Historical Profile wrapper must retain its shared parity stylesheet identity');
 expect(layout.includes('profile-game-cosmetics-manual-repair-v3.css?v=4&mvp19_6=checkers-store-parity-exact-v1'), 'Profile wrapper must retain the manual repair layer');
 expect(layout.includes('profile-checkers-store-exact-v2.css?v=1&mvp19_6=board-effect-full-square-v1'), 'Profile wrapper must load the final direct Checkers Store-square owner');
 expect(layout.indexOf('ensureProfileCheckersStoreExactStyles();') > layout.indexOf('ensureProfileGameCosmeticsManualRepairStyles();'), 'final direct Checkers Store-square owner must be appended after older Profile repair styles');
@@ -96,6 +98,19 @@ expect(checkers.includes('keepProfileGameTabVisible') && checkers.includes('stri
 expect(checkers.includes('keepProfileGameTabVisible(gameTab, false)'), 'tab selection must use immediate rail positioning instead of a delayed smooth scroll');
 expect(!checkers.includes('scrollIntoView'), 'Profile tab selection must never reintroduce full-page jump behavior');
 expect(manualRepairCss.includes('scroll-behavior:auto!important'), 'final Profile rail owner must disable CSS smooth-scroll lag');
+
+// Factual Telegram v110 imports profile-screen-v110.js?v=1109, so manual scroll UX must live in that direct owner.
+expect(activeProfile.includes('function ensureProfileGameTabStyles()') && activeProfile.includes('profile-game-tabs-active-v1.css?v=1&manual_acceptance=active-scroll-owner-v1'), 'Active direct Profile owner must load its scoped game-tab stylesheet');
+expect(activeProfile.includes('function initProfileGameTabScroller()'), 'Active direct Profile owner must install the game-tab scroller');
+expect(activeProfile.includes("screen.dataset.profileGameTabsScrollOwner = 'active-profile-v1'"), 'Active direct Profile owner must expose one scroll ownership marker');
+expect(activeProfile.includes('PROFILE_GAME_TAB_DRAG_THRESHOLD') && activeProfile.includes('drag.strip.setPointerCapture?.(event.pointerId)'), 'Mouse drag must capture only after movement crosses the threshold');
+expect(activeProfile.includes("data-profile-game-tabs-scroll") && activeProfile.includes("addEventListener('wheel'"), 'Active Profile owner must expose arrows and desktop wheel translation');
+expect(activeProfile.includes('MutationObserver(scheduleProfileGameTabControls)'), 'Active Profile owner must restore controls after Profile DOM rerenders');
+expect(activeProfile.includes('keepProfileGameTabVisible(gameTab)') && !activeProfile.includes('scrollIntoView'), 'Active Profile selection must move only the horizontal rail');
+expect(!activeProfile.includes('profile-v2-game-tabs-shell'), 'Active Profile rail must not reparent tabs into the inactive wrapper shell');
+expect(activeProfileCss.includes('.profile-v2-game-tabs-arrow') && activeProfileCss.includes('.profile-v2-game-tab:active{transform:none!important}'), 'Active Profile CSS must expose arrows without press-scale distortion');
+expect(manifest.includes("'./assets/js/screens/profile-screen-v110.js?v=1109' => './assets/js/screens/profile-screen-v110.js?v=1144")
+  && manifest.includes('profile_tabs=active-scroll-owner-v1'), 'Manifest must publish the active v1109 Profile rail successor');
 
 // Tic-Tac-Toe must keep exactly one accepted graphical X/O owner; no text glyph may sit on top of it.
 expect(manualRepairCss.includes('flex:0 0 27px!important') && manualRepairCss.includes('width:27px!important'), 'Tic-Tac-Toe tab must restore the accepted optical box');

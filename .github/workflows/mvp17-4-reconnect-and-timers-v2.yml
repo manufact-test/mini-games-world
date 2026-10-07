@@ -27,6 +27,9 @@ on:
       - 'bot/tests/Mvp17_4ActiveV110ReconnectContractTest.php'
       - 'bot/tests/Mvp17_4ReconnectLifecycleTest.php'
       - 'bot/tests/Mvp17_4ReconnectResumeRegressionTest.php'
+      - 'bot/tests/ProductionV110OnlineCountStabilityContractTest.php'
+      - 'bot/tests/ProductionV110PresenceDocumentLeaseRaceTest.php'
+      - 'bot/tests/ProductionV104PresenceRuntimeTest.php'
       - 'bot/tests/Mvp17_3BotOpacityIntegrationContractTest.php'
       - 'bot/tests/Mvp17_2HumanPriorityFallbackTest.php'
       - 'bot/tests/Mvp17_2MatchmakingIntegrationContractTest.php'
@@ -70,6 +73,9 @@ jobs:
           php -l bot/tests/Mvp17_4ActiveV110ReconnectContractTest.php
           php -l bot/tests/Mvp17_4ReconnectLifecycleTest.php
           php -l bot/tests/Mvp17_4ReconnectResumeRegressionTest.php
+          php -l bot/tests/ProductionV110OnlineCountStabilityContractTest.php
+          php -l bot/tests/ProductionV110PresenceDocumentLeaseRaceTest.php
+          php -l bot/tests/ProductionV104PresenceRuntimeTest.php
           php -l bot/tests/Mvp17_3BotOpacityIntegrationContractTest.php
           php -l bot/tests/Mvp17_2HumanPriorityFallbackTest.php
           php -l bot/tests/Mvp17_2MatchmakingIntegrationContractTest.php
@@ -94,6 +100,12 @@ jobs:
 
       - name: MVP-17.4 reconnect lifecycle
         run: php bot/tests/Mvp17_4ReconnectLifecycleTest.php
+
+      - name: Public online count stability
+        run: |
+          php bot/tests/ProductionV110OnlineCountStabilityContractTest.php
+          php bot/tests/ProductionV110PresenceDocumentLeaseRaceTest.php
+          php bot/tests/ProductionV104PresenceRuntimeTest.php
 
       - name: MVP-17.3 bot opacity regression
         run: php bot/tests/Mvp17_3BotOpacityIntegrationContractTest.php
