@@ -30,7 +30,11 @@ final class RuntimeHistoryRepository
     public function read(string $legacyUserId, int $limit = 24): array
     {
         $this->assertDatabaseRoute();
-        return $this->formatter->formatHistory($this->databaseSnapshot(), $legacyUserId, $limit);
+        return $this->formatter->formatHistory(
+            $this->runtimeReadSnapshot($legacyUserId, $limit),
+            $legacyUserId,
+            $limit
+        );
     }
 
     public function auditParity(array $jsonSnapshot): array
@@ -113,6 +117,123 @@ final class RuntimeHistoryRepository
             'production_changed' => false,
             'sensitive_identifiers_exposed' => false,
         ];
+    }
+
+    /**
+     * Live player history must read the canonical relational match projection.
+     * The legacy shadow below remains intentionally available only for migration
+     * synchronization/parity audits and for the older economy transaction bridge.
+     */
+    private function runtimeReadSnapshot(string $legacyUserId, int $limit): array
+    {
+        $shadow = $this->databaseSnapshot();
+        $transactions = is_array($shadow['transactions'] ?? null) ? $shadow['transactions'] : [];
+        $games = [];
+
+        $safeLimit = max(12, min(100, $limit * 2));
+        $rows = $this->database->fetchAll(
+            'SELECT
+                m.match_id, m.game_type, m.room, m.status, m.board_size, m.bet,
+                m.match_source, m.winner_player_ref, m.finish_reason,
+                m.server_state_json, m.created_at_utc, m.started_at_utc,
+                m.updated_at_utc, m.finished_at_utc
+             FROM mgw_matches m
+             INNER JOIN mgw_match_players me ON me.match_id = m.match_id
+             WHERE me.legacy_user_id = :legacy_user_id
+             ORDER BY
+                COALESCE(m.finished_at_utc, m.updated_at_utc, m.created_at_utc) DESC,
+                m.match_id DESC
+             LIMIT ' . $safeLimit,
+            ['legacy_user_id' => $legacyUserId]
+        );
+
+        foreach ($rows as $row) {
+            if (!is_array($row)) continue;
+            $matchId = trim((string)($row['match_id'] ?? ''));
+            if ($matchId === '') continue;
+
+            $game = $this->decodeRuntimeState($row['server_state_json'] ?? null);
+            $players = $this->database->fetchAll(
+                'SELECT seat, player_ref, legacy_user_id, display_name, result
+                 FROM mgw_match_players
+                 WHERE match_id = :match_id
+                 ORDER BY seat',
+                ['match_id' => $matchId]
+            );
+
+            $playerIds = [];
+            $playerNames = [];
+            $winnerId = null;
+            $winnerRef = trim((string)($row['winner_player_ref'] ?? ''));
+
+            foreach ($players as $player) {
+                if (!is_array($player)) continue;
+                $playerRef = trim((string)($player['player_ref'] ?? ''));
+                $legacyId = trim((string)($player['legacy_user_id'] ?? ''));
+                $identity = $legacyId !== '' ? $legacyId : $playerRef;
+                if ($identity === '') continue;
+
+                $playerIds[] = $identity;
+                $displayName = trim((string)($player['display_name'] ?? ''));
+                if ($displayName !== '') $playerNames[$identity] = $displayName;
+                if ($winnerRef !== '' && $playerRef === $winnerRef) $winnerId = $identity;
+            }
+
+            if ($playerIds === []) {
+                $playerIds = array_values(array_map('strval', is_array($game['player_ids'] ?? null) ? $game['player_ids'] : []));
+            }
+            if ($playerNames === [] && is_array($game['player_names'] ?? null)) {
+                $playerNames = $game['player_names'];
+            }
+            if ($winnerId === null && isset($game['winner_id'])) {
+                $winnerId = trim((string)$game['winner_id']);
+                if ($winnerId === '') $winnerId = null;
+            }
+
+            $game['id'] = $matchId;
+            $game['game_type'] = (string)($row['game_type'] ?? ($game['game_type'] ?? 'tictactoe'));
+            $game['room'] = (string)($row['room'] ?? ($game['room'] ?? 'match'));
+            $game['status'] = (string)($row['status'] ?? ($game['status'] ?? ''));
+            $game['board_size'] = max(1, (int)($row['board_size'] ?? ($game['board_size'] ?? 3)));
+            $game['bet'] = max(0, (int)($row['bet'] ?? ($game['bet'] ?? 0)));
+            $game['match_source'] = (string)($row['match_source'] ?? ($game['match_source'] ?? ''));
+            $game['finish_reason'] = (string)($row['finish_reason'] ?? ($game['finish_reason'] ?? ''));
+            $game['player_ids'] = $playerIds;
+            $game['player_names'] = $playerNames;
+            $game['winner_id'] = $winnerId;
+            $game['created_at'] = $this->utcIso($row['created_at_utc'] ?? ($game['created_at'] ?? null));
+            $game['started_at'] = $this->utcIso($row['started_at_utc'] ?? ($game['started_at'] ?? null));
+            $game['updated_at'] = $this->utcIso($row['updated_at_utc'] ?? ($game['updated_at'] ?? null));
+            $game['finished_at'] = $this->utcIso($row['finished_at_utc'] ?? ($game['finished_at'] ?? null));
+
+            $games[$matchId] = $game;
+        }
+
+        return ['transactions' => $transactions, 'games' => $games];
+    }
+
+    private function decodeRuntimeState(mixed $value): array
+    {
+        if ($value === null || trim((string)$value) === '') return [];
+        try {
+            $decoded = json_decode((string)$value, true, 512, JSON_THROW_ON_ERROR);
+            return is_array($decoded) ? $decoded : [];
+        } catch (JsonException) {
+            return [];
+        }
+    }
+
+    private function utcIso(mixed $value): string
+    {
+        $raw = trim((string)($value ?? ''));
+        if ($raw === '') return '';
+        try {
+            return (new DateTimeImmutable($raw, new DateTimeZone('UTC')))
+                ->setTimezone(new DateTimeZone('UTC'))
+                ->format(DATE_ATOM);
+        } catch (Throwable) {
+            return $raw;
+        }
     }
 
     private function databaseSnapshot(?array $sourceSnapshot = null): array
