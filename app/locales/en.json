@@ -1,7 +1,7 @@
 {
   "_meta": {
     "locale": "en",
-    "version": 33,
+    "version": 34,
     "status": "draft"
   },
   "common": {
@@ -3578,6 +3578,142 @@
       "set_unavailable": "Reaction set unavailable.",
       "unknown_action": "Unknown reaction action.",
       "failed": "Could not complete the reaction action."
+    },
+    "tournament_runtime": {
+      "registration": {
+        "closed_full": "Registration for the official tournament is already closed. The roster is full.",
+        "closed": "Registration for the official tournament is currently closed.",
+        "consent_race": "Rules consent changed at the same time. Try again.",
+        "full": "All tournament places are already filled.",
+        "publication_missing": "No active registration was found for publication.",
+        "publication_race": "Registration publication changed at the same time. Try again.",
+        "leave_unavailable": "You cannot leave through registration from the tournament’s current state.",
+        "not_found": "Active registration not found.",
+        "roster_fixed": "Once the tournament is full, registration is locked and you can no longer leave at this stage.",
+        "state_race": "Registration state changed at the same time.",
+        "tournament_missing": "The official tournament has not been created yet."
+      },
+      "scheduling": {
+        "single_official_only": "Only one official tournament can exist at a time.",
+        "start_required": "Specify the tournament start date and time.",
+        "start_invalid": "Invalid tournament start date or time.",
+        "start_future": "The tournament start date must be in the future.",
+        "already_scheduled": "The tournament date is already scheduled. Rescheduling or delaying is outside MVP-21.3.",
+        "roster_required": "A date can be scheduled only after the roster is full.",
+        "capacity_required": "The tournament date can be scheduled only for a full roster.",
+        "consent_required": "Not all participants have confirmed consent to the tournament rules.",
+        "schedule_race": "The tournament date changed at the same time as the request."
+      },
+      "rules": {
+        "title": "Official tournament rules",
+        "registration_title": "Registration and entry fee",
+        "registration_game_capacity": "The tournament is played in “{game}”. Participants: {capacity}.",
+        "registration_fee": "The entry fee is 50,000 coins. The amount is reserved at registration, not charged.",
+        "registration_cancel": "Until the tournament is full, a participant may cancel registration: the place is released and the 50,000-coin reservation is removed in full.",
+        "registration_close": "When all places are filled, registration closes automatically, the roster is locked, and the tournament waits for a date to be scheduled.",
+        "date_title": "Date and participation",
+        "date_schedule": "After the roster is full, the tournament date and time are scheduled.",
+        "date_reminders": "Participants receive reminders one day, one hour, and 15 minutes before the start.",
+        "date_hall": "The Tournament Hall opens 15 minutes before the start. The bracket is generated randomly at the exact start time.",
+        "date_absent": "An absent participant remains in the bracket and receives a technical loss under the tournament rules.",
+        "ready_title": "Readiness and match start",
+        "ready_window": "Before the first match, players have 2 minutes to confirm “I’m ready”.",
+        "ready_countdown": "Once both players are ready, the board is locked for a shared 10-second visual, audio, and vibration countdown.",
+        "ready_timer": "The game timer starts only after that countdown ends.",
+        "rounds_title": "Rounds and draws",
+        "rounds_next": "The next round starts after all matches in the current round are complete.",
+        "rounds_break": "There is a 3-minute break between rounds.",
+        "rounds_draw": "After a draw, a replay starts in 1 minute, sides switch, and no additional entry fee is reserved.",
+        "rounds_final_third": "The tournament includes a final and a separate 3rd-place match.",
+        "technical_title": "Disconnects and technical outcomes",
+        "technical_single_disconnect": "If one player disconnects, they have 60 seconds to return to the game.",
+        "technical_both_disconnect": "If both players disconnect, they have up to 3 minutes to return to the game.",
+        "technical_outcome": "If a player leaves voluntarily, neither player appears, or a technical error occurs, the result is determined under the tournament rules.",
+        "technical_cancel_refund": "If the tournament is cancelled or stopped because of a technical problem, participants receive a full entry-fee refund and the results are voided.",
+        "rewards_title": "Rewards",
+        "rewards_first": "1st place: 200,000 coins; Golden Ticket; Champion Crown for 30 days; permanent Winner Badge; exclusive Champion game-cosmetic set; Hall of Fame; Gold Cup.",
+        "rewards_second": "2nd place: 80,000 coins; Silver Frame for 30 days; permanent Finalist Mark; Silver Cup.",
+        "rewards_third": "3rd place: 50,000 coins; Bronze Mark for 30 days; permanent 3rd Place mark; Bronze Cup.",
+        "rewards_others": "There is no cash reward for the other participants.",
+        "rewards_golden_ticket": "The Golden Ticket cannot be sold or transferred to another player. It grants entry to a future Grand Tournament and remains valid until that tournament is held. The Grand Tournament date and number of participants will be determined later.",
+        "change_title": "Rule changes",
+        "change_notice": "Once registration opens, the terms of this tournament will not change without notice to participants. If the rules need to change materially, the current tournament will be cancelled and a new one will be created.",
+        "not_prepared": "Tournament rules have not been prepared yet.",
+        "snapshot_damaged": "The tournament rules snapshot is damaged.",
+        "version_mismatch": "The tournament rules version does not match the snapshot.",
+        "consent_required": "Confirm your agreement to the tournament rules before registering.",
+        "updated": "The tournament rules have been updated. Open them again and confirm the current version."
+      },
+      "hall": {
+        "opens_15": "The Tournament Hall opens 15 minutes before the start.",
+        "enter_first": "Enter the Tournament Hall first.",
+        "registered_only": "The Tournament Hall is available only to registered participants.",
+        "after_schedule": "The Tournament Hall will open after the tournament date is scheduled.",
+        "date_not_set": "The tournament start date has not been scheduled.",
+        "invalid_action": "Invalid Tournament Hall action.",
+        "account_unavailable": "Could not verify the tournament participant.",
+        "unavailable": "The Tournament Hall is temporarily unavailable.",
+        "load_error": "Could not load the Tournament Hall.",
+        "registration_conflict": "Tournament Hall entry conflicts with the canonical registration.",
+        "scheduled_only": "The Tournament Hall is available only for the active scheduled tournament.",
+        "participant_identity_required": "The Tournament Hall requires canonical participant identity.",
+        "participant_state_ambiguous": "The Tournament Hall participant state is ambiguous."
+      },
+      "ready": {
+        "not_required": "Readiness confirmation is not required for this pair.",
+        "manual_finished": "Manual readiness confirmation for this stage is already complete.",
+        "opens_at_start": "Readiness confirmation opens when the tournament starts.",
+        "not_in_pair": "The player is not in this tournament pair.",
+        "registered_only": "Readiness is available only to registered tournament participants.",
+        "tournament_not_ready": "The tournament is not ready to start matches yet."
+      },
+      "notifications": {
+        "scheduled_title": "Tournament date scheduled",
+        "scheduled_text": "“{title}”: the tournament date and time have been scheduled. Open the tournaments section to see your local time and the exact countdown.",
+        "day_title": "Tournament starts in one day",
+        "day_text": "“{title}” starts in 24 hours. Check the date and countdown in the tournaments section.",
+        "hour_title": "Tournament starts in one hour",
+        "hour_text": "“{title}” starts in 1 hour. Get ready to participate.",
+        "minutes15_title": "Tournament starts in 15 minutes",
+        "minutes15_text": "“{title}” starts in 15 minutes."
+      },
+      "cancellation": {
+        "admin_reason": "Cancelled by an administrator."
+      }
+    },
+    "tournament_status": {
+      "invalid_request": "Invalid request.",
+      "account_unavailable": "Could not verify the game account.",
+      "unavailable": "Tournaments are temporarily unavailable."
+    },
+    "api": {
+      "invalid_request": "Invalid request.",
+      "restriction_check_unavailable": "Restriction checks are temporarily unavailable.",
+      "tournament_registration_identity_required": "Tournament registration requires canonical MGW account identity.",
+      "tournaments_unavailable": "Tournaments are temporarily unavailable.",
+      "tournament_match_identity_required": "A tournament match requires canonical MGW account identity.",
+      "tournament_matches_unavailable": "Tournament matches are temporarily unavailable.",
+      "tournament_player_not_ready": "One of the players is not ready to start the match yet.",
+      "support_message_empty": "The message is empty.",
+      "unknown_action": "Unknown action."
+    },
+    "rating_archive_endpoint": {
+      "invalid_request": "Invalid request.",
+      "session_unavailable": "The rating archive is unavailable for this session.",
+      "unavailable": "The rating archive is temporarily unavailable.",
+      "unknown_mode": "Unknown rating archive mode.",
+      "load_failed": "Could not load the rating archive."
+    },
+    "leaderboard_endpoint": {
+      "invalid_request": "Invalid request.",
+      "session_unavailable": "Rating is unavailable for this session.",
+      "unavailable": "The leaderboard is temporarily unavailable.",
+      "load_failed": "Could not load the leaderboard."
+    },
+    "weekly_match": {
+      "welcome_description": "Mini Games World starter bonus",
+      "first_game_description": "Bonus for the first completed match in a game",
+      "weekly_description": "Weekly bonus for game activity"
     }
   }
 }
