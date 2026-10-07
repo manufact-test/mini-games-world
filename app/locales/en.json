@@ -1,7 +1,7 @@
 {
   "_meta": {
     "locale": "en",
-    "version": 26,
+    "version": 27,
     "status": "draft"
   },
   "common": {
@@ -379,6 +379,51 @@
       "read_error": "{file}: could not read the file.",
       "loading": "Loading…",
       "attachment_open_error": "Could not open the attachment."
+    },
+    "report": {
+      "reasons": {
+        "nickname": "Inappropriate nickname",
+        "avatar": "Inappropriate avatar",
+        "spam": "Spam",
+        "cheating": "Cheating",
+        "stalling": "Stalling the game",
+        "other": "Other"
+      },
+      "title": "Report a player",
+      "subtitle": "Find a player and choose a reason for the report.",
+      "target_question": "Who do you want to report?",
+      "search_note": "Search by nickname or MGW-ID",
+      "search_placeholder": "Nickname or MGW-ID",
+      "search_action": "Find",
+      "search_hint": "Enter at least 2 nickname characters or a full MGW-ID.",
+      "reason_title": "Reason for report",
+      "choose_one": "Choose one option",
+      "comment": "Comment",
+      "optional": "optional",
+      "comment_placeholder": "Briefly describe what happened",
+      "send": "Submit report",
+      "history_title": "My reports",
+      "history_loading": "Loading history…",
+      "player_fallback": "Player",
+      "change": "Change",
+      "selected": "Player selected.",
+      "not_found": "No players found. Try another nickname or MGW-ID.",
+      "found": "Found: {count}. Choose a player.",
+      "choose": "Choose",
+      "enter_query": "Enter a nickname or MGW-ID.",
+      "nickname_min": "Enter at least 2 nickname characters to search.",
+      "searching": "Searching for player…",
+      "search_error": "Could not complete the search.",
+      "status_open": "New",
+      "status_reviewing": "Under review",
+      "status_closed": "Reviewed",
+      "history_empty": "You have not reported any players yet.",
+      "complaint_fallback": "Report",
+      "review_complete": " · review completed",
+      "history_error": "Could not load report history.",
+      "sent_case": "Report submitted · {case_id}",
+      "sent": "Report submitted.",
+      "send_error": "Could not submit the report."
     }
   },
   "weekly_match": {
