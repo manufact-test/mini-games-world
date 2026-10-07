@@ -305,6 +305,8 @@ final class NotificationService
             'message' => ServerLocalization::copy('server.notifications.service.weekly_message', 'Completed matches: {games}. Credited +{amount} coins.', ['games'=>$games,'amount'=>$amount]),
             'tone' => 'success',
             'cycle_key' => $cycleKey,
+            'qualifying_games' => $games,
+            'amount' => $amount,
             'created_at' => (string)($bonus['created_at'] ?? now_iso()),
             'read_at' => null,
         ];
@@ -364,7 +366,7 @@ final class NotificationService
             $items[] = [
                 'id' => (string)($notification['id'] ?? ''),
                 'type' => (string)($notification['type'] ?? ''),
-                'title' => (string)($notification['title'] ?? ServerLocalization::copy('notifications.item_fallback', 'Notification')),
+                'title' => $this->displayTitle($notification),
                 'message' => $this->displayMessage($notification),
                 'text' => (string)($notification['text'] ?? $notification['message'] ?? ''),
                 'tone' => (string)($notification['tone'] ?? 'info'),
@@ -501,9 +503,47 @@ final class NotificationService
         }
     }
 
+    private function displayTitle(array $notification): string
+    {
+        return match ((string)($notification['type'] ?? '')) {
+            'weekly_match_bonus' => ServerLocalization::copy('server.notifications.service.weekly_title', 'Weekly coins credited'),
+            'first_game_bonus' => ServerLocalization::copy('server.notifications.service.first_game_title', 'New game bonus'),
+            'welcome_match_grant' => ServerLocalization::copy('server.notifications.service.welcome_title', 'Welcome!'),
+            default => (string)($notification['title'] ?? ServerLocalization::copy('notifications.item_fallback', 'Notification')),
+        };
+    }
+
     private function displayMessage(array $notification): string
     {
-        if ((string)($notification['type'] ?? '') !== 'first_game_bonus') {
+        $type = (string)($notification['type'] ?? '');
+        if ($type === 'weekly_match_bonus') {
+            $raw = (string)($notification['message'] ?? '');
+            $games = max(0, (int)($notification['qualifying_games'] ?? 0));
+            $amount = max(0, (int)($notification['amount'] ?? 0));
+            if (($games <= 0 || $amount <= 0) && preg_match_all('/\d+/u', $raw, $matches) && !empty($matches[0])) {
+                $numbers = array_map('intval', $matches[0]);
+                if ($games <= 0) $games = (int)($numbers[0] ?? 0);
+                if ($amount <= 0) $amount = (int)($numbers[count($numbers) - 1] ?? 0);
+            }
+            return ServerLocalization::copy(
+                'server.notifications.service.weekly_message',
+                'Completed matches: {games}. Credited +{amount} coins.',
+                ['games'=>$games,'amount'=>$amount]
+            );
+        }
+
+        if ($type === 'welcome_match_grant') {
+            $raw = (string)($notification['message'] ?? '');
+            $amount = max(0, (int)($notification['amount'] ?? 0));
+            if ($amount <= 0 && preg_match('/\+(\d+)/u', $raw, $matches) === 1) $amount = (int)$matches[1];
+            return ServerLocalization::copy(
+                'server.notifications.service.welcome_message',
+                'Thanks for visiting Mini Games World. We credited you +{amount} coins.',
+                ['amount'=>$amount]
+            );
+        }
+
+        if ($type !== 'first_game_bonus') {
             return (string)($notification['message'] ?? '');
         }
 
