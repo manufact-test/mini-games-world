@@ -54,9 +54,14 @@ const compatibilityTokenKeys = new Set([
 ]);
 const englishLeaves = flatten(en).filter(([key]) => !key.startsWith('_meta.'));
 for (const [key, value] of englishLeaves) {
-  assert(typeof value === 'string' && value.trim() !== '', `English key must be a non-empty string: ${key}`);
+  assert(typeof value === 'string', `English key must be a string: ${key}`);
   const ruValue = readPath(ru, key);
   assert(typeof ruValue === 'string', `English draft key has no canonical RU owner: ${key}`);
+  if (ruValue === '') {
+    assert(value === '', `Canonical empty RU value must remain empty in EN: ${key}`);
+  } else {
+    assert(value.trim() !== '', `English key must be non-empty when RU owner is non-empty: ${key}`);
+  }
   if (compatibilityTokenKeys.has(key)) {
     assert(value === ruValue, `Compatibility parser token must remain locale-invariant: ${key}`);
   } else {
@@ -117,6 +122,7 @@ const completeScopes = [
   'store.purchase',
   'store.products',
   'store.bundles',
+  'store.games',
 ];
 
 for (const scope of completeScopes) {
