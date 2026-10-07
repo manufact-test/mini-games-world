@@ -1,7 +1,7 @@
 {
   "_meta": {
     "locale": "en",
-    "version": 2,
+    "version": 3,
     "status": "draft"
   },
   "common": {
@@ -83,7 +83,38 @@
   "rules": {
     "open": "Rules",
     "version": "Rules version: {version}",
-    "understood": "Got it"
+    "understood": "Got it",
+    "tictactoe": {
+      "title": "Tic-Tac-Toe · {size}×{size}",
+      "subtitle": "Complete a line of {need} marks before your opponent does.",
+      "turn_title": "How to play",
+      "turn_text": "Players take turns placing ✕ and ○ in empty cells on the {size}×{size} board. One turn means one mark.",
+      "win_title": "How to win",
+      "win_text": "Be the first to place {need} of your marks in a row horizontally, vertically, or diagonally.",
+      "win_tip": "On a {size}×{size} board, the winning line is {need} marks in a row.",
+      "draw_title": "Draw",
+      "draw_text": "If every cell is filled and neither player has a winning line, the match ends in a draw.",
+      "diagram_label": "{size}×{size} board: example of a winning line of {need} marks",
+      "diagram_caption": "Example winning line: {need} in a row"
+    },
+    "four_in_a_row": {
+      "title": "Four in a Row · {columns}×{rows}",
+      "subtitle": "Connect four of your pieces in one line before your opponent does.",
+      "turn_title": "How to play",
+      "turn_text": "Choose a column on the {columns}×{rows} board. Your piece drops into the lowest empty cell in that column.",
+      "gravity": "↓ Pieces always fall down",
+      "win_title": "How to win",
+      "win_text": "Be the first to connect {connect} pieces horizontally, vertically, or diagonally.",
+      "horizontal": "Horizontal",
+      "vertical": "Vertical",
+      "diagonal": "Diagonal",
+      "size_title": "{columns}×{rows} board",
+      "size_text": "This match uses a {columns}×{rows} board. The board size can vary, but every variant is won by connecting {connect} pieces.",
+      "draw_title": "Draw",
+      "draw_text": "If the {columns}×{rows} board is completely filled and nobody connects four pieces, the match ends in a draw.",
+      "tip": "💡 Build your own line, but watch your opponent’s threats — sometimes blocking a column in time matters more.",
+      "diagram_label": "Example moves on a {columns}×{rows} board"
+    }
   },
   "home": {
     "stats": {
@@ -480,5 +511,45 @@
     "profile_connect_failed": "Could not connect your game profile. Close Mini Games World and open it again.",
     "telegram_identity_missing": "Telegram did not provide your account details. Close Mini Games World and open it again from the bot chat.",
     "device_registration_failed": "Could not register this device. Close Mini Games World and open it again."
+  },
+  "games": {
+    "router": {
+      "aliases": {
+        "domino": "домино",
+        "go": "го",
+        "chess": "шахмат",
+        "reversi": "реверси",
+        "checkers": "шашк",
+        "battleship": "морской бой",
+        "four_in_a_row": "4 в ряд"
+      },
+      "game_fallback": "Game",
+      "meta_with_bet": "{room} · {bet} coins",
+      "status": {
+        "finished": "Game over",
+        "your_turn": "Your turn",
+        "opponent_turn": "Opponent’s turn"
+      },
+      "unsupported": "The “{game}” game screen is not available yet."
+    },
+    "tictactoe": {
+      "name": "Tic-Tac-Toe",
+      "ui": {
+        "meta": "{room} · {bet} coins · {size}×{size}"
+      }
+    },
+    "four_in_a_row": {
+      "name": "Four in a Row",
+      "ui": {
+        "meta": "{room} · {bet} coins · {columns}×{rows}",
+        "aria_drop": "Drop a piece into column {column}",
+        "aria_board": "Four in a Row board, {columns} by {rows}",
+        "disc": {
+          "yellow": "Yellow piece",
+          "red": "Red piece",
+          "empty": "Empty cell"
+        }
+      }
+    }
   }
 }
