@@ -220,5 +220,34 @@ for (const key of [
   assert(typeof readPath(en, key) === 'string', `Required shared English key missing: ${key}`);
 }
 
+const deferredNonMiniAppServerScopes = [
+  'server.feature_flags.admin',
+  'server.shop_history',
+  'server.payment',
+  'server.webhook',
+  'server.welcome',
+  'server.shop_catalog',
+  'server.prizes',
+  'server.response',
+  'server.telegram',
+];
+
+const englishKeySet = new Set(englishLeaves.map(([key]) => key));
+const missingCanonicalEnglishKeys = flatten(ru)
+  .filter(([key]) => !key.startsWith('_meta.') && !englishKeySet.has(key))
+  .map(([key]) => key);
+
+for (const key of missingCanonicalEnglishKeys) {
+  assert(
+    deferredNonMiniAppServerScopes.some(scope => key === scope || key.startsWith(`${scope}.`)),
+    `Unclassified canonical RU key is missing from final Mini App English coverage: ${key}`
+  );
+}
+
+assert(
+  missingCanonicalEnglishKeys.every(key => key.startsWith('server.')),
+  'Final Mini App English coverage may defer only explicitly classified server-owned copy.'
+);
+
 assert(englishLeaves.length >= 365, `Expected at least 365 English draft leaves after MVP-27.2.2a, got ${englishLeaves.length}.`);
-console.log(`MVP-27.2 English draft catalog: PASS (${englishLeaves.length} leaves; games/rules + Store + Profile complete; RU runtime still authoritative).`);
+console.log(`MVP-27.2 English draft catalog: PASS (${englishLeaves.length} leaves; all Mini App player-facing owners complete; deferred non-Mini-App server copy explicitly classified; RU runtime still authoritative).`);
