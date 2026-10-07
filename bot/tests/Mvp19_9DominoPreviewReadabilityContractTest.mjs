@@ -86,7 +86,7 @@ expect(wrapper.includes("store-screen-domino-effects-v9.js?v=12&mvp19_9=domino-s
 
 expect(profile.includes("dominoPreviewMarkup } from '../screens/store-screen-domino-store-v1.js?v=14&mvp19_9=domino-svg-pips-v48'"), 'Profile must reuse the same v44 Store primitive.');
 expect(profile.includes('store-effects-scene-v9.css?v=7&mvp19_9=domino-premium-effects-v15-proportions') && profile.includes('store-effects-preview-component-v44.css?v=4&mvp19_9=domino-svg-pips-v48'), 'Profile must share both base geometry and the exact v44 component stylesheet.');
-expect(profileCss.includes('mgw-domino-profile-tab-mark::before'), 'Profile Domino tab icon must remain accepted.');
+expect(profileCss.includes('data-profile-game-tab="domino"] .profile-v2-game-tab-mark::before'), 'Profile Domino tab icon must remain accepted through the canonical tab mark.');
 expect(!hardRatio.includes('getBoundingClientRect') && !hardRatio.includes('setTimeout'), 'Profile must not regain an imperative geometry owner.');
 
 expect(manifest.includes('domino_effects=svg-pips-v48') && manifest.includes('domino_preview=svg-pips-v48') && manifest.includes('domino_preview=shared-svg-pips-v48'), 'Active Store/Profile graph must publish fresh v44 preview identities.');
