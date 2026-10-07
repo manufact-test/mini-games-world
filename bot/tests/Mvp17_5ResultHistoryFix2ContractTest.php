@@ -37,7 +37,7 @@ $assert(is_string($home) && str_contains($home, 'void refreshHistoryCache({ forc
 $assert(is_string($home) && str_contains($home, "document.addEventListener('mgw:game-finished'"), 'Finished matches must schedule a background History cache refresh.');
 $assert(is_string($home) && str_contains($home, 'void refreshHistoryCache().catch(() => {});'), 'Opening the More menu must refresh History in the background without blocking interaction.');
 $assert(is_string($home) && substr_count($home, 'historyCache || await refreshHistoryCache({ force:true })') >= 2, 'Both Match History and Balance History must prefer already-prefetched data on click.');
-$assert(is_string($home) && str_contains($home, 'historyCachePromise=api.historyFast()'), 'Menu History cache must use the fast one-shot History endpoint owner.');
+$assert(is_string($home) && str_contains($home, 'historyCachePromise=api.history()'), 'Menu History cache must use the result-aware History owner so a just-finished match cannot be skipped.');
 $assert(is_string($client) && str_contains($client, "historyFast: () => request('history')"), 'API client must expose a fast one-shot History read for menu prefetch.');
 
 $assert($matchHistory !== '' && str_contains($matchHistory, "const game=item.game_title||t('home.history.match');"), 'Actual History modal must display the real game title with the localized fallback owner.');
