@@ -1,7 +1,7 @@
 {
   "_meta": {
     "locale": "en",
-    "version": 1,
+    "version": 2,
     "status": "draft"
   },
   "common": {
@@ -216,5 +216,269 @@
     "player": "Player",
     "member_since": "Member since {date}",
     "save_error": "Could not save your MGW profile."
+  },
+  "acceptance_runtime": {
+    "search": {
+      "room_gold": "Gold room",
+      "room_match": "Match room",
+      "primary": "{game} · {room} · entry {bet} coins",
+      "domino_classic": "Classic 0–6",
+      "board": "{size}×{size} board",
+      "game_fallback": "Game"
+    },
+    "launch": {
+      "timeout_title": "Match did not start",
+      "timeout_note": "Your opponent did not connect in time",
+      "upcoming_title": "Match starting soon",
+      "prepare_note": "Get ready to play",
+      "first_move_note": "Get ready for the first move",
+      "syncing_title": "Almost ready",
+      "syncing_note": "Just a moment",
+      "ready_title": "Ready",
+      "ready_note": "Go!"
+    }
+  },
+  "game_invites": {
+    "game_titles": {
+      "tictactoe": "Tic-Tac-Toe",
+      "four_in_a_row": "Four in a Row",
+      "battleship": "Battleship",
+      "checkers": "Checkers",
+      "reversi": "Reversi",
+      "chess": "Chess",
+      "go": "Go",
+      "domino": "Domino"
+    },
+    "player": "Player",
+    "player_genitive": "player",
+    "game_fallback": "Game",
+    "initial": "I",
+    "social": {
+      "title": "Invite {name}",
+      "choose_game": "Choose a game.",
+      "setup_title": "Invite to “{game}”",
+      "choose_variant": "Choose a game variant.",
+      "debit_note": "Coins are charged only after the match starts.",
+      "variant_title": "Game variant",
+      "entry_title": "Entry fee",
+      "entry_value": "{count} coins",
+      "invite_named": "Invite {name}",
+      "invite_player": "Invite player",
+      "share_link": "Share link",
+      "method_selected": "The selected player will receive the invitation.",
+      "method_list": "A player from the list receives the invitation in the app immediately. Use the link for someone new.",
+      "picker_title": "Choose a player",
+      "picker_loading": "Loading players",
+      "picker_checking": "Checking availability",
+      "back_conditions": "Back to match settings",
+      "no_recent": "No recent opponents yet",
+      "no_recent_note": "Go back and send a link.",
+      "load_players_failed": "Could not load players",
+      "recent_opponent": "recent opponent",
+      "create_failed": "Could not create the invitation.",
+      "send_failed": "Could not send the invitation.",
+      "cancel_failed_retry": "Could not cancel the invitation. Try again.",
+      "cancel_failed": "Could not cancel the invitation.",
+      "link_prepare_failed": "Could not prepare the link.",
+      "invite_prepare_failed": "Could not prepare the invitation.",
+      "send_failed_retry": "Could not send the invitation. Try again.",
+      "share_ready_title": "Link ready",
+      "share_device_note": "Telegram cannot confirm delivery on this device.",
+      "wait_link_open": "The invitation will start waiting for a response when the recipient opens the link.",
+      "open_telegram": "Open Telegram list",
+      "copy_link": "Copy link",
+      "cancel": "Cancel",
+      "link_unavailable": "The link is temporarily unavailable.",
+      "link_copied": "Link copied.",
+      "copy_prompt": "Copy the link:",
+      "action_failed": "Could not complete the action."
+    },
+    "rematch": {
+      "proposed": "Rematch offered",
+      "waiting_opponent": "Waiting for your opponent’s response.",
+      "create_failed": "Could not create a rematch.",
+      "propose_failed": "Could not offer a rematch.",
+      "play_again": "Play again"
+    },
+    "direct": {
+      "sent_title": "Invitation sent",
+      "for_player": "For {name}",
+      "sending": "Sending invitation…",
+      "cancel_invite": "Cancel invitation"
+    },
+    "incoming": {
+      "title": "You have been invited to play",
+      "from_player": "From {name}",
+      "accept": "Accept invitation",
+      "decline": "Decline",
+      "respond": "Respond to the invitation"
+    },
+    "summary": {
+      "game": "Game",
+      "variant": "Variant",
+      "entry": "Entry",
+      "entry_value": "{count} coins"
+    },
+    "owner_wait": {
+      "waiting_response": "Waiting for a response",
+      "rematch_proposed": "Rematch offered",
+      "sent": "Invitation sent",
+      "cancel_invite": "Cancel invitation"
+    },
+    "ready": {
+      "opponent_agreed": "Opponent accepted",
+      "player_ready": "{name} is ready to play.",
+      "start": "Start game",
+      "cancel": "Cancel",
+      "start_match": "Start the match"
+    },
+    "accepted": {
+      "title": "Invitation accepted",
+      "waiting_from": "Waiting for {name} to start the match.",
+      "cancel_participation": "Cancel participation",
+      "wait_start": "Waiting for the match to start",
+      "wait_start_sentence": "Waiting for the match to start.",
+      "wait_until": "Waiting until {time}."
+    },
+    "terminal": {
+      "note": "This invitation can no longer be used.",
+      "understood": "Got it",
+      "declined": "Invitation declined",
+      "cancelled": "Invitation cancelled",
+      "expired": "Invitation expired",
+      "timed_out": "Waiting time expired",
+      "closed": "Invitation closed"
+    },
+    "loading": {
+      "accept": "Accepting…",
+      "start": "Starting…",
+      "decline": "Declining…",
+      "cancel": "Cancelling…",
+      "wait": "Please wait…"
+    },
+    "status": {
+      "start_match": "Start the match",
+      "wait_start": "Waiting for the match to start",
+      "respond": "Respond to the invitation",
+      "waiting_response": "Waiting for a response",
+      "waiting": "Waiting"
+    },
+    "network": {
+      "unavailable": "This invitation is no longer available.",
+      "retry": "Try again.",
+      "server_unreachable": "Could not reach the server. Check your internet connection and try again.",
+      "overloaded": "The connection is overloaded. Try again in a few seconds.",
+      "service_unavailable": "The invitation service is temporarily unavailable.",
+      "open_link_failed": "Could not open the invitation. Try opening the link again."
+    },
+    "board": {
+      "four_classic_suffix": " · classic",
+      "domino_classic": "Classic 0–6",
+      "normal_match": "Regular match"
+    }
+  },
+  "game_screen": {
+    "waiting_start": "Waiting for the match to start",
+    "timer_seconds": "{count} sec",
+    "roles": {
+      "you": "you",
+      "opponent": "opponent"
+    },
+    "leave": {
+      "title": "Leave the match?",
+      "note": "The match is not over yet. If you leave now, it will count as a technical loss.",
+      "continue": "Continue playing",
+      "confirm": "Leave and end match"
+    },
+    "errors": {
+      "action_restore": "Could not complete the action. The board was restored.",
+      "viewer": "Could not identify the player needed to finish the match.",
+      "leave": "Could not leave the match.",
+      "leave_restore": "Could not finish the match. The game was restored."
+    },
+    "result": {
+      "draw_title": "Draw",
+      "draw_text": "The match ended in a draw.",
+      "not_started_title": "Match did not start",
+      "not_started_text": "Your opponent did not connect in time. The entry fee was refunded to your balance.",
+      "win_title": "Victory!",
+      "loss_title": "Defeat",
+      "timeout_win": "Your opponent did not move in time.",
+      "timeout_loss": "Your turn timer expired. The match was recorded as a technical loss.",
+      "left_win": "Your opponent left the match.",
+      "left_loss": "You left the match. The match was recorded as a technical loss.",
+      "checkmate_win": "Checkmate.",
+      "checkmate_loss": "Your king was checkmated.",
+      "domino_empty_win": "You were the first to play all your tiles.",
+      "domino_empty_loss": "Your opponent was the first to play all their tiles.",
+      "normal_win": "The match ended in your favor.",
+      "normal_loss": "Your opponent came out on top.",
+      "pending_confirming": "confirming…",
+      "pending_counting": "calculating…",
+      "tournament_saved": "Tournament result saved to the bracket.",
+      "go_tournament": "Return to tournament",
+      "new_opponent": "Find a new opponent",
+      "home": "Back to menu",
+      "unavailable": "result unavailable",
+      "tournament_pair": "{first} vs {second}",
+      "tournament_participants": "Tournament pair participants",
+      "tournament_duel": "Tournament match · {title}",
+      "summary_unavailable": "Match: result unavailable · Balance: —",
+      "summary": "Match: {delta} · Balance: {balance}",
+      "summary_status": "Match: {status} · Balance: —",
+      "opponent_fallback": "Opponent",
+      "versus": "vs {opponent}",
+      "coins": "{value} coins",
+      "match_fallback": "Match",
+      "chess_draw": {
+        "stalemate": "Stalemate.",
+        "insufficient_material": "Insufficient material for checkmate.",
+        "threefold_repetition": "The position was repeated three times.",
+        "fifty_move": "The 50-move rule applied.",
+        "fallback": "The game ended in a draw."
+      },
+      "final_score": "Final score: {mine}:{theirs}.",
+      "domino_blocked_score": "The game is blocked. Remaining pips: {mine}:{theirs}.",
+      "domino_score": "Remaining pips: {mine}:{theirs}."
+    }
+  },
+  "search": {
+    "start_failed": "Could not start matchmaking.",
+    "lock_default": "You already have an active game on another device.",
+    "lock_markers": {
+      "active_game_other_device": "active game on another device",
+      "searching_other_device": "searching for a match on another device",
+      "game_open_other_device": "game already open on another device"
+    },
+    "match_label": "{game} · entry {bet} coins",
+    "board_suffix": " · {size}×{size} board"
+  },
+  "setup": {
+    "subtitle": "Choose match settings and confirm your entry.",
+    "variant_label": "Size / variant",
+    "entry_label": "Entry fee",
+    "entry_value": "{count} coins",
+    "confirm": "Start search",
+    "invite": "Invite a friend",
+    "one_on_one": "1 vs 1",
+    "search_label": "{game} · entry {count} coins · {variant}",
+    "insufficient_title": "Not enough coins",
+    "insufficient_note": "You need {needed} coins to start the match. You currently have {balance}.",
+    "economy_unavailable": "The entry fee is temporarily unavailable."
+  },
+  "session": {
+    "lock_default": "The game is already open on another device.",
+    "device_session_unknown": "Could not identify this device session. Close the app and open it again from Telegram.",
+    "active_game_other_device": "You already have an active game on another device. Continue playing there.",
+    "search_other_device": "You are already searching for a match on another device. Stop the search there or wait a few minutes."
+  },
+  "network": {
+    "server_unreachable": "Could not reach the server. Check your internet connection and try again.",
+    "request_failed": "Could not complete the request. Try again.",
+    "archive_download_failed": "Could not download the archive. Check your internet connection and try again.",
+    "session_ownership_stale_reconnecting": "This device session is outdated. Reconnecting the profile automatically.",
+    "profile_connect_failed": "Could not connect your game profile. Close Mini Games World and open it again.",
+    "telegram_identity_missing": "Telegram did not provide your account details. Close Mini Games World and open it again from the bot chat.",
+    "device_registration_failed": "Could not register this device. Close Mini Games World and open it again."
   }
 }
