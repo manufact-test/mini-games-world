@@ -123,6 +123,7 @@ const completeScopes = [
   'store.products',
   'store.bundles',
   'store.games',
+  'store.wrappers',
 ];
 
 for (const scope of completeScopes) {
