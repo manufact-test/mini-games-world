@@ -1,7 +1,7 @@
 {
   "_meta": {
     "locale": "en",
-    "version": 32,
+    "version": 33,
     "status": "draft"
   },
   "common": {
@@ -3409,6 +3409,175 @@
         "recent_player": "recent player",
         "friend": "friend"
       }
+    },
+    "game_runtime": {
+      "common": {
+        "insufficient_entry": "Not enough coins to enter.",
+        "game_not_found": "Game not found.",
+        "not_participant": "You are not a participant in this game.",
+        "not_participating": "You are not participating in this game.",
+        "game_not_active": "The game is no longer active.",
+        "not_your_turn": "It is not your turn.",
+        "opponent_turn": "It is the opponent’s turn.",
+        "cell_unavailable": "This cell is unavailable.",
+        "active_match_conflict": "The player is already participating in another active match.",
+        "opponent_fallback": "Opponent",
+        "opponent_reconnecting": "The opponent is reconnecting. Please wait.",
+        "engine_unavailable": "The engine for this game is not connected yet.",
+        "invalid_action": "Invalid action for this game.",
+        "cell_not_selected": "No cell selected.",
+        "state_updating": "The game state is updating.",
+        "result_unavailable": "The match result is not available yet.",
+        "match_not_finished": "The match is not finished yet.",
+        "financial_result_unavailable": "The financial result of the match is not available yet.",
+        "device_session_not_found": "Device session not found.",
+        "game_unavailable_room": "This game is unavailable in the selected room.",
+        "resolve_confirmed_invite": "Start or cancel the confirmed invitation first.",
+        "resolve_pending_invite": "Respond to or cancel the current invitation first.",
+        "unsupported_action": "This action is not supported by the selected game.",
+        "bot_no_moves": "The bot has no legal moves."
+      },
+      "economy": {
+        "entry_description": "Match entry against {opponent}",
+        "draw_refund": "Coin refund for a draw",
+        "match_win": "Match winnings",
+        "opponent_no_show_refund": "Refund: opponent did not connect",
+        "cancelled_before_start_refund": "Refund: search cancelled before the match started",
+        "server_failure_refund": "Refund: match cancelled because of a server failure",
+        "both_disconnected_refund": "Refund: both players disconnected",
+        "tournament_both_disconnected": "Tournament match: neither player returned within 3 minutes"
+      },
+      "match_preparation": {
+        "syncing": "The match is still syncing the players.",
+        "opponent_no_show": "The opponent did not connect. The match is being cancelled.",
+        "countdown": "The match will start after the countdown.",
+        "turn_not_started": "The turn has not started yet.",
+        "match_not_started": "The match has not started yet."
+      },
+      "presence": {
+        "end_old_failed": "Could not end presence for the previous account.",
+        "update_failed": "Could not update player presence.",
+        "prepare_failed": "Could not prepare player presence."
+      },
+      "reactions": {
+        "invalid": "Invalid reaction.",
+        "not_owned": "You do not own this reaction yet.",
+        "unavailable": "Reactions are temporarily unavailable.",
+        "cooldown": "Wait a second before sending another reaction.",
+        "match_finished": "The match is already finished."
+      },
+      "battleship": {
+        "two_players": "Battleship requires two players.",
+        "invalid_action": "Invalid action for Battleship.",
+        "select_ship": "Choose a ship from your fleet.",
+        "select_cell": "Choose a cell on the board.",
+        "size_complete": "All ships of this size have already been placed.",
+        "cannot_place": "A ship cannot be placed here.",
+        "ship_not_found": "Ship not found.",
+        "setup_finished": "Fleet placement is already complete.",
+        "place_all_ships": "Place all 10 ships first.",
+        "finish_setup": "Finish placing your fleet first.",
+        "select_shot": "Choose a cell to fire at.",
+        "already_shot": "You have already fired at this cell.",
+        "auto_place_failed": "Could not place the fleet automatically.",
+        "randomize_validation_failed": "Could not validate the randomized fleet placement.",
+        "randomize_invalid_ship": "Invalid ship in randomized placement.",
+        "randomize_invalid_fleet": "The randomized placement has an invalid fleet composition.",
+        "randomize_invalid_size": "Invalid ship size in randomized placement.",
+        "randomize_invalid_cell": "Invalid ship cell in randomized placement.",
+        "randomize_out_of_bounds": "A ship extends beyond the board.",
+        "randomize_not_straight": "The ship must form a straight line with no gaps."
+      },
+      "domino": {
+        "two_players": "Domino requires two players.",
+        "invalid_action": "Invalid action for Domino.",
+        "tile_not_in_hand": "This tile is not in your hand.",
+        "tile_not_playable": "This tile does not match either open end.",
+        "select_end": "Choose the left or right end of the chain.",
+        "playable_tile_exists": "You already have a playable tile.",
+        "first_move_failed": "Could not determine the first move.",
+        "tile_not_for_end": "This tile does not match the selected end.",
+        "invalid_tile": "Invalid tile."
+      },
+      "chess": {
+        "two_players": "Chess requires two players.",
+        "invalid_action": "Invalid action for Chess.",
+        "select_move": "Choose a piece and a destination square.",
+        "select_promotion": "Choose a piece for pawn promotion.",
+        "select_legal_move": "Choose a legal move.",
+        "select_own_piece": "Choose one of your own pieces.",
+        "king_in_check": "This move is unavailable. Your king cannot remain in check.",
+        "select_available_promotion": "Choose an available piece for pawn promotion."
+      },
+      "go": {
+        "two_players": "Go requires two players.",
+        "invalid_action": "Invalid action for Go.",
+        "select_point": "Choose an intersection on the board.",
+        "point_occupied": "This intersection is already occupied.",
+        "no_liberties": "This group would have no liberties.",
+        "ko_repeat": "Play somewhere else first."
+      },
+      "checkers": {
+        "two_players": "Checkers requires two players.",
+        "invalid_action": "Invalid action for Checkers.",
+        "select_move": "Choose a piece and a destination square.",
+        "select_cell": "Choose a square on the board.",
+        "capture_required": "A capture is mandatory. Choose a highlighted move.",
+        "move_unavailable": "You cannot move there."
+      },
+      "reversi": {
+        "two_players": "Reversi requires two players.",
+        "invalid_action": "Invalid action for Reversi.",
+        "select_move": "Choose a cell for your move.",
+        "select_cell": "Choose a cell on the board.",
+        "move_unavailable": "You cannot place a piece there. Choose a highlighted cell."
+      },
+      "four_in_a_row": {
+        "two_players": "Four in a Row requires two players.",
+        "select_column": "Choose a column for your move.",
+        "select_available_column": "Choose an available column.",
+        "piece_missing": "The game piece is not defined.",
+        "column_full": "This column is already full."
+      },
+      "legacy_zone": {
+        "archived_gold_invite": "The old Gold invitation is available only in the archive. Create a new invitation.",
+        "read_only": "Legacy Match/Gold operations are view-only. New operations are disabled."
+      }
+    },
+    "cosmetic_store": {
+      "already_owned": "You already own this item.",
+      "request_conflict": "This purchase request has already been used for another offer.",
+      "purchase_in_progress": "A previous purchase of these items is still being completed. Refresh the Store.",
+      "ownership_conflict": "The purchase contents changed. Your balance was restored; refresh the Store.",
+      "price_changed": "The offer price changed. Your balance was restored; refresh the Store.",
+      "offer_unavailable": "This Store offer is no longer available.",
+      "item_unavailable": "This item is no longer available.",
+      "item_not_owned": "Buy this item first.",
+      "equip_failed": "Could not select the item.",
+      "prepare_failed": "Could not prepare the purchase. Refresh the Store.",
+      "insufficient_balance": "Not enough coins for this purchase.",
+      "account_unavailable": "MGW profile unavailable for this session.",
+      "purchase_failed": "Could not complete the purchase.",
+      "invalid_request": "Invalid request.",
+      "unavailable": "The MGW Store is temporarily unavailable.",
+      "item_cannot_equip": "This item cannot be selected.",
+      "profile_equip_failed": "Could not select the profile cosmetic.",
+      "item_not_selectable": "This item cannot be selected through the Store.",
+      "slot_not_unequip": "This slot cannot be unequipped through the Store.",
+      "invalid_action": "Unknown Store action.",
+      "load_failed": "Could not load the MGW Store.",
+      "transactions": {
+        "purchase_description": "MGW cosmetic purchase",
+        "refund_description": "Coin refund for an incomplete cosmetic purchase"
+      }
+    },
+    "game_reactions_endpoint": {
+      "invalid_request": "Invalid request.",
+      "profile_unavailable": "MGW profile unavailable for this session.",
+      "unavailable": "Reactions are temporarily unavailable.",
+      "set_unavailable": "Reaction set unavailable.",
+      "unknown_action": "Unknown reaction action.",
+      "failed": "Could not complete the reaction action."
     }
   }
 }
