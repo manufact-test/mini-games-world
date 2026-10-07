@@ -1,7 +1,7 @@
 {
   "_meta": {
     "locale": "en",
-    "version": 3,
+    "version": 4,
     "status": "draft"
   },
   "common": {
@@ -114,6 +114,50 @@
       "draw_text": "If the {columns}×{rows} board is completely filled and nobody connects four pieces, the match ends in a draw.",
       "tip": "💡 Build your own line, but watch your opponent’s threats — sometimes blocking a column in time matters more.",
       "diagram_label": "Example moves on a {columns}×{rows} board"
+    },
+    "reversi": {
+      "title": "Reversi · {size}×{size}",
+      "subtitle": "Flip your opponent’s pieces and finish with the majority.",
+      "size_title": "{size}×{size} board",
+      "size_text": "This match uses a {size}×{size} board. The basic rules are the same for 6×6, 8×8, and 10×10.",
+      "start_title": "Starting position",
+      "start_text": "Four pieces begin diagonally in the center of the {size}×{size} board. Sides are assigned at random, and Black always moves first.",
+      "legal_title": "Legal move",
+      "legal_text": "Place a piece so that a continuous line of your opponent’s pieces lies between the new piece and one of your existing pieces. Legal cells are highlighted.",
+      "flip_title": "Flipping a line",
+      "flip_text": "All trapped opponent pieces flip to your color. Horizontal, vertical, and diagonal lines are checked.",
+      "multi_title": "Multiple directions",
+      "multi_text": "A single move can flip several lines at once. Every opponent piece enclosed by your pieces after the new placement flips immediately.",
+      "pass_title": "Passing a turn",
+      "pass_text": "If you have no legal moves, the system automatically passes the turn to your opponent. You cannot voluntarily pass when a legal move is available.",
+      "finish_title": "End and scoring",
+      "finish_text": "The game ends when the board is full or neither player has a legal move. The player with more pieces wins. If the score is tied, the result is a draw and the entry fee is refunded.",
+      "timer_title": "Timer",
+      "timer_text": "You have 60 seconds per turn. Leaving an active game or running out of time results in a technical loss.",
+      "diagram_label": "Example Reversi rule on a {size}×{size} board"
+    },
+    "go": {
+      "title": "Go · {size}×{size}",
+      "subtitle": "Surround enemy stones and claim territory.",
+      "size_title": "{size}×{size} board",
+      "size_text": "This match uses a {size}×{size} board. The rules are the same for 9×9 and 13×13; only the board size and game length change.",
+      "start_title": "Empty board and first move",
+      "start_text": "The game begins on an empty {size}×{size} board. Stones are placed on line intersections and do not move afterward. Sides are assigned at random, and Black moves first.",
+      "liberties_title": "Groups and liberties",
+      "liberties_text": "Horizontally or vertically adjacent stones of the same color form a group. Empty adjacent intersections are its liberties. Diagonal stones are not connected.",
+      "capture_title": "Capturing a group",
+      "capture_text": "If an opponent’s stone or group has no liberties left, the entire group is removed from the board. One move can capture several groups.",
+      "suicide_title": "Illegal move",
+      "suicide_text": "You cannot place a stone if your own group would have no liberties. The move is allowed if it first captures opposing stones and frees intersections.",
+      "ko_title": "Position repetition rule",
+      "ko_text": "You cannot immediately recreate a board position that has already occurred in the game. After a reciprocal capture, you must first play somewhere else.",
+      "pass_title": "Passing and ending the game",
+      "pass_text": "You may pass at any time. Two consecutive passes end the game. Before the second pass, the game asks you to confirm that you want to finish.",
+      "score_title": "Scoring",
+      "score_text": "You score one point for every stone on the board and every surrounded empty intersection. Mixed areas are neutral. White receives {komi} komi points because Black moves first. All stones remaining after the second pass are considered alive.",
+      "timer_title": "Timer",
+      "timer_text": "You have 60 seconds per turn. Leaving an active game or running out of time results in a technical loss.",
+      "diagram_label": "Example Go rule on a {size}×{size} board"
     }
   },
   "home": {
@@ -548,6 +592,110 @@
           "yellow": "Yellow piece",
           "red": "Red piece",
           "empty": "Empty cell"
+        }
+      }
+    },
+    "reversi": {
+      "name": "Reversi",
+      "ui": {
+        "meta": {
+          "fallback_room": "Game",
+          "summary": "{room} · {bet} coins · {size}×{size}"
+        },
+        "player_mark": {
+          "black": "● black",
+          "white": "○ white"
+        },
+        "status": {
+          "opponent_passed": "Opponent passed — your turn",
+          "your_turn": "Your turn",
+          "opponent_turn": "Opponent’s turn"
+        },
+        "score": {
+          "you": "You",
+          "opponent": "Opponent"
+        },
+        "legend": {
+          "available": "available move",
+          "last": "last move"
+        },
+        "errors": {
+          "illegal_move": "You cannot place a piece here. Choose a highlighted cell."
+        },
+        "events": {
+          "animating_self": "Your move — flipping pieces",
+          "animating_opponent": "Opponent moved — flipping pieces",
+          "finished": "Game over · ● {black} : {white} ○",
+          "pass_self": "You had no legal moves — turn passed",
+          "pass_opponent": "Opponent has no legal moves — your turn again",
+          "your_turn_hint": "Your turn — choose a highlighted cell",
+          "opponent_turn_hint": "Opponent’s turn — watch the board"
+        },
+        "result": {
+          "draw": "Draw",
+          "victory": "Victory",
+          "defeat": "Defeat"
+        },
+        "cell": {
+          "legal": "{cell}: place a piece",
+          "black": "{cell}: black piece",
+          "white": "{cell}: white piece",
+          "empty": "{cell}: empty cell"
+        }
+      }
+    },
+    "go": {
+      "name": "Go",
+      "ui": {
+        "game_fallback": "Game",
+        "meta": "{room} · {bet} coins · {size}×{size}",
+        "side": {
+          "black": "● black",
+          "white": "○ white"
+        },
+        "status": {
+          "opponent_passed": "Opponent passed — your turn",
+          "your_turn": "Your turn",
+          "opponent_turn": "Opponent’s turn"
+        },
+        "actions": {
+          "pass_finish": "Pass and finish game",
+          "pass": "Pass"
+        },
+        "finish_confirm": {
+          "title": "Finish the game?",
+          "note": "This is the second consecutive pass. Territory will be counted automatically after it.",
+          "stones_note": "All stones remaining on the board are considered alive and count toward the result.",
+          "confirm": "Finish game",
+          "continue": "Continue playing"
+        },
+        "event": {
+          "your_move": "Your turn",
+          "opponent_move": "Opponent’s turn",
+          "capture_group": "removing the surrounded group",
+          "self_placed": "Your stone was placed",
+          "opponent_placed": "Opponent placed a stone",
+          "finished": "Game over — counting territory",
+          "self_pass": "You passed",
+          "opponent_pass": "Opponent passed",
+          "next_pass_finishes": "the next pass will end the game",
+          "your_turn_hint": "Your turn — choose an empty intersection",
+          "opponent_turn_hint": "Opponent’s turn — watch the board"
+        },
+        "score": {
+          "total": "Final {mine}:{theirs}",
+          "detail": "Your territory: {mineTerritory} · opponent: {theirTerritory} · White komi: {komi}"
+        },
+        "result": {
+          "draw": "Draw",
+          "victory": "Victory",
+          "defeat": "Defeat"
+        },
+        "point": {
+          "black": "black stone",
+          "white": "white stone",
+          "empty": "empty",
+          "label": "Row {row}, column {column}: {state}"
         }
       }
     }
