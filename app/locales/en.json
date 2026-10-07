@@ -1,7 +1,7 @@
 {
   "_meta": {
     "locale": "en",
-    "version": 19,
+    "version": 20,
     "status": "draft"
   },
   "common": {
@@ -2444,6 +2444,62 @@
       "restart_minute": "The match will restart in 1 minute.",
       "round_break": "Break between rounds.",
       "round_completed": "{completed}/{total} completed"
+    },
+    "terminal": {
+      "rewards": {
+        "golden_ticket": "Golden Ticket",
+        "champion_crown": "Champion Crown · 30 days",
+        "winner_badge": "Winner Badge · permanent",
+        "champion_cosmetics": "Champion Set · permanent",
+        "hall_of_fame": "Hall of Fame",
+        "cup_gold": "Gold Cup",
+        "silver_frame": "Silver Frame · 30 days",
+        "finalist_result": "Finalist Mark · permanent",
+        "cup_silver": "Silver Cup",
+        "bronze_mark": "Bronze Mark · 30 days",
+        "third_place_result": "3rd Place · permanent",
+        "cup_bronze": "Bronze Cup"
+      },
+      "reward_fallback": "Tournament reward",
+      "review_kicker": "Prize review",
+      "completed_kicker": "Tournament completed",
+      "self_hold_title": "Your reward is temporarily under review",
+      "other_hold_title": "One reward is temporarily under review",
+      "settling_title": "Finalizing results and issuing rewards…",
+      "self_hold_note": "We are reviewing the result. You do not need to do anything again: the final result will appear here after review and, if confirmed, the reward will be issued.",
+      "other_hold_note": "One prize result is under review. Final placements and rewards will update automatically after the review.",
+      "settling_note": "The bracket result is already recorded. Rewards will appear automatically after processing is complete.",
+      "champion": "Champion",
+      "second_place": "2nd place",
+      "third_place": "3rd place",
+      "test_no_reward": "test · no reward",
+      "coin_amount": "{amount} coins",
+      "participation_done": "Participation completed",
+      "disqualified": "Disqualified",
+      "placement": "{place} place",
+      "reward_amount": "Reward: {amount} coins",
+      "no_money_reward": "No cash reward.",
+      "balance_after": "Balance after settlement:",
+      "all_done_rewards": "All tournament matches are complete. Rewards issued",
+      "not_defined": "Not determined",
+      "your_result": "Your result",
+      "go_rating": "Go to rating"
+    },
+    "progression": {
+      "match_finished_wait_round": "Your match is complete · waiting for the other matches in the round.",
+      "eliminated_next_round": "You have been eliminated · the bracket has already moved to the next round.",
+      "eliminated": "You have been eliminated from the tournament.",
+      "next_round_formed": "Your match is complete · the next round has already been formed.",
+      "round": "Round {round_no}",
+      "round_pair": "Round {round_no} · pair {pair_no}",
+      "next_match_preparing": "The next match is being prepared.",
+      "draw_replay_wait": "Draw · replay starts in one minute. Sides will switch.",
+      "draw_replay_ready": "Replay ready · launching match.",
+      "round_break_wait": "Round complete · break before the next match.",
+      "round_break_ready": "Break over · launching the next match.",
+      "rematch_wait": "Rematch is being prepared.",
+      "rematch_ready": "Rematch ready · launching.",
+      "attempt_suffix": " · attempt {attempt_no}"
     }
   }
 }
