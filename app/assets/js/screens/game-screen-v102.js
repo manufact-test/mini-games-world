@@ -23,6 +23,7 @@ import {
 import { t, formatNumber as formatLocalizedNumber } from '@mgw/i18n';
 
 const GAME_TYPES = new Set(['tictactoe','four_in_a_row','battleship','checkers','reversi','chess','go','domino']);
+const LAUNCH_GAME_POLL_INTERVAL_MS = 300;
 const gameText = (key, params = {}) => t(`game_screen.${key}`, params);
 
 const runtime = window.__MGW_V100_GAME_RUNTIME__ ||= {
@@ -126,9 +127,28 @@ export function startGamePolling(gameId){
   const id = String(gameId || state.activeGame?.id || '');
   if (!id) return;
   state.timers.search = clearTimer(state.timers.search);
-  state.timers.game = clearTimer(state.timers.game);
-  state.timers.game = window.setInterval(() => refreshGame(id), APP_CONFIG.gameIntervalMs);
+  setGamePollingCadence(id, gamePollIntervalFor(state.activeGame));
   window.setTimeout(() => refreshGame(id), Math.min(180, Math.max(60, Number(APP_CONFIG.gameIntervalMs || 450) / 3)));
+}
+
+function gamePollIntervalFor(game){
+  const phase = String(game?.launch_phase || '');
+  if (phase === 'preparing' || phase === 'countdown') {
+    return Math.min(Number(APP_CONFIG.gameIntervalMs || 1500), LAUNCH_GAME_POLL_INTERVAL_MS);
+  }
+  return Number(APP_CONFIG.gameIntervalMs || 1500);
+}
+
+function setGamePollingCadence(gameId, intervalMs){
+  const id = String(gameId || '');
+  if (!id) return;
+  const item = gameRuntime(id);
+  const cadence = Math.max(100, Number(intervalMs || APP_CONFIG.gameIntervalMs || 1500));
+  if (state.timers.game && Number(item.pollIntervalMs || 0) === cadence) return;
+
+  state.timers.game = clearTimer(state.timers.game);
+  item.pollIntervalMs = cadence;
+  state.timers.game = window.setInterval(() => refreshGame(id), cadence);
 }
 
 export function clearGameView(){
@@ -178,6 +198,7 @@ async function refreshGame(gameId){
     state.selectedGame = gameTypeOf(game);
 
     renderGame(game, viewer, false);
+    setGamePollingCadence(gameId, gamePollIntervalFor(game));
     if (String(game.status || '') === 'finished') finishGame(game, viewer);
   } catch (error) {
     // Background game-state polling is best-effort. The active read-only watcher
@@ -775,6 +796,7 @@ function gameRuntime(gameId){
       queue:[],
       running:false,
       pollBusy:false,
+      pollIntervalMs:0,
       surrenderPending:false,
       generation:0,
       interactionGeneration:0,

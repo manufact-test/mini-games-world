@@ -3,6 +3,7 @@ import { haptic } from './telegram/telegram-app.js?v=27';
 import { t } from '@mgw/i18n';
 
 const LAUNCH_COUNTDOWN_STEP_MS = 1000;
+const LAUNCH_FIRST_BEAT_MIN_MS = 180;
 const LAUNCH_READY_HOLD_MS = 260;
 const TTT_FIRST_TAP_GRACE_MS = 400;
 
@@ -441,9 +442,19 @@ function syncLaunchPresentation(game, phase){
     const remainingToStart = startsAtMs !== null && serverNowMs !== null
       ? Math.max(0, startsAtMs - serverNowMs)
       : null;
-    const elapsedAtReceipt = remainingToStart === null
+    const authoritativeElapsedAtReceipt = remainingToStart === null
       ? 0
       : Math.max(0, Math.min(numbersDuration, numbersDuration - remainingToStart));
+    // A delayed first ordinary countdown response must not make the accepted
+    // 3-2-1 sequence appear to begin at 2. Keep a short perceptible first beat
+    // only for the three-second flow. Longer authoritative countdowns (including
+    // tournaments) retain their exact server-derived elapsed time.
+    const elapsedAtReceipt = presentation.countdownSeconds === 3
+      ? Math.min(
+          authoritativeElapsedAtReceipt,
+          Math.max(0, LAUNCH_COUNTDOWN_STEP_MS - LAUNCH_FIRST_BEAT_MIN_MS),
+        )
+      : authoritativeElapsedAtReceipt;
 
     // The visible sequence consumes the exact authoritative server countdown.
     // Ordinary matches remain 3-2-1; tournament matches publish 10 seconds.

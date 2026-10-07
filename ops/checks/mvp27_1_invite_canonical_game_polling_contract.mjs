@@ -37,11 +37,23 @@ assert.ok(canonicalSafe.includes('export { startGamePolling, clearGameView };'),
 for (const token of [
   'state.timers.search = clearTimer(state.timers.search);',
   'state.timers.game = clearTimer(state.timers.game);',
-  'window.setInterval(() => refreshGame(id), APP_CONFIG.gameIntervalMs)',
+  'setGamePollingCadence(id, gamePollIntervalFor(state.activeGame));',
+  'state.timers.game = window.setInterval(() => refreshGame(id), cadence);',
+  "if (phase === 'preparing' || phase === 'countdown')",
+  'LAUNCH_GAME_POLL_INTERVAL_MS',
   'window.setTimeout(() => refreshGame(id)',
 ]) {
   assert.ok(canonicalGame.includes(token), `Canonical v102 polling invariant missing: ${token}`);
 }
+assert.equal(
+  (canonicalGame.match(/window\.setInterval\(\(\) => refreshGame\(/g) || []).length,
+  1,
+  'Canonical v102 must retain exactly one game-state interval owner while allowing bounded launch cadence.'
+);
+assert.ok(
+  canonicalGame.includes('return Number(APP_CONFIG.gameIntervalMs || 1500);'),
+  'Canonical v102 must return to the normal configured poll cadence after launch.'
+);
 
 assert.equal(countCyrillicLines(legacyGame), 30,
   'Legacy game-screen Cyrillic evidence count changed');
