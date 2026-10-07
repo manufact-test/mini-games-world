@@ -6,7 +6,6 @@ const baseline = JSON.parse(fs.readFileSync('ops/checks/mvp27_1_hardcoded_text_b
 const registrationSource = fs.readFileSync('bot/tournaments/TournamentRegistrationService.php','utf8');
 const successor = registrationSource.includes("ServerLocalization::copy('server.tournament_runtime.scheduling.start_required'");
 const finalBackendSuccessor = Number(baseline?.by_scope?.backend) === 0;
-const finalBackendSuccessor = Number(baseline?.by_scope?.backend) === 0;
 function assert(ok,msg){ if(!ok) throw new Error(msg); }
 function get(key){ return key.split('.').reduce((v,p)=>v?.[p],locale); }
 function cyrLines(path){ return fs.readFileSync(path,'utf8').split(/\r?\n/).filter(l=>CYR.test(l)).length; }
