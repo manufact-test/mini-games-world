@@ -1,7 +1,7 @@
 {
   "_meta": {
     "locale": "en",
-    "version": 8,
+    "version": 9,
     "status": "draft"
   },
   "common": {
@@ -1229,6 +1229,122 @@
       "game-battleship-effect-shot": "Plasma Shot",
       "game-battleship-effect-hit": "Impact Flash",
       "game-battleship-effect-destroy": "Critical Sinking"
+    },
+    "bundles": {
+      "generic_game": "Game",
+      "effect": "Effect",
+      "already_in_collection": "Already in collection",
+      "empty": "Bundles are not available yet",
+      "choose_game": "Choose a game",
+      "default_title": "Neon Bundle",
+      "checkers_default_title": "Neon Checkers Bundle",
+      "progress_complete": "{owned} of {total} already in your collection",
+      "progress_partial": "You own {owned} of {total} · {missing} left",
+      "progress_new": "{total} items · yours forever",
+      "premium": "Premium bundle",
+      "remaining_price": "For the remaining items",
+      "bundle_price": "Bundle price",
+      "saving": "Save {saving}",
+      "separate_total": "Separately {total}",
+      "view_buy": "View and buy",
+      "no_auto_equip": "The purchase adds items to your collection but does not equip anything automatically.",
+      "contents": "Includes",
+      "confirm_progress": "{missing} left · {owned} already owned",
+      "item_count": "{count} items",
+      "confirm_note": "You pay only for the missing items. After purchase, they are added to your collection without being equipped automatically.",
+      "separately": "Separately",
+      "you_save": "You save {saving} coins",
+      "presentation": {
+        "tictactoe": {
+          "bundle_title": "Neon Bundle",
+          "game_title": "Tic-Tac-Toe",
+          "description": "The premium game look and all three effects in one bundle.",
+          "labels": {
+            "theme": "Board",
+            "elements": "Marks",
+            "effect": "Effect"
+          }
+        },
+        "chess": {
+          "bundle_title": "Neon Chess Bundle",
+          "game_title": "Chess",
+          "description": "Neon board, neon pieces, and all three effects in one bundle.",
+          "labels": {
+            "theme": "Board",
+            "elements": "Pieces",
+            "effect": "Effect"
+          }
+        },
+        "checkers": {
+          "bundle_title": "Neon Checkers Bundle",
+          "game_title": "Checkers",
+          "description": "Neon board, neon checkers, and all three effects in one bundle.",
+          "labels": {
+            "theme": "Board",
+            "elements": "Checkers",
+            "effect": "Effect"
+          }
+        },
+        "reversi": {
+          "bundle_title": "Neon Reversi Bundle",
+          "game_title": "Reversi",
+          "description": "Neon board, neon pieces, and all three effects in one bundle.",
+          "labels": {
+            "theme": "Board",
+            "elements": "Pieces",
+            "effect": "Effect"
+          }
+        },
+        "go": {
+          "bundle_title": "Neon Go Bundle",
+          "game_title": "Go",
+          "description": "Neon board, neon stones, and all three effects in one bundle.",
+          "labels": {
+            "theme": "Board",
+            "elements": "Stones",
+            "effect": "Effect"
+          }
+        },
+        "domino": {
+          "bundle_title": "Neon Domino Bundle",
+          "game_title": "Domino",
+          "description": "Neon table, neon tiles, and all three effects in one bundle.",
+          "labels": {
+            "theme": "Table",
+            "elements": "Tiles",
+            "effect": "Effect"
+          }
+        },
+        "four_in_a_row": {
+          "bundle_title": "Neon Four in a Row Bundle",
+          "game_title": "Four in a Row",
+          "description": "Neon board, neon pieces, and all three effects in one bundle.",
+          "labels": {
+            "theme": "Board",
+            "elements": "Pieces",
+            "effect": "Effect"
+          }
+        },
+        "battleship": {
+          "bundle_title": "Neon Battleship Bundle",
+          "game_title": "Battleship",
+          "description": "Neon map, neon fleet, and all three effects in one bundle.",
+          "labels": {
+            "theme": "Map",
+            "elements": "Fleet",
+            "effect": "Effect"
+          }
+        },
+        "generic": {
+          "bundle_title": "Neon Bundle",
+          "description": "Premium customization and all three effects in one bundle.",
+          "labels": {
+            "theme": "Theme",
+            "elements": "Elements",
+            "effect": "Effect"
+          }
+        }
+      }
     }
   }
 }

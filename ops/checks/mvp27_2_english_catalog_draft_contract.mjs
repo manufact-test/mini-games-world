@@ -116,6 +116,7 @@ const completeScopes = [
   'store.profile',
   'store.purchase',
   'store.products',
+  'store.bundles',
 ];
 
 for (const scope of completeScopes) {
