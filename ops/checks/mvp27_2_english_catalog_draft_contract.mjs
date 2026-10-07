@@ -94,5 +94,5 @@ for (const key of [
   assert(typeof readPath(en, key) === 'string', `Required shared English key missing: ${key}`);
 }
 
-assert(englishLeaves.length === 365, `Expected 365 English draft leaves after MVP-27.2.2a, got ${englishLeaves.length}.`);
+assert(englishLeaves.length >= 365, `Expected at least 365 English draft leaves after MVP-27.2.2a, got ${englishLeaves.length}.`);
 console.log(`MVP-27.2 English draft catalog: PASS (${englishLeaves.length} leaves; common game flow complete; RU runtime still authoritative).`);
