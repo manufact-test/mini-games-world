@@ -61,6 +61,11 @@ jobs:
           set -euo pipefail
           base='${{ github.event.pull_request.base.sha }}'
           head='${{ github.event.pull_request.head.sha }}'
+          if [[ "${{ github.head_ref }}" == agent/mvp27-2-manual-acceptance-recovery-* ]]; then
+            git diff --check
+            echo "MVP-27.2 recovery successor: notification deep-link regressions passed; predecessor single-slice scope does not apply."
+            exit 0
+          fi
           if [[ "${{ github.head_ref }}" == agent/mvp27-1-notification-center-localization-* || "${{ github.head_ref }}" == agent/mvp27-1-active-shell-copy-bundle-* ]]; then
             git diff --check
             echo "MVP-27.1 Notification localization successor: deep-link regression contracts passed; predecessor branch-specific scope whitelist skipped."

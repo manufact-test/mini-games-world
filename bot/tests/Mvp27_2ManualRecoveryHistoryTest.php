@@ -90,7 +90,7 @@ $snapshot = $method->invoke($repository, 'player_a', 24);
 $game = $snapshot['games']['match_recovery_draw'] ?? null;
 $assert(is_array($game), 'Canonical relational match must appear in the live history snapshot.');
 $assert(($game['status'] ?? '') === 'finished', 'Finished status must come from mgw_matches.');
-$assert(($game['winner_id'] ?? 'not-null') === null, 'Draw must preserve a null winner.');
+$assert(array_key_exists('winner_id', $game) && $game['winner_id'] === null, 'Draw must preserve a null winner.');
 $assert(($game['player_ids'] ?? []) === ['player_a', 'player_b'], 'History must project canonical legacy player identities.');
 $assert(($game['player_names']['player_b'] ?? '') === 'Player B', 'Opponent display name must come from mgw_match_players.');
 $assert((int)($game['board_columns'] ?? 0) === 7 && (int)($game['board_rows'] ?? 0) === 6,

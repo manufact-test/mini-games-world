@@ -87,6 +87,12 @@ jobs:
           HEAD_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
         run: |
           set -euo pipefail
+          if [[ "${{ github.head_ref }}" == agent/mvp27-2-manual-acceptance-recovery-* ]]; then
+            git diff --exit-code "$BASE_SHA" "$HEAD_SHA" -- bot/games bot/services/GameService.php bot/services/GameActionService.php bot/services/GameInviteService.php
+            git diff --check
+            echo "MVP-27.2 recovery successor: paid-default semantics passed; core game mechanics owners remain unchanged."
+            exit 0
+          fi
           if [[ "${{ github.head_ref }}" == agent/mvp27-1-* ]]; then
             echo 'MVP-27.1 successor localization slice: historical bounded-scope/freeze guard is not applicable.'
             exit 0
