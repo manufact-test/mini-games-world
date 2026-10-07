@@ -3,7 +3,7 @@ import { haptic, getInitData } from '../telegram/telegram-app.js?v=27';
 import { getSessionId } from '../session.js?v=27';
 import { state } from '../state.js?v=27';
 import { currentScreen, showScreen } from '../router.js?v=27';
-import { t, formatDateTime as formatLocalizedDateTime } from '@mgw/i18n';
+import { t, getI18n, formatDateTime as formatLocalizedDateTime } from '@mgw/i18n';
 
 const NOTIFICATIONS_URL = `${window.location.origin}/bot/notifications.php`;
 const ANNOUNCED_STORAGE_KEY = 'mgw_announced_notifications_v7';
@@ -926,7 +926,7 @@ async function rawNotifications(markRead, options = {}){
   const fetcher = typeof speed?.rawFetch === 'function' ? speed.rawFetch : window.fetch.bind(window);
   const response = await fetcher(NOTIFICATIONS_URL, {
     method:'POST',
-    headers:{ 'Content-Type':'application/json' },
+    headers:{ 'Content-Type':'application/json', 'X-MGW-Locale':String(getI18n().locale || 'ru') },
     body:JSON.stringify({
       initData:getInitData(),
       sessionId:getSessionId(),
