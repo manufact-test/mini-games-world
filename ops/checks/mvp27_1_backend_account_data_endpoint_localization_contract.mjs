@@ -48,7 +48,7 @@ assert.ok(Number(locale?._meta?.version)>=61,'RU catalog must be backend account
 
 assert.equal(manifest.default_locale,'ru');
 assert.equal(manifest.fallback_locale,'ru');
-assert.deepEqual(manifest.supported_locales,['ru'],'Production manifest must remain truthful RU-only during MVP-27.1.');
+assert.deepEqual(manifest.supported_locales,['ru','en'],'Production manifest must expose the active RU/EN runtime after MVP-27.2 activation.');
 
 assert.ok(Number.isInteger(Number(baseline.scanned_files)) && Number(baseline.scanned_files) > 0,'Successor classification may reduce scan coverage only through an explicit ownership proof; the player-facing audit itself must remain populated.');
 assert.ok(Number(baseline.cyrillic_lines_total)<=1637,'Later backend localization slices may only reduce total debt from the accepted account-data endpoint ceiling.');
