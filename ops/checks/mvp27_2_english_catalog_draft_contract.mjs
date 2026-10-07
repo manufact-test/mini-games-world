@@ -35,12 +35,17 @@ function leafKeys(source, prefix){
 }
 
 assert(en?._meta?.locale === 'en', 'English draft locale metadata must be en.');
-assert(en?._meta?.status === 'draft', 'English catalog must remain draft until MVP-27.2 completeness gate.');
-assert(manifest.default_locale === 'ru' && manifest.fallback_locale === 'ru', 'RU must remain default/fallback while EN is incomplete.');
-assert(Array.isArray(manifest.supported_locales) && manifest.supported_locales.length === 1 && manifest.supported_locales[0] === 'ru',
-  'Incomplete English catalog must not be declared supported.');
-assert(!Object.prototype.hasOwnProperty.call(manifest.catalogs || {}, 'en'),
-  'Incomplete English catalog must not be wired into the runtime manifest.');
+assert(en?._meta?.status === 'active', 'English catalog must be active after the MVP-27.2 completeness gate.');
+assert(manifest.default_locale === 'ru' && manifest.fallback_locale === 'ru', 'RU must remain default/fallback after EN activation.');
+assert(Array.isArray(manifest.supported_locales) && manifest.supported_locales.includes('ru') && manifest.supported_locales.includes('en'),
+  'RU and EN must both be declared supported after MVP-27.2 activation.');
+assert(manifest.catalogs?.ru === 'ru.json' && manifest.catalogs?.en === 'en.json',
+  'RU/EN runtime catalog mappings must be registered.');
+assert(manifest.formats?.en?.intl_locale === 'en-US', 'EN runtime format configuration must be registered.');
+for (const [game, entry] of Object.entries(manifest.rules?.games || {})) {
+  assert(Array.isArray(entry.languages) && entry.languages.includes('ru') && entry.languages.includes('en'),
+    `RU/EN rules languages must be active for ${game}.`);
+}
 
 const cyrillic = /[А-Яа-яЁё]/u;
 const compatibilityTokenKeys = new Set([
@@ -250,4 +255,4 @@ assert(
 );
 
 assert(englishLeaves.length >= 365, `Expected at least 365 English draft leaves after MVP-27.2.2a, got ${englishLeaves.length}.`);
-console.log(`MVP-27.2 English draft catalog: PASS (${englishLeaves.length} leaves; all Mini App player-facing owners complete; deferred non-Mini-App server copy explicitly classified; RU runtime still authoritative).`);
+console.log(`MVP-27.2 English catalog: PASS (${englishLeaves.length} leaves; all Mini App player-facing owners complete; deferred non-Mini-App server copy explicitly classified; RU default/fallback preserved; EN runtime active).`);
