@@ -77,8 +77,10 @@ $assert(
 );
 $assert(
     str_contains($sources['ui'], "['topAvatar','profileAvatar','searchMeAvatar'].forEach")
-        && str_contains($sources['ui'], 'el.dataset.avatarId = canonicalAvatarId;'),
-    'Persistent shell, Profile and search must converge on the selected canonical MGW avatar.'
+        && str_contains($sources['ui'], 'el.dataset.avatarId = canonicalAvatarId;')
+        && str_contains($sources['ui'], "document.getElementById('profileV2Avatar')")
+        && str_contains($sources['ui'], 'profileV2Avatar.dataset.avatarItemId = canonicalAvatarId;'),
+    'Persistent shell, Profile V2 identity card and search must converge on one selected canonical MGW avatar.'
 );
 $assert(
     str_contains($sources['entry'], 'X-MGW-Profile-API: provider-neutral-mgw-v1')

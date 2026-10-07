@@ -68,6 +68,11 @@ export function renderUser(user){
     el.classList.remove('has-photo');
     el.classList.toggle('has-tournament-prestige-crown', championCrown);
   });
+  const profileV2Avatar = document.getElementById('profileV2Avatar');
+  if (profileV2Avatar instanceof HTMLElement) {
+    profileV2Avatar.dataset.avatarItemId = canonicalAvatarId;
+    profileV2Avatar.textContent = 'MG';
+  }
   const date = document.getElementById('profileDate');
   if (date) date.textContent = user?.registered_at ? t('profile.member_since', { date:formatDate(user.registered_at) }) : t('shell.profile_date_pending');
 }

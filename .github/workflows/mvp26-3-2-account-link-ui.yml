@@ -68,8 +68,13 @@ jobs:
           need(!ui.includes('telegram_url:telegramUrl'), 'raw Telegram URL must not be persisted');
           need(!ui.includes('localStorage.setItem(STORAGE_KEY, telegram'), 'raw Telegram URL must not be persisted');
           need(/client\.js\?v=(?:115[3-9]|11[6-9]\d|1[2-9]\d{2,})/.test(manifest) && manifest.includes('mvp25_2=network-human-error-v2'), 'current localized client cache identity missing');
-          const profileAlias=manifest.match(/'\.\/assets\/js\/screens\/profile-screen-v110\.js\?v=1109'\s*=>\s*'\.\/assets\/js\/screens\/profile-screen-v110\.js\?v=(\d+)([^']*)'/);
-          need(profileAlias && Number(profileAlias[1]) >= 1142 && profileAlias[2].includes('mvp27_1=profile-localized-v1'), 'current localized Profile cache identity missing');
+          const directProfileAlias=manifest.match(/'\.\/assets\/js\/screens\/profile-screen-v110\.js\?v=1109'\s*=>\s*'\.\/assets\/js\/screens\/profile-screen-v110\.js\?v=(\d+)([^']*)'/);
+          const wrappedProfileAlias=manifest.match(/'\.\/assets\/js\/screens\/profile-screen-v110\.js\?v=1109'\s*=>\s*'\.\/assets\/js\/profile\/mgw-profile-chess-layout-v2\.js\?v=(\d+)([^']*)'/);
+          const profileBaseAlias=manifest.match(/'\.\/assets\/js\/screens\/profile-screen-v110\.js\?v=1126&profile_base=accepted-game-cosmetics'\s*=>\s*'\.\/assets\/js\/screens\/profile-screen-v110\.js\?v=(\d+)([^']*)'/);
+          const directProfileOk=directProfileAlias && Number(directProfileAlias[1]) >= 1142 && directProfileAlias[2].includes('mvp27_1=profile-localized-v1');
+          const wrappedProfileOk=wrappedProfileAlias && Number(wrappedProfileAlias[1]) >= 44 && wrappedProfileAlias[2].includes('mvp27_1=profile-chain-localized-v1')
+            && profileBaseAlias && Number(profileBaseAlias[1]) >= 1142 && profileBaseAlias[2].includes('mvp27_1=profile-localized-v1');
+          need(Boolean(directProfileOk || wrappedProfileOk), 'current localized Profile cache identity missing');
           need(manifest.includes("'./assets/js/profile/mgw-account-link-ui.js?v=3' => './assets/js/profile/mgw-account-link-ui.js?v=4&mvp27_1=localized-v1'"), 'localized account-link canonical alias missing');
           NODE
 

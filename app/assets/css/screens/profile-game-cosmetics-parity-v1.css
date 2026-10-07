@@ -6,43 +6,6 @@
   overflow:hidden;
 }
 
-.profile-v2-game-tabs-shell{
-  position:relative;
-  min-width:0;
-  max-width:100%;
-}
-.profile-v2-game-tabs-shell.has-overflow .profile-v2-game-tabs{
-  padding-left:34px!important;
-  padding-right:34px!important;
-  scroll-padding-inline:34px;
-}
-.profile-v2-game-tabs-arrow{
-  position:absolute;
-  z-index:4;
-  top:50%;
-  width:28px;
-  height:28px;
-  margin:0;
-  padding:0 0 2px;
-  display:grid;
-  place-items:center;
-  transform:translateY(-50%);
-  border:1px solid rgba(255,255,255,.16);
-  border-radius:50%;
-  background:rgba(14,18,31,.92);
-  color:#f3f5ff;
-  box-shadow:0 5px 16px rgba(0,0,0,.28);
-  font:700 22px/1 system-ui,sans-serif;
-  cursor:pointer;
-  touch-action:manipulation;
-}
-.profile-v2-game-tabs-arrow.is-left{left:2px}
-.profile-v2-game-tabs-arrow.is-right{right:2px}
-.profile-v2-game-tabs-arrow:disabled{
-  opacity:.24;
-  cursor:default;
-}
-.profile-v2-game-tabs-arrow[hidden]{display:none!important}
 
 .profile-v2-game-tabs{
   display:flex!important;
@@ -58,7 +21,7 @@
   scrollbar-width:none;
   touch-action:pan-x;
   cursor:grab;
-  scroll-behavior:smooth;
+  scroll-behavior:auto;
   padding:2px 1px 4px!important;
 }
 .profile-v2-game-tabs::-webkit-scrollbar{display:none;width:0;height:0}
@@ -69,6 +32,7 @@
   user-select:none;
   -webkit-user-select:none;
 }
+.profile-v2-game-tab:active{transform:none!important}
 .profile-v2-game-tab-mark{
   position:relative;
   display:inline-grid!important;

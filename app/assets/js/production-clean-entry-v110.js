@@ -71,10 +71,9 @@ async function startStoreAvatarSelection(){
   if (storeAvatarStarted) return;
   storeAvatarStarted = true;
   try {
-    const [apiModule, stateModule, toastModule, uiModule, telegramModule, profileModelModule, sheetModule] = await Promise.all([
+    const [apiModule, stateModule, uiModule, telegramModule, profileModelModule, sheetModule] = await Promise.all([
       import('./api/client.js?v=47'),
       import('./state.js?v=27'),
-      import('./components/toast.js?v=27'),
       import('./ui.js?v=89'),
       import('./telegram/telegram-app.js?v=27'),
       import('./profile/mgw-profile-model.js?v=1'),
@@ -83,7 +82,6 @@ async function startStoreAvatarSelection(){
     storeAvatarRuntime = {
       api:apiModule.api,
       state:stateModule.state,
-      toast:toastModule.toast,
       renderUser:uiModule.renderUser,
       haptic:telegramModule.haptic,
       mergeCanonicalMgwUser:profileModelModule.mergeCanonicalMgwUser,
@@ -364,6 +362,9 @@ function applyStoreAvatarOptimistic(itemId){
     state.user = mergeCanonicalMgwUser(state.user, {}, state.mgwProfile);
   }
   decorateStoreAvatarCards();
+  document.dispatchEvent(new CustomEvent('mgw:avatar-selection-changed', {
+    detail:{ itemId, source:'store', confirmed:false },
+  }));
 }
 
 function restoreStoreAvatarConfirmed(){
@@ -384,12 +385,15 @@ function restoreStoreAvatarConfirmed(){
   }
   decorateStoreAvatarCards();
   if (state.user) renderUser(state.user);
+  document.dispatchEvent(new CustomEvent('mgw:avatar-selection-changed', {
+    detail:{ itemId, source:'store', confirmed:false },
+  }));
 }
 
 async function drainStoreAvatarSelectionQueue(){
   const runtime = storeAvatarRuntime;
   if (!runtime || storeAvatarSaving) return;
-  const { api, state, toast, renderUser, haptic, mergeCanonicalMgwUser } = runtime;
+  const { api, state, renderUser, haptic, mergeCanonicalMgwUser } = runtime;
   storeAvatarSaving = true;
 
   try {
@@ -413,10 +417,10 @@ async function drainStoreAvatarSelectionQueue(){
         else decorateStoreAvatarCards();
 
         if (state.user) renderUser(state.user);
-        if (!pending) {
-          haptic('success');
-          toast(intent.removed ? t('store.profile_selection.avatar.toast.removed') : t('store.profile_selection.avatar.toast.selected'));
-        }
+        document.dispatchEvent(new CustomEvent('mgw:avatar-selection-changed', {
+          detail:{ itemId:confirmedItemId, source:'store', confirmed:true },
+        }));
+        if (!pending) haptic('success');
       } catch (error) {
         if (storeAvatarQueuedIntent?.itemId) {
           applyStoreAvatarOptimistic(storeAvatarQueuedIntent.itemId);
@@ -424,7 +428,6 @@ async function drainStoreAvatarSelectionQueue(){
         }
         restoreStoreAvatarConfirmed();
         haptic('error');
-        toast(error?.message || (intent.removed ? t('store.profile_selection.avatar.errors.remove') : t('store.profile_selection.avatar.errors.select')));
       }
     }
   } finally {

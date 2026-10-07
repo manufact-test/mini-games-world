@@ -8,8 +8,6 @@ import { initProfileDominoParity } from './mgw-profile-domino-parity.js?v=2&mvp1
 import { initProfileDominoHardRatio } from './mgw-profile-domino-hard-ratio-v1.js?v=1&mvp19_9=hard-8x5-v1';
 import { initProfileFourInARowParity } from './mgw-profile-four-in-a-row-parity.js?v=9&four_profile=live-previews-v3&four_module=export-v11&geometry=7x6&fx=victory-test-exact-v3&effect2=random-chain-v4&victory=overdrive-v3&copy=compact-v3&mvp27_1=localized-v1';
 import { initProfileBattleshipParity } from './mgw-profile-battleship-parity.js?v=15&mvp19_12=profile-four-parity-v3&store=preview-parity-v14&geometry=square&header=steel-ship&neon_fleet=tube-v4&fleet_preview=svg-models-v3&neon_map_ships=white-v1&preview_geometry=svg-circles-v6&hydration=observer-v1&inline_owner=svg-v5&effects=live-parity-destroy-v3&copy=four-pattern&mvp27_1=localized-v1';
-import { t } from '@mgw/i18n';
-
 const profileChessArtworkPrewarm = [];
 const PROFILE_GAME_TAB_DRAG_THRESHOLD = 5;
 let profileGameTabDrag = null;
@@ -51,7 +49,7 @@ function prepareProfileGameTabInputMode(){
   screen.dataset.mgwGameTabsInputV2 = '1';
   screen.dataset.mgwGameTabsScroller = '1';
   screen.dataset.mgwGameTabsScrollerMode = 'delayed-capture-v2';
-  screen.dataset.mgwGameTabsScrollerAffordance = 'arrows-wheel-v1';
+  screen.dataset.mgwGameTabsScrollerAffordance = 'native-wheel-no-arrows-v2';
   prepareProfileGameTabAffordance(screen);
 
   // The old Profile rail captured the pointer on pointerdown. In Telegram/WebView
@@ -118,101 +116,20 @@ function prepareProfileGameTabInputMode(){
 
 
 function prepareProfileGameTabAffordance(screen){
-  let decorateScheduled = false;
-
-  const scheduleDecorate = () => {
-    if (decorateScheduled) return;
-    decorateScheduled = true;
-    queueMicrotask(() => {
-      decorateScheduled = false;
-      screen.querySelectorAll('.profile-v2-game-tabs').forEach(strip => ensureProfileGameTabRail(strip));
-    });
-  };
-
-  const observer = new MutationObserver(scheduleDecorate);
-  observer.observe(screen, { childList:true, subtree:true });
-
-  screen.addEventListener('click', event => {
-    const arrow = event.target instanceof Element ? event.target.closest('[data-profile-game-tabs-scroll]') : null;
-    if (!(arrow instanceof HTMLButtonElement)) return;
-    const shell = arrow.closest('.profile-v2-game-tabs-shell');
-    const strip = shell?.querySelector('.profile-v2-game-tabs');
-    if (!(strip instanceof HTMLElement)) return;
-    event.preventDefault();
-    event.stopPropagation();
-    const direction = Number(arrow.dataset.profileGameTabsScroll || 0);
-    const step = Math.max(120, Math.min(260, Math.round(strip.clientWidth * 0.72)));
-    strip.scrollBy({ left:direction * step, behavior:'smooth' });
-  });
-
+  // Touch scrolling is native. Desktop mouse drag is owned above; wheel input
+  // is translated into the same horizontal rail. No arrows, wrappers or extra controls.
   screen.addEventListener('wheel', event => {
     const target = event.target instanceof Element ? event.target : null;
     const strip = target?.closest('.profile-v2-game-tabs');
     if (!(strip instanceof HTMLElement) || strip.scrollWidth <= strip.clientWidth + 2) return;
-    if (Math.abs(event.deltaX) >= Math.abs(event.deltaY) || Math.abs(event.deltaY) < 1) return;
+    const delta = Math.abs(event.deltaX) > Math.abs(event.deltaY) ? event.deltaX : event.deltaY;
+    if (Math.abs(delta) < 1) return;
     const before = strip.scrollLeft;
-    strip.scrollLeft += event.deltaY;
+    strip.scrollLeft += delta;
     if (strip.scrollLeft !== before && event.cancelable) event.preventDefault();
   }, { passive:false });
-
-  screen.addEventListener('scroll', event => {
-    const strip = event.target;
-    if (strip instanceof HTMLElement && strip.classList.contains('profile-v2-game-tabs')) {
-      updateProfileGameTabRail(strip);
-    }
-  }, true);
-
-  globalThis.addEventListener?.('resize', scheduleDecorate, { passive:true });
-  scheduleDecorate();
 }
 
-function ensureProfileGameTabRail(strip){
-  if (!(strip instanceof HTMLElement)) return;
-  let shell = strip.parentElement;
-  if (!(shell instanceof HTMLElement) || !shell.classList.contains('profile-v2-game-tabs-shell')) {
-    shell = document.createElement('div');
-    shell.className = 'profile-v2-game-tabs-shell';
-
-    const left = document.createElement('button');
-    left.type = 'button';
-    left.className = 'profile-v2-game-tabs-arrow is-left';
-    left.dataset.profileGameTabsScroll = '-1';
-    left.setAttribute('aria-label', t('arena.scroll_left'));
-    left.textContent = '‹';
-
-    const right = document.createElement('button');
-    right.type = 'button';
-    right.className = 'profile-v2-game-tabs-arrow is-right';
-    right.dataset.profileGameTabsScroll = '1';
-    right.setAttribute('aria-label', t('arena.scroll_right'));
-    right.textContent = '›';
-
-    strip.before(shell);
-    shell.append(left, strip, right);
-  }
-
-  updateProfileGameTabRail(strip);
-  globalThis.requestAnimationFrame?.(() => updateProfileGameTabRail(strip));
-}
-
-function updateProfileGameTabRail(strip){
-  const shell = strip?.closest?.('.profile-v2-game-tabs-shell');
-  if (!(strip instanceof HTMLElement) || !(shell instanceof HTMLElement)) return;
-  const maxScroll = Math.max(0, strip.scrollWidth - strip.clientWidth);
-  const hasOverflow = maxScroll > 3;
-  shell.classList.toggle('has-overflow', hasOverflow);
-
-  const left = shell.querySelector('[data-profile-game-tabs-scroll="-1"]');
-  const right = shell.querySelector('[data-profile-game-tabs-scroll="1"]');
-  if (left instanceof HTMLButtonElement) {
-    left.hidden = !hasOverflow;
-    left.disabled = !hasOverflow || strip.scrollLeft <= 3;
-  }
-  if (right instanceof HTMLButtonElement) {
-    right.hidden = !hasOverflow;
-    right.disabled = !hasOverflow || strip.scrollLeft >= maxScroll - 3;
-  }
-}
 
 function ensureProfileChessLayoutStyles(){
   if (document.querySelector('link[data-mgw-profile-chess-layout-v2]')) return;
@@ -225,7 +142,7 @@ function ensureProfileChessLayoutStyles(){
 }
 
 function ensureProfileGameCosmeticsRepairStyles(){
-  const href = new URL('../../css/screens/profile-game-cosmetics-parity-v1.css?v=4&mvp19_6=profile-card-visual-repair-v3&manual_acceptance=scroll-arrows-v1', import.meta.url).href;
+  const href = new URL('../../css/screens/profile-game-cosmetics-parity-v1.css?v=5&mvp19_6=profile-card-visual-repair-v3&manual_acceptance=native-no-arrows-v2', import.meta.url).href;
   const existing = document.querySelector('link[data-mgw-profile-game-cosmetics-parity]');
   if (existing instanceof HTMLLinkElement) {
     if (existing.href !== href) existing.href = href;

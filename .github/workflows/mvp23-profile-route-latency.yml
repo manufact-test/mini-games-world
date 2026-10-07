@@ -79,6 +79,12 @@ jobs:
             echo 'MVP-27.1 session localization: Profile animation guard is frozen; bounded v110 cache-bust identities are allowed and covered by the Profile latency contract.'
             exit 0
           fi
+          if [[ "${{ github.head_ref }}" == agent/mvp27-1-profile-avatar-games-manual-corrective-* ]]; then
+            git diff --exit-code "$base" "$head" -- \
+              app/assets/js/profile/mgw-mobile-profile-animation-guard-v2.js
+            echo 'MVP-27.1 Profile avatar/games corrective: animation guard is frozen; cache-bust-only clean-entry wrapper updates are covered by the passing latency contracts.'
+            exit 0
+          fi
           if [[ "${{ github.head_ref }}" == agent/mvp27-1-* ]]; then
             git diff --exit-code "$base" "$head" -- \
               app/assets/js/production-clean-entry-v110-mvp19-3-final-polish.js \

@@ -76,18 +76,40 @@ $assert(
     preg_match('/main-v110-handoff-shell\\.js\\?v=\\d+[^\\n]*mvp26_3_6=pending-link-preboot-v1/', $manifest) === 1,
     'Active v110 shell cache identity must include the pending-link corrective.'
 );
-$profileAliasMatch = [];
-$profileAliasOk = preg_match(
+$directProfileAliasMatch = [];
+$directProfileAliasOk = preg_match(
     "~'\\./assets/js/screens/profile-screen-v110\\.js\\?v=1109'\\s*=>\\s*'\\./assets/js/screens/profile-screen-v110\\.js\\?v=(\\d+)([^']*)'~",
     $manifest,
-    $profileAliasMatch
+    $directProfileAliasMatch
 ) === 1;
+$wrappedProfileAliasMatch = [];
+$wrappedProfileAliasOk = preg_match(
+    "~'\\./assets/js/screens/profile-screen-v110\\.js\\?v=1109'\\s*=>\\s*'\\./assets/js/profile/mgw-profile-chess-layout-v2\\.js\\?v=(\\d+)([^']*)'~",
+    $manifest,
+    $wrappedProfileAliasMatch
+) === 1;
+$profileBaseAliasMatch = [];
+$profileBaseAliasOk = preg_match(
+    "~'\\./assets/js/screens/profile-screen-v110\\.js\\?v=1126&profile_base=accepted-game-cosmetics'\\s*=>\\s*'\\./assets/js/screens/profile-screen-v110\\.js\\?v=(\\d+)([^']*)'~",
+    $manifest,
+    $profileBaseAliasMatch
+) === 1;
+$profileGraphOk = (
+    $directProfileAliasOk
+    && (int)($directProfileAliasMatch[1] ?? 0) >= 1142
+    && str_contains((string)($directProfileAliasMatch[2] ?? ''), 'mvp27_1=profile-localized-v1')
+) || (
+    $wrappedProfileAliasOk
+    && (int)($wrappedProfileAliasMatch[1] ?? 0) >= 44
+    && str_contains((string)($wrappedProfileAliasMatch[2] ?? ''), 'mvp27_1=profile-chain-localized-v1')
+    && $profileBaseAliasOk
+    && (int)($profileBaseAliasMatch[1] ?? 0) >= 1142
+    && str_contains((string)($profileBaseAliasMatch[2] ?? ''), 'mvp27_1=profile-localized-v1')
+);
 $assert(
     str_contains($manifest, "'./assets/js/profile/mgw-account-link-ui.js?v=3' => './assets/js/profile/mgw-account-link-ui.js?v=4&mvp27_1=localized-v1'")
-    && $profileAliasOk
-    && (int)($profileAliasMatch[1] ?? 0) >= 1142
-    && str_contains((string)($profileAliasMatch[2] ?? ''), 'mvp27_1=profile-localized-v1'),
-    'Active Profile graph must preserve one accepted v3 account-link specifier and resolve it to the localized canonical owner or a newer successor.'
+    && $profileGraphOk,
+    'Active Profile graph must preserve one accepted v3 account-link specifier and resolve through the localized canonical Profile owner or a newer wrapped successor.'
 );
 $assert(
     !str_contains($ui, 'LedgerWriteService')

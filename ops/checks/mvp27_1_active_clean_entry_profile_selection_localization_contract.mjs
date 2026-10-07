@@ -64,17 +64,21 @@ assert.ok(
   'Active avatar selection must serialize server writes while latest visible intent remains replaceable.'
 );
 
+assert.ok(
+  target.includes("mgw:avatar-selection-changed")
+    && !target.includes("store.profile_selection.avatar.toast.removed")
+    && !target.includes("store.profile_selection.avatar.toast.selected")
+    && !/\btoast\s*\(/.test(target),
+  'Avatar selection/removal must publish shared state silently with no delayed toast feedback.'
+);
+
 for (const key of [
   'store.profile_selection.status.selected',
   'store.profile_selection.status.owned',
   'store.profile_selection.actions.remove',
   'store.profile_selection.actions.selected',
   'store.profile_selection.actions.select',
-  'store.profile_selection.avatar.toast.removed',
-  'store.profile_selection.avatar.toast.selected',
   'store.profile_selection.avatar.errors.unconfirmed',
-  'store.profile_selection.avatar.errors.remove',
-  'store.profile_selection.avatar.errors.select',
 ]) assert.ok(target.includes(`t('${key}')`), 'Active clean-entry must use locale key: ' + key);
 
 assert.ok(target.includes(

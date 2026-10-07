@@ -43,6 +43,7 @@ let activeCollectionGame = 'tictactoe';
 let lastProfileRenderSignature = '';
 let hiddenProfileRenderPending = false;
 let lastFullProfileSnapshotAt = 0;
+let avatarSelectionSyncBound = false;
 
 export function initProfileScreen(){
   document.querySelector('#screen-profile [data-back-home]')?.remove();
@@ -51,6 +52,7 @@ export function initProfileScreen(){
     if (cached) state.profileStats = cached;
   }
   bindProfileActions();
+  bindAvatarSelectionSync();
   initAccountLinkUi();
   initAccountLinkHomeOnboarding();
   renderProfileV2();
@@ -238,6 +240,15 @@ function showProfileImmediately(){
   currentAvatarItemId();
   if (state.user) { renderUser(state.user); renderBalances(state.user); }
   renderProfileV2();
+}
+
+function bindAvatarSelectionSync(){
+  if (avatarSelectionSyncBound) return;
+  avatarSelectionSyncBound = true;
+  document.addEventListener('mgw:avatar-selection-changed', () => {
+    if (state.user) renderUser(state.user);
+    renderProfileV2();
+  });
 }
 
 function bindProfileActions(){
@@ -563,7 +574,6 @@ async function drainAvatarSelectionQueue(){
           continue;
         }
         restoreConfirmedAvatarSelection();
-        if (currentScreen() === 'profile') toast(error.message || t('profile.avatar_save_error'));
       }
     }
   } finally {
