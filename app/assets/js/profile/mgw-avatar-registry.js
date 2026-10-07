@@ -23,7 +23,11 @@ export function getAvatarVisualMeta(itemId){
 }
 
 export function avatarDisplayName(itemId, fallback = t('profile.collection.avatar_fallback')){
-  return getAvatarVisualMeta(itemId)?.name || fallback;
+  const normalized = String(itemId || '').trim().toLowerCase();
+  if (normalized) {
+    try { return t(`store.products.${normalized}`); } catch (error) {}
+  }
+  return getAvatarVisualMeta(normalized)?.name || fallback;
 }
 
 export function avatarSpritePosition(itemId){
