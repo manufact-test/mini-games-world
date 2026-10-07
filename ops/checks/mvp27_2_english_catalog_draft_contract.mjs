@@ -125,6 +125,7 @@ const completeScopes = [
   'store.games',
   'store.wrappers',
   'store',
+  'profile.providers',
 ];
 
 for (const scope of completeScopes) {
@@ -133,6 +134,22 @@ for (const scope of completeScopes) {
   assert(JSON.stringify(enKeys) === JSON.stringify(ruKeys),
     `English scope is not complete for ${scope}: RU=${ruKeys.length}, EN=${enKeys.length}`);
 }
+
+const deferredProfileSections = new Set([
+  'entry_effects',
+  'victory_effects',
+  'badges',
+  'frames',
+  'backgrounds',
+  'reactions',
+  'moderation',
+  'collection',
+  'tournament',
+]);
+const ruProfileCoreKeys = Object.keys(ru.profile || {}).filter(key => !deferredProfileSections.has(key)).sort();
+const enProfileCoreKeys = Object.keys(en.profile || {}).filter(key => !deferredProfileSections.has(key)).sort();
+assert(JSON.stringify(enProfileCoreKeys) === JSON.stringify(ruProfileCoreKeys),
+  `English Profile core key-set is incomplete: RU=${ruProfileCoreKeys.length}, EN=${enProfileCoreKeys.length}`);
 
 for (const key of [
   'rules.open',
