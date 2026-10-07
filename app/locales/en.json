@@ -996,7 +996,7 @@
           "ready_button": "Ready for battle",
           "remaining": "{count} left",
           "done": "done",
-          "guide_ship": "{size}-cell ship",
+          "guide_ship": "Ship: {size} {cells}",
           "guide_next": "Choose the next ship",
           "guide_selected": "{selected}/{size} selected. Selected cells are highlighted in purple.",
           "guide_press": "Tap {size} adjacent {cells} horizontally or vertically.",
