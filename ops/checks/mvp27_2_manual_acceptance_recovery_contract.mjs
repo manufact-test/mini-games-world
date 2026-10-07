@@ -57,7 +57,6 @@ for (const marker of [
   'explicit-locale-inplace-v2',
   'active-i18n-locale-v2',
   'inplace-language-history-v2',
-  'inplace-notification-locale-v2',
   'runtime-dom-inplace-v2',
   'inplace-search-locale-v2',
   'inplace-game-locale-v2',
