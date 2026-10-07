@@ -59,7 +59,7 @@ for (const token of [
   "mgw-profile-checkers-parity.js?v=4",
   "mgw-profile-reversi-parity.js?v=3",
   "mgw-profile-go-parity.js?v=3",
-  "mgw-profile-domino-parity.js?v=2",
+  "mgw-profile-domino-parity.js?v=3",
   "mgw-profile-four-in-a-row-parity.js?v=9",
   "mgw-profile-battleship-parity.js?v=15",
 ]) {
