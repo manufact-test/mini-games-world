@@ -43,6 +43,8 @@ const main110 = read('app/assets/js/main-v110.js');
 const handoff = read('app/assets/js/main-v110-handoff-shell.js');
 const legacy = read(TARGET);
 const active = read(ACTIVE);
+const profileParityWrapper = read('app/assets/js/profile/mgw-profile-chess-layout-v2.js');
+const profileChessParity = read('app/assets/js/profile/mgw-profile-chess-parity.js');
 const audit = read('ops/checks/mvp27_1_hardcoded_text_audit.mjs');
 const baseline = JSON.parse(read('ops/checks/mvp27_1_hardcoded_text_baseline.json'));
 
@@ -63,9 +65,22 @@ assert.ok(main110.includes("import './main-v110-handoff-shell.js"), 'main-v110 m
 assert.ok(handoff.includes("import { initProfileScreen } from './screens/profile-screen-v110.js?v=1109';"),
   'Factual handoff must own the v110 Profile screen');
 assert.ok(handoff.includes('initProfileScreen();'), 'Factual handoff must initialize Profile');
-const profileAlias = manifest.match(/'\.\/assets\/js\/screens\/profile-screen-v110\.js\?v=1109'\s*=>\s*'\.\/assets\/js\/screens\/profile-screen-v110\.js\?v=(\d+)([^']*)'/);
-assert.ok(profileAlias && Number(profileAlias[1]) >= 1142 && profileAlias[2].includes('mvp27_1=profile-localized-v1'),
-  'Manifest must retain localized factual Profile owner or a newer successor');
+const directProfileAlias = manifest.match(/'\.\/assets\/js\/screens\/profile-screen-v110\.js\?v=1109'\s*=>\s*'\.\/assets\/js\/screens\/profile-screen-v110\.js\?v=(\d+)([^']*)'/);
+const wrapperProfileAlias = manifest.match(/'\.\/assets\/js\/screens\/profile-screen-v110\.js\?v=1109'\s*=>\s*'\.\/assets\/js\/profile\/mgw-profile-chess-layout-v2\.js\?v=(\d+)([^']*)'/);
+const profileBaseAlias = manifest.match(/'\.\/assets\/js\/screens\/profile-screen-v110\.js\?v=1126&profile_base=accepted-game-cosmetics'\s*=>\s*'\.\/assets\/js\/screens\/profile-screen-v110\.js\?v=(\d+)([^']*)'/);
+const directProfileOk = directProfileAlias
+  && Number(directProfileAlias[1]) >= 1142
+  && directProfileAlias[2].includes('mvp27_1=profile-localized-v1');
+const wrapperProfileOk = wrapperProfileAlias
+  && Number(wrapperProfileAlias[1]) >= 44
+  && wrapperProfileAlias[2].includes('mvp27_1=profile-chain-localized-v1')
+  && profileParityWrapper.includes('initCheckersParityProfileScreen();')
+  && profileChessParity.includes("../screens/profile-screen-v110.js?v=1126&profile_base=accepted-game-cosmetics")
+  && profileBaseAlias
+  && Number(profileBaseAlias[1]) >= 1142
+  && profileBaseAlias[2].includes('mvp27_1=profile-localized-v1');
+assert.ok(directProfileOk || wrapperProfileOk,
+  'Manifest must retain the localized factual Profile owner through either the direct base or accepted game-parity wrapper successor');
 
 for (const [label, source] of [
   ['manifest', manifest],
