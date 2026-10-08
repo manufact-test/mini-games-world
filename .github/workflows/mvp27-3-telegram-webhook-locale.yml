@@ -13,10 +13,16 @@ on:
       - 'app/locales/en.json'
       - 'bot/tests/Mvp27_3TelegramWebhookLocaleTest.php'
       - 'bot/tests/Mvp27_3ManualLocaleCorrectiveTest.php'
+      - 'ops/checks/mvp27_3_invite_share_locale_transport_contract.mjs'
       - '.github/workflows/mvp27-3-telegram-webhook-locale.yml'
   push:
     branches: [agent/mvp-13-2-staging]
     paths:
+      - 'app/assets/js/games/game-invites-v110.js'
+      - 'app/runtime/client/version-manifest.php'
+      - 'bot/invites.php'
+      - 'bot/tests/Mvp27_3ManualLocaleCorrectiveTest.php'
+      - 'ops/checks/mvp27_3_invite_share_locale_transport_contract.mjs'
       - 'bot/localization/ServerLocalization.php'
       - 'bot/webhook.php'
       - 'app/locales/en.json'
@@ -52,3 +58,4 @@ jobs:
           php bot/tests/Mvp26_3_12InviteSyncBalanceOwnershipContractTest.php
           node ops/checks/mvp27_1_game_invites_localization_contract.mjs
           node ops/checks/mvp27_1_backend_invites_endpoint_localization_contract.mjs
+          node ops/checks/mvp27_3_invite_share_locale_transport_contract.mjs

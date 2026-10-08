@@ -1600,7 +1600,7 @@ async function postJson(url, payload, options = {}){
   try {
     response = await fetch(url, {
       method:'POST',
-      headers:{ 'Content-Type':'application/json' },
+      headers:{ 'Content-Type':'application/json', 'X-MGW-Locale':getI18n().locale },
       body:JSON.stringify({
         initData:getInitData(),
         sessionId:getSessionId(),

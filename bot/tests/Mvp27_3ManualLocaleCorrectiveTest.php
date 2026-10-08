@@ -95,8 +95,13 @@ $assert(str_contains($bot, 'TelegramLocalePreference::fromUpdate($config, $updat
     'Authenticated webhook must consult persisted Telegram-channel preference.');
 $assert(str_contains($invites, "'HTTP_X_MGW_LOCALE'") && str_contains($invites, 'mgw_invite_game_title($invite)'),
     'Share and prepared messages must use request locale and game_type translations.');
-$assert(str_contains($client, "'X-MGW-Locale':getI18n().locale"),
-    'Real invite HTTP transport must propagate current in-memory locale.');
+$transportStart = strpos($client, 'async function postJson(');
+$transportEnd = $transportStart === false ? false : strpos($client, "\nfunction cloneInvite(", $transportStart);
+$transportSource = $transportStart !== false && $transportEnd !== false
+    ? substr($client, $transportStart, $transportEnd - $transportStart)
+    : '';
+$assert(str_contains($transportSource, "'X-MGW-Locale':getI18n().locale"),
+    'Actual prepared/direct/rematch invite postJson transport must propagate selected locale, not only invite-watch.');
 $assert(str_contains($client, 'gameTitle(String(invite?.game_type || \'\'))'),
     'Waiting game title must be derived from game_type rather than stored Russian title.');
 $assert(str_contains($client, '${getI18n().locale}'),
