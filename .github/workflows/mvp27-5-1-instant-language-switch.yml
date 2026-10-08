@@ -1,0 +1,45 @@
+name: MVP-27.5.1 Instant Language Switching
+on:
+  pull_request:
+    paths:
+      - 'app/assets/js/screens/home-screen.js'
+      - 'app/assets/js/localization/i18n.js'
+      - 'app/assets/js/api/client.js'
+      - 'bot/profile-v2.php'
+      - 'app/runtime/client/version-manifest.php'
+      - 'ops/checks/mvp27_5_instant_language_switch_contract.mjs'
+      - '.github/workflows/mvp27-5-1-instant-language-switch.yml'
+  push:
+    branches: [agent/mvp-13-2-staging]
+    paths:
+      - 'app/assets/js/screens/home-screen.js'
+      - 'app/assets/js/localization/i18n.js'
+      - 'app/assets/js/api/client.js'
+      - 'bot/profile-v2.php'
+      - 'app/runtime/client/version-manifest.php'
+      - 'ops/checks/mvp27_5_instant_language_switch_contract.mjs'
+      - '.github/workflows/mvp27-5-1-instant-language-switch.yml'
+permissions:
+  contents: read
+jobs:
+  instant-language:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - name: Syntax
+        run: |
+          php -l bot/profile-v2.php
+          php -l app/runtime/client/version-manifest.php
+          node --check app/assets/js/screens/home-screen.js
+          node --check app/assets/js/localization/i18n.js
+          node --check app/assets/js/api/client.js
+          node --check ops/checks/mvp27_5_instant_language_switch_contract.mjs
+      - name: Instant language and canonical persistence
+        run: |
+          node ops/checks/mvp27_5_instant_language_switch_contract.mjs
+          node ops/checks/mvp27_5_account_language_contract.mjs
+          php bot/tests/Mvp27_5AccountLocalePreferenceTest.php
+          php bot/tests/Mvp26_3_11ProfileV2BalanceOwnershipContractTest.php
+          php bot/tests/Mvp27_3ManualLocaleCorrectiveTest.php
+          node ops/checks/mvp27_2_locale_cards_inplace_contract.mjs

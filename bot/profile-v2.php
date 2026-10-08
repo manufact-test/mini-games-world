@@ -103,6 +103,21 @@ try {
         }
         throw $error;
     }
+    // Fast-path only for an explicitly opted-in, authenticated single-field
+    // language update. The normal Profile V2 endpoint retains its full shape.
+    // This runs after existing ownership, moderation and locale validation.
+    if (($payload['locale_preference_only'] ?? false) === true
+        && $profileUpdateRequested
+        && count($payload['profile_update']) === 1
+        && array_key_exists('preferred_locale', $payload['profile_update'])) {
+        $profileStage = 'locale_preference_response';
+        json_response([
+            'ok'=>true,
+            'profile'=>$canonicalProfile,
+            'locale_preference_only'=>true,
+        ]);
+    }
+
     $profileStage = 'inventory';
     $inventory = (new ProductInventoryService($database))->snapshot($mgwId);
     $profileStage = 'rating';

@@ -154,6 +154,20 @@ export function applyAccountLocalePreference(accountLocale = null){
   return activated;
 }
 
+// Optimistic visual-only change: no localStorage or Telegram bot writes.
+// The authenticated canonical profile stays authoritative until server ACK.
+export function previewAccountLocale(locale){
+  if (!['ru', 'en'].includes(locale)) throw new TypeError('Unsupported language');
+  const previous = clientI18n?.locale || readInlineLocalization().locale;
+  const activated = activateLocale(locale);
+  if (activated !== previous && globalThis.document?.dispatchEvent) {
+    globalThis.document.dispatchEvent(new CustomEvent('mgw:locale-changed', {
+      detail:{ previous, locale:activated, source:'preview' },
+    }));
+  }
+  return activated;
+}
+
 export function setExplicitLocale(locale){
   const previous = clientI18n?.locale || readInlineLocalization().locale;
   const activated = activateLocale(locale);

@@ -22,6 +22,9 @@ const ANDROID_REAUTH_URL = `${window.location.origin}/bot/android-reauth.php`;
 const PROFILE_V2_READ_PROMISE_KEY = '__MGW_PROFILE_V2_READ_PROMISE_V1__';
 let tournamentPrestigeReadPromise = null;
 let accountLocaleWriteEpoch = 0;
+// Serialize overlapping language writes: a slow EN response must never
+// overwrite a newer RU preference on the authenticated account.
+let accountLocaleSaveTail = Promise.resolve();
 function hydrateCanonicalLanguage(result, readEpoch){
   if (readEpoch === accountLocaleWriteEpoch
       && result?.profile && Object.prototype.hasOwnProperty.call(result.profile, 'preferred_locale')) {
@@ -169,17 +172,24 @@ function publishProfileV2(result){
   return result;
 }
 
-async function saveAccountLocale(locale){
-  if (!['ru', 'en'].includes(locale)) throw new TypeError('Unsupported language');
+function saveAccountLocale(locale){
+  if (!['ru', 'en'].includes(locale)) return Promise.reject(new TypeError('Unsupported language'));
   const epoch = ++accountLocaleWriteEpoch;
-  const result = await requestUrl(PROFILE_V2_URL, { profile_update:{ preferred_locale:locale } });
-  if (result?.profile?.preferred_locale !== locale) throw new Error(t('network.request_failed'));
-  publishProfileV2(result);
-  if (epoch === accountLocaleWriteEpoch) {
+  const operation = accountLocaleSaveTail.catch(() => {}).then(async () => {
+    const result = await requestUrl(PROFILE_V2_URL, {
+      profile_update:{ preferred_locale:locale },
+      locale_preference_only:true,
+    });
+    if (result?.profile?.preferred_locale !== locale) throw new Error(t('network.request_failed'));
+    // Confirm the durable DB state even if another tap is already queued.
     state.mgwProfile = result.profile;
-    applyAccountLocalePreference(result.profile.preferred_locale);
-  }
-  return result;
+    if (epoch === accountLocaleWriteEpoch) {
+      applyAccountLocalePreference(result.profile.preferred_locale);
+    }
+    return result;
+  });
+  accountLocaleSaveTail = operation.catch(() => {});
+  return operation;
 }
 
 async function requestCosmeticStore(payload){
