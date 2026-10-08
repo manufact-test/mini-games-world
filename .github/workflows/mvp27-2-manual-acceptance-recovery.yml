@@ -14,6 +14,12 @@ on:
       - 'app/assets/js/profile/mgw-profile-backgrounds.js'
       - 'app/assets/js/profile/mgw-profile-badges.js'
       - 'app/assets/js/profile/mgw-profile-frames.js'
+      - 'app/assets/js/profile/mgw-profile-entry-effects.js'
+      - 'app/assets/js/profile/mgw-profile-reactions.js'
+      - 'app/assets/js/profile/mgw-profile-victory-effects-v4.js'
+      - 'app/assets/js/profile/mgw-profile-victory-effects-card-parity.js'
+      - 'app/assets/js/screens/store-screen.js'
+      - 'app/assets/js/screens/weekly-match-info.js'
       - 'app/assets/js/screens/game-screen-v102.js'
       - 'app/assets/js/screens/home-screen.js'
       - 'app/assets/js/screens/notifications-screen-v110r13.js'
@@ -27,6 +33,7 @@ on:
       - 'bot/services/NotificationService.php'
       - 'bot/tests/Mvp27_2ManualRecoveryHistoryTest.php'
       - 'ops/checks/mvp27_2_manual_acceptance_recovery_contract.mjs'
+      - 'ops/checks/mvp27_2_locale_cards_inplace_contract.mjs'
       - '.github/workflows/mvp27-2-manual-acceptance-recovery.yml'
   workflow_dispatch:
 
@@ -59,6 +66,8 @@ jobs:
             node --input-type=module --check < "$file"
           done
           node --check ops/checks/mvp27_2_manual_acceptance_recovery_contract.mjs
+          node --check ops/checks/mvp27_2_locale_cards_inplace_contract.mjs
+          for file in app/assets/js/profile/mgw-profile-entry-effects.js app/assets/js/profile/mgw-profile-reactions.js app/assets/js/profile/mgw-profile-victory-effects-v4.js app/assets/js/profile/mgw-profile-victory-effects-card-parity.js app/assets/js/screens/store-screen.js app/assets/js/screens/weekly-match-info.js; do node --input-type=module --check < "$file"; done
           node -e "JSON.parse(require('fs').readFileSync('app/locales/ru.json','utf8')); JSON.parse(require('fs').readFileSync('app/locales/en.json','utf8'))"
           php -l app/runtime/client/version-manifest.php
           php -l bot/history/RuntimeHistoryRepository.php
@@ -68,6 +77,9 @@ jobs:
 
       - name: Recovery ownership contract
         run: node ops/checks/mvp27_2_manual_acceptance_recovery_contract.mjs
+
+      - name: In-place locale and cosmetic card ownership
+        run: node ops/checks/mvp27_2_locale_cards_inplace_contract.mjs
 
       - name: Canonical history projection
         run: php bot/tests/Mvp27_2ManualRecoveryHistoryTest.php
