@@ -57,8 +57,10 @@ assert.ok(
   'Canonical Victory Effects specifier must resolve to the localized card-parity wrapper'
 );
 assert.ok(
-  wrapper.includes("mgw-profile-victory-effects-v4.js?v=3")
-    && wrapper.includes('mvp27_1=localized-v1'),
+  (wrapper.includes("mgw-profile-victory-effects-v4.js?v=3")
+    && wrapper.includes('mvp27_1=localized-v1'))
+    || (wrapper.includes("mgw-profile-victory-effects-v4.js?v=4")
+    && wrapper.includes('mvp27_2=locale-cards-v1')),
   'Active card-parity wrapper must resolve to localized v4 owner'
 );
 assert.ok(activeOwner.includes("from '@mgw/i18n'"), 'Active v4 Victory Effects owner must use canonical i18n');
