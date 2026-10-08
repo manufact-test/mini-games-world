@@ -18,7 +18,7 @@ on:
       - 'bot/webhook.php'
       - 'android-app/app/src/main/**'
       - 'android-app/tools/verify-native-localization.py'
-      - 'ops/checks/mvp27_6_bilingual_release_contract.mjs'
+      - 'ops/checks/mvp27_*.mjs'
       - 'docs/MVP27_6_BILINGUAL_QA.md'
       - '.github/workflows/mvp27-6-bilingual-release-qa.yml'
   push:
@@ -37,7 +37,7 @@ on:
       - 'bot/webhook.php'
       - 'android-app/app/src/main/**'
       - 'android-app/tools/verify-native-localization.py'
-      - 'ops/checks/mvp27_6_bilingual_release_contract.mjs'
+      - 'ops/checks/mvp27_*.mjs'
       - 'docs/MVP27_6_BILINGUAL_QA.md'
       - '.github/workflows/mvp27-6-bilingual-release-qa.yml'
   workflow_dispatch:
