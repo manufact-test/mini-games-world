@@ -190,7 +190,6 @@
 #screen-profile [data-profile-name-color],
 #screen-profile [data-profile-badge-preview],
 #screen-profile [data-profile-game-cosmetic]{
-  --mgw-profile-card-subtitle:"Оформление";
   box-sizing:border-box!important;
   height:100%!important;
   min-width:0!important;
@@ -254,7 +253,7 @@
 #screen-profile [data-profile-name-color]::after,
 #screen-profile [data-profile-badge-preview]::after,
 #screen-profile [data-profile-game-cosmetic]::after{
-  content:var(--mgw-profile-card-subtitle);
+  content:attr(data-mgw-profile-subtitle);
   order:3;
   display:block;
   min-width:0;
@@ -267,29 +266,8 @@
   line-height:1.15;
 }
 
-/* Card subtitles use the same catalogue language already exposed in Store/sheets. */
-#screen-profile [data-profile-avatar-preview^="starter-default-"]{--mgw-profile-card-subtitle:"Стартовый"}
-#screen-profile [data-profile-avatar-preview^="store-avatar-"]{--mgw-profile-card-subtitle:"Аватар"}
-
-#screen-profile [data-profile-name-color="profile-name-color-sky"]{--mgw-profile-card-subtitle:"Обычный"}
-#screen-profile [data-profile-name-color="profile-name-color-gold"]{--mgw-profile-card-subtitle:"Редкий"}
-#screen-profile [data-profile-name-color="profile-name-color-aurora"]{--mgw-profile-card-subtitle:"Градиент"}
-
-#screen-profile [data-profile-badge-preview="profile-badge-spark"]{--mgw-profile-card-subtitle:"Обычный"}
-#screen-profile [data-profile-badge-preview="profile-badge-crest"]{--mgw-profile-card-subtitle:"Редкий"}
-#screen-profile [data-profile-badge-preview="profile-badge-pulse"]{--mgw-profile-card-subtitle:"Анимированный"}
-
-#screen-profile [data-profile-frame-preview="profile-frame-01"]{--mgw-profile-card-subtitle:"Обычная"}
-#screen-profile [data-profile-frame-preview="profile-frame-02"]{--mgw-profile-card-subtitle:"Редкая"}
-#screen-profile [data-profile-frame-preview="profile-frame-03"]{--mgw-profile-card-subtitle:"Эпическая"}
-#screen-profile [data-profile-frame-preview="profile-frame-animated"]{--mgw-profile-card-subtitle:"Анимированная"}
-
-#screen-profile [data-profile-game-cosmetic*="-field-"],
-#screen-profile [data-profile-game-cosmetic*="-theme-"]{--mgw-profile-card-subtitle:"Поле"}
-#screen-profile [data-profile-game-cosmetic*="-marks-"],
-#screen-profile [data-profile-game-cosmetic*="-elements-"]{--mgw-profile-card-subtitle:"Знаки"}
-#screen-profile [data-profile-game-cosmetic*="-effect-"]{--mgw-profile-card-subtitle:"Эффект"}
-
+/* Subtitle strings are supplied by the owning Profile renderers as data attributes.
+ * This CSS does not own Russian/English product or rarity vocabulary. */
 /* Fixed shell nav must never cover the last Store/Profile collection rows. */
 .has-shell-chrome .screen[data-screen="store"] .content,
 .has-shell-chrome .screen[data-screen="profile"] .content{padding-bottom:calc(86px + env(safe-area-inset-bottom))!important;scroll-padding-bottom:calc(86px + env(safe-area-inset-bottom))}

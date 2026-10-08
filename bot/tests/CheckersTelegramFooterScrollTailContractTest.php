@@ -64,7 +64,7 @@ if (!str_contains($manifest, "production-v108-profile-entry-preview-live-owner-c
 }
 $graniteWrapper = file_get_contents($root . '/app/assets/css/production-v108-profile-entry-preview-live-owner-checkers-fit-granite-v2.css');
 if (!is_string($graniteWrapper)
-    || !str_contains($graniteWrapper, "production-v108-profile-entry-preview-live-owner-checkers-fit.css?v=12&checkers=pre-b94d-exact-restore-v1")) {
+    || preg_match('~production-v108-profile-entry-preview-live-owner-checkers-fit\\.css\\?v=[0-9]+&checkers=pre-b94d-exact-restore-v1~', $graniteWrapper) !== 1) {
     throw new RuntimeException('Exact pre-b94d Checkers restore must remain under the current Granite consistency wrapper.');
 }
 

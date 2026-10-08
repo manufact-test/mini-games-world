@@ -273,7 +273,7 @@ function renderProfileBadgeCollection(catalog){
 function profileBadgeCard(item, activeItemId){
   const itemId = String(item.item_id || '');
   const active = itemId === activeItemId;
-  return `<button class="profile-v2-badge-card${active ? ' active' : ''}" type="button" data-profile-badge-preview="${escapeAttr(itemId)}" aria-label="${escapeAttr(badgeName(item))}" aria-pressed="${active ? 'true' : 'false'}">${badgePreviewMarkup(itemId)}<small>${escapeHtml(badgeName(item))}</small>${active ? '<i class="profile-v2-selected-check" aria-hidden="true">✓</i>' : ''}</button>`;
+  return `<button class="profile-v2-badge-card${active ? ' active' : ''}" type="button" data-profile-badge-preview="${escapeAttr(itemId)}" data-mgw-profile-subtitle="${escapeAttr(badgeTierLabel(item))}" aria-label="${escapeAttr(badgeName(item))}" aria-pressed="${active ? 'true' : 'false'}">${badgePreviewMarkup(itemId)}<small>${escapeHtml(badgeName(item))}</small>${active ? '<i class="profile-v2-selected-check" aria-hidden="true">✓</i>' : ''}</button>`;
 }
 
 function openBadgePurchase(itemId){

@@ -212,35 +212,4 @@
   display:none!important;
 }
 
-/* The underlying old Profile renderer still calls starter avatars “Аватарка N”
- * and Entry metadata can still carry “Эффект входа I/II/III”. Correct only the
- * visible Profile sheet header without changing Store/economy/runtime owners. */
-#sheet:has(.profile-v2-avatar-preview[data-avatar-item-id]) .sheet-head h2,
-#sheet:has(.mgw-entry-effect-sheet-preview .mgw-entry-effect-preview[data-entry-effect-variant]) .sheet-head h2{
-  font-size:0!important;
-  line-height:1!important;
-}
-#sheet:has(.profile-v2-avatar-preview[data-avatar-item-id]) .sheet-head h2::after,
-#sheet:has(.mgw-entry-effect-sheet-preview .mgw-entry-effect-preview[data-entry-effect-variant]) .sheet-head h2::after{
-  display:block!important;
-  color:var(--text)!important;
-  font-size:20px!important;
-  line-height:1.1!important;
-  font-weight:950!important;
-  letter-spacing:-.035em!important;
-}
-#sheet:has(.profile-v2-avatar-preview[data-avatar-item-id="starter-default-01"]) .sheet-head h2::after{content:'Брам'!important}
-#sheet:has(.profile-v2-avatar-preview[data-avatar-item-id="starter-default-02"]) .sheet-head h2::after{content:'Мира'!important}
-#sheet:has(.profile-v2-avatar-preview[data-avatar-item-id="starter-default-03"]) .sheet-head h2::after{content:'Тобин'!important}
-#sheet:has(.profile-v2-avatar-preview[data-avatar-item-id="store-avatar-01"]) .sheet-head h2::after{content:'Сайлас'!important}
-#sheet:has(.profile-v2-avatar-preview[data-avatar-item-id="store-avatar-02"]) .sheet-head h2::after{content:'Каэл'!important}
-#sheet:has(.profile-v2-avatar-preview[data-avatar-item-id="store-avatar-03"]) .sheet-head h2::after{content:'Рук'!important}
-#sheet:has(.profile-v2-avatar-preview[data-avatar-item-id="store-avatar-04"]) .sheet-head h2::after{content:'Вейр'!important}
-#sheet:has(.profile-v2-avatar-preview[data-avatar-item-id="store-avatar-05"]) .sheet-head h2::after{content:'Аурекс'!important}
-#sheet:has(.profile-v2-avatar-preview[data-avatar-item-id="store-avatar-06"]) .sheet-head h2::after{content:'Эйра'!important}
-#sheet:has(.profile-v2-avatar-preview[data-avatar-item-id="store-avatar-07"]) .sheet-head h2::after{content:'Ноктар'!important}
-#sheet:has(.profile-v2-avatar-preview[data-avatar-item-id="store-avatar-08"]) .sheet-head h2::after{content:'Соларис'!important}
-#sheet:has(.profile-v2-avatar-preview[data-avatar-item-id="store-avatar-09"]) .sheet-head h2::after{content:'Дракс'!important}
-#sheet:has(.mgw-entry-effect-sheet-preview .mgw-entry-effect-preview[data-entry-effect-variant="entry-01"]) .sheet-head h2::after{content:'Небесные врата'!important}
-#sheet:has(.mgw-entry-effect-sheet-preview .mgw-entry-effect-preview[data-entry-effect-variant="entry-02"]) .sheet-head h2::after{content:'Восхождение короля'!important}
-#sheet:has(.mgw-entry-effect-sheet-preview .mgw-entry-effect-preview[data-entry-effect-variant="entry-03"]) .sheet-head h2::after{content:'Клинок владыки'!important}
+/* Sheet headings display localized real text supplied by their owning modules. */

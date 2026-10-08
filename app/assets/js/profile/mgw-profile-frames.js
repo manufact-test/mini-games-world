@@ -196,7 +196,7 @@ function storeFrameCard(item, activeItemId){
   return `
     <article class="store-v2-product ${owned ? 'owned' : ''} ${active ? 'equipped' : ''}">
       ${framePreviewMarkup(itemId, 'store-v2-avatar-preview', active)}
-      <strong class="store-v2-product-name">${escapeHtml(frameName(item))}</strong>
+      <strong class="store-v2-product-name" data-mgw-frame-subtitle="${escapeAttr(frameTierLabel(item))}">${escapeHtml(frameName(item))}</strong>
       <div class="store-v2-product-foot store-v2-profile-frame-foot">
         ${owned
           ? (active
@@ -264,7 +264,7 @@ function renderProfileFrameCollection(catalog){
 function profileFrameCard(item, activeItemId){
   const itemId = String(item.item_id || '');
   const active = itemId === activeItemId;
-  return `<button class="profile-v2-collection-card${active ? ' active' : ''}" type="button" data-profile-frame-preview="${escapeAttr(itemId)}" aria-label="${escapeAttr(frameName(item))}" aria-pressed="${active ? 'true' : 'false'}">${framePreviewMarkup(itemId, 'profile-v2-collection-avatar')}${active ? '<i class="profile-v2-selected-check" aria-hidden="true">✓</i>' : ''}</button>`;
+  return `<button class="profile-v2-collection-card${active ? ' active' : ''}" type="button" data-profile-frame-preview="${escapeAttr(itemId)}" data-mgw-profile-subtitle="${escapeAttr(frameTierLabel(item))}" aria-label="${escapeAttr(frameName(item))}" aria-pressed="${active ? 'true' : 'false'}">${framePreviewMarkup(itemId, 'profile-v2-collection-avatar')}${active ? '<i class="profile-v2-selected-check" aria-hidden="true">✓</i>' : ''}</button>`;
 }
 
 function openFramePurchase(itemId){

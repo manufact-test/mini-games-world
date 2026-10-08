@@ -761,7 +761,7 @@ function ownedAvatarIds(){ return ownedAvatarItems().map(item => item.item_id); 
 function collectionAvatarMarkup(item, activeAvatar){
   const itemId = String(item?.item_id || '');
   const active = itemId === activeAvatar;
-  return `<button class="profile-v2-collection-card${active ? ' active' : ''}" type="button" data-profile-avatar-preview="${escapeHtml(itemId)}" aria-label="${escapeHtml(avatarName(itemId))}" aria-pressed="${active ? 'true' : 'false'}"><span class="profile-v2-collection-avatar" data-avatar-item-id="${escapeHtml(itemId)}" aria-hidden="true">MG</span>${active ? '<i class="profile-v2-selected-check" aria-hidden="true">✓</i>' : ''}</button>`;
+  return `<button class="profile-v2-collection-card${active ? ' active' : ''}" type="button" data-profile-avatar-preview="${escapeHtml(itemId)}" data-mgw-profile-subtitle="${escapeHtml(t(itemId.startsWith('starter-default-') ? 'profile.collection.avatar_subtitles.starter' : 'profile.collection.avatar_subtitles.purchased'))}" aria-label="${escapeHtml(avatarName(itemId))}" aria-pressed="${active ? 'true' : 'false'}"><span class="profile-v2-collection-avatar" data-avatar-item-id="${escapeHtml(itemId)}" aria-hidden="true">MG</span>${active ? '<i class="profile-v2-selected-check" aria-hidden="true">✓</i>' : ''}</button>`;
 }
 
 function avatarChoiceMarkup(item, activeAvatar){
@@ -773,7 +773,7 @@ function avatarChoiceMarkup(item, activeAvatar){
 
 function avatarName(itemId){
   const normalized = String(itemId || '');
-  if (LAUNCH_AVATARS.includes(normalized)) {
+  if (LAUNCH_AVATARS.includes(normalized) || ['starter-default-01','starter-default-02','starter-default-03'].includes(normalized)) {
     try { return t(`store.products.${normalized}`); } catch (error) {}
   }
   const index = LAUNCH_AVATARS.indexOf(normalized);
@@ -815,7 +815,7 @@ function nameColorCardMarkup(item, activeItemId, nickname){
   const itemId = String(item?.item_id || '');
   const active = itemId === activeItemId;
   const name = nameColorName(item);
-  return `<button class="profile-v2-name-color-card${active ? ' active' : ''}" type="button" data-profile-name-color="${escapeHtml(itemId)}" aria-label="${escapeHtml(name)}" aria-pressed="${active ? 'true' : 'false'}"><span class="profile-v2-name-color-sample" data-name-color-item-id="${escapeHtml(itemId)}">${escapeHtml(nickname)}</span><small>${escapeHtml(name)}</small>${active ? '<i class="profile-v2-selected-check" aria-hidden="true">✓</i>' : ''}</button>`;
+  return `<button class="profile-v2-name-color-card${active ? ' active' : ''}" type="button" data-profile-name-color="${escapeHtml(itemId)}" data-mgw-profile-subtitle="${escapeHtml(nameColorTierLabel(item))}" aria-label="${escapeHtml(name)}" aria-pressed="${active ? 'true' : 'false'}"><span class="profile-v2-name-color-sample" data-name-color-item-id="${escapeHtml(itemId)}">${escapeHtml(nickname)}</span><small>${escapeHtml(name)}</small>${active ? '<i class="profile-v2-selected-check" aria-hidden="true">✓</i>' : ''}</button>`;
 }
 
 function openNameColorPreview(itemId){
@@ -1035,12 +1035,24 @@ function gameCollectionMark(gameType){
   })[String(gameType || '')] || '◆';
 }
 
+function gameCosmeticSubtitle(item){
+  const layer = gameCosmeticLayer(item);
+  const gameType = gameCosmeticGameType(item);
+  if (gameType && layer) {
+    try { return t(`profile.collection.games.${gameType}.groups.${layer}`); } catch (_) {}
+  }
+  if (layer) {
+    try { return t(`profile.collection.game_groups.${layer}`); } catch (_) {}
+  }
+  return t('profile.collection.cosmetics_label');
+}
+
 function gameCosmeticCardMarkup(item){
   const itemId = String(item?.item_id || '');
   const active = isGameCosmeticEquipped(item);
   const available = String(item?.catalog_status || '') === 'active';
   const name = gameCosmeticName(item);
-  return `<button class="profile-v2-game-card${active ? ' active' : ''}${available ? '' : ' unavailable'}" type="button" data-profile-game-cosmetic="${escapeHtml(itemId)}" aria-label="${escapeHtml(name)}" aria-pressed="${active ? 'true' : 'false'}">${gameCosmeticPreviewMarkup(item)}<span class="profile-v2-game-card-name">${escapeHtml(name)}</span>${active ? '<i class="profile-v2-selected-check" aria-hidden="true">✓</i>' : ''}</button>`;
+  return `<button class="profile-v2-game-card${active ? ' active' : ''}${available ? '' : ' unavailable'}" type="button" data-profile-game-cosmetic="${escapeHtml(itemId)}" data-mgw-profile-subtitle="${escapeHtml(gameCosmeticSubtitle(item))}" aria-label="${escapeHtml(name)}" aria-pressed="${active ? 'true' : 'false'}">${gameCosmeticPreviewMarkup(item)}<span class="profile-v2-game-card-name">${escapeHtml(name)}</span>${active ? '<i class="profile-v2-selected-check" aria-hidden="true">✓</i>' : ''}</button>`;
 }
 
 function openGameCosmeticPreview(itemId){

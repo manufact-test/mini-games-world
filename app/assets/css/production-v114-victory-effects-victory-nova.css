@@ -106,7 +106,7 @@
 .mgw-victory-effect-layer[data-victory-effect-variant="victory-nova"]::before{background:radial-gradient(circle at 50% 48%,rgba(255,213,97,.22),transparent 20%),radial-gradient(circle at 25% 27%,rgba(89,206,255,.15),transparent 34%),radial-gradient(circle at 76% 30%,rgba(255,82,214,.16),transparent 34%),radial-gradient(circle at 50% 78%,rgba(130,85,255,.14),transparent 42%);animation:mgwVictoryNovaBackdrop 3.5s ease-out both}
 .mgw-victory-effect-layer[data-victory-effect-variant="victory-nova"]::after{left:50%;top:50%;width:min(118vw,880px);border-color:rgba(255,226,144,.28);box-shadow:0 0 72px rgba(255,183,63,.14) inset,0 0 84px rgba(157,82,255,.08);animation:mgwVictoryNovaOuterHalo 3.5s ease-out both}
 
-#screen-profile [data-victory-effect-preview="profile-victory-effect-03"] .profile-v2-victory-effect-copy>b::after{content:'Победная сверхновая'!important}
+/* Victory effect title is already localized by its owning Profile renderer. */
 
 @keyframes mgwVictoryNovaAura{0%,3%{opacity:0;transform:rotate(-4deg) scale(.9)}12%{opacity:1}44%{opacity:.72;transform:rotate(5deg) scale(1.04)}78%{opacity:.38;transform:rotate(11deg) scale(1.12)}100%{opacity:0;transform:rotate(16deg) scale(1.18)}}
 @keyframes mgwVictoryNovaBloom{0%,5%{opacity:0;transform:scale(.3)}13%{opacity:1}35%{opacity:.75;transform:scale(1)}74%{opacity:.36;transform:scale(1.45)}100%{opacity:0;transform:scale(1.7)}}

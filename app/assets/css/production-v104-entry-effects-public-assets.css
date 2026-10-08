@@ -1,4 +1,4 @@
-@import url('./production-v103-entry-effects-cinematic-assets.css?v=1&mvp19_3=cinematic-assets-v1');
+@import url('./production-v103-entry-effects-cinematic-assets.css?v=2&mvp19_3=cinematic-assets-v1');
 
 /* MVP-19.3 Entry Effects — full reference-trio visual rebuild after #1218 manual FAIL.
  * Existing JS remains the single lifecycle/equip/skip owner. This file owns presentation only. */
@@ -20,18 +20,9 @@
 }
 .mgw-entry-effect-preview[data-entry-effect-variant] .mgw-entry-effect-preview-core i{display:none!important}
 
-/* Technical "Уровень I/II/III" copy is not product copy. */
+/* Product names are localized real DOM text, never old CSS-painted Russian copy.
+ * Technical tier/level captions stay hidden as in the accepted product. */
 .store-v2-entry-effect-copy small,.profile-v2-entry-effect-copy small{display:none!important}
-.store-v2-entry-effect-copy strong,.profile-v2-entry-effect-copy b{font-size:0!important;line-height:1.12!important}
-.store-v2-entry-effect-copy strong::after,.profile-v2-entry-effect-copy b::after{
-  display:block;font-size:12px;line-height:1.12;font-weight:900;letter-spacing:-.015em;color:inherit;
-}
-.store-v2-entry-effect-card:has(.mgw-entry-effect-preview[data-entry-effect-variant="entry-01"]) .store-v2-entry-effect-copy strong::after,
-.profile-v2-entry-effect-card:has(.mgw-entry-effect-preview[data-entry-effect-variant="entry-01"]) .profile-v2-entry-effect-copy b::after{content:'Небесные врата'}
-.store-v2-entry-effect-card:has(.mgw-entry-effect-preview[data-entry-effect-variant="entry-02"]) .store-v2-entry-effect-copy strong::after,
-.profile-v2-entry-effect-card:has(.mgw-entry-effect-preview[data-entry-effect-variant="entry-02"]) .profile-v2-entry-effect-copy b::after{content:'Восхождение короля'}
-.store-v2-entry-effect-card:has(.mgw-entry-effect-preview[data-entry-effect-variant="entry-03"]) .store-v2-entry-effect-copy strong::after,
-.profile-v2-entry-effect-card:has(.mgw-entry-effect-preview[data-entry-effect-variant="entry-03"]) .profile-v2-entry-effect-copy b::after{content:'Клинок владыки'}
 
 /* Shared Store/Profile preview stage. */
 .mgw-entry-effect-preview[data-entry-effect-variant]{

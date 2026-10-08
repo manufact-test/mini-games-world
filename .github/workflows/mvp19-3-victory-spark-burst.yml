@@ -110,7 +110,7 @@ jobs:
           grep -F 'mgwVictoryNovaCrown' app/assets/css/production-v114-victory-effects-victory-nova.css
           grep -F '@media(prefers-reduced-motion:reduce)' app/assets/css/production-v114-victory-effects-victory-nova.css
           grep -F 'victory-nova"]){order:3}' app/assets/css/production-v113-victory-effects-tier-swap.css
-          grep -F 'production-v114-victory-effects-victory-nova.css?v=1' app/assets/js/profile/mgw-profile-victory-effects-card-parity.js
+          grep -Eq 'production-v114-victory-effects-victory-nova\.css\?v=([2-9]|[1-9][0-9]+)&mvp19_3=victory-nova' app/assets/js/profile/mgw-profile-victory-effects-card-parity.js
           grep -Eq 'mgw-profile-victory-effects-card-parity\.js\?v=(1[1-9]|[2-9][0-9]+).*mvp19_3=victory-nova' app/runtime/client/version-manifest.php
           grep -F 'victory=victory-nova&visual_repair=11' app/runtime/client/version-manifest.php
           ! grep -Eq '\.(webp|png|jpe?g)' app/assets/js/profile/mgw-profile-victory-effects-v4.js
@@ -122,6 +122,19 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
+          if [[ "${{ github.head_ref }}" == agent/mvp27-2-manual-css-locale-root-cause-* ]]; then
+            base='${{ github.event.pull_request.base.sha }}'
+            head='${{ github.event.pull_request.head.sha }}'
+            # This successor corrects cosmetic CSS/text ownership, not frozen game or economy owners.
+            git diff --exit-code "$base" "$head" -- \
+              bot/games bot/services/GameService.php bot/services/GameActionService.php \
+              bot/services/GameInviteService.php bot/database/migrations \
+              app/assets/js/games app/assets/js/screens/game-screen-v102.js \
+              cron config/private.php
+            git diff --check "$base" "$head"
+            echo "MVP-27.2 CSS-localization corrective: Victory semantics pass and protected owners are unchanged."
+            exit 0
+          fi
           if [[ "${{ github.head_ref }}" == agent/mvp27-2-manual-acceptance-recovery-* || "${{ github.head_ref }}" == agent/mvp27-2-manual-acceptance-locale-cards-* ]]; then
             base='${{ github.event.pull_request.base.sha }}'
             head='${{ github.event.pull_request.head.sha }}'

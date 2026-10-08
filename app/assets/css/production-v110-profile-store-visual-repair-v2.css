@@ -32,37 +32,14 @@
   padding:0!important;
   overflow:visible!important;
 }
+/* Keep the real localized Entry Effect title visible at the accepted compact size. */
 .store-v2-content[data-store-v2-panel="profile"] .store-v2-entry-effect-copy>strong{
-  display:block!important;
-  width:100%!important;
-  min-width:0!important;
-  margin:0!important;
-  padding:0!important;
-  font-size:0!important;
-  line-height:1!important;
-  white-space:nowrap!important;
-  overflow:hidden!important;
-  text-overflow:ellipsis!important;
+  display:block!important;width:100%!important;min-width:0!important;
+  margin:0!important;padding:0!important;font-size:9px!important;line-height:1.1!important;
+  font-weight:900!important;white-space:nowrap!important;overflow:hidden!important;text-overflow:ellipsis!important;
 }
-.store-v2-content[data-store-v2-panel="profile"] .store-v2-entry-effect-copy>strong::before{content:none!important;display:none!important}
-.store-v2-content[data-store-v2-panel="profile"] .store-v2-entry-effect-copy>strong::after{
-  display:block!important;
-  width:100%!important;
-  min-width:0!important;
-  margin:0!important;
-  padding:0!important;
-  color:var(--text)!important;
-  font-size:9px!important;
-  line-height:1.1!important;
-  font-weight:900!important;
-  letter-spacing:0!important;
-  white-space:nowrap!important;
-  overflow:hidden!important;
-  text-overflow:ellipsis!important;
-}
-.store-v2-content[data-store-v2-panel="profile"] .store-v2-entry-effect-preview[data-entry-effect-variant="entry-01"]+.store-v2-entry-effect-copy>strong::after{content:'Небесные врата'!important}
-.store-v2-content[data-store-v2-panel="profile"] .store-v2-entry-effect-preview[data-entry-effect-variant="entry-02"]+.store-v2-entry-effect-copy>strong::after{content:'Восхождение короля'!important}
-.store-v2-content[data-store-v2-panel="profile"] .store-v2-entry-effect-preview[data-entry-effect-variant="entry-03"]+.store-v2-entry-effect-copy>strong::after{content:'Клинок владыки'!important}
+.store-v2-content[data-store-v2-panel="profile"] .store-v2-entry-effect-copy>strong::before,
+.store-v2-content[data-store-v2-panel="profile"] .store-v2-entry-effect-copy>strong::after{content:none!important;display:none!important}
 .store-v2-content[data-store-v2-panel="profile"] .store-v2-entry-effect-copy>small{display:none!important}
 .store-v2-content[data-store-v2-panel="profile"] .store-v2-victory-effect-copy>strong{
   display:block!important;
@@ -241,39 +218,19 @@
   opacity:1!important;
   overflow:visible!important;
 }
+/* Title-only Profile effect geometry, driven by localized real names. */
 #screen-profile .profile-v2-entry-effect-copy>b,
+#screen-profile .profile-v2-victory-effect-copy>b{
+  display:block!important;min-width:0!important;margin:0!important;padding:0!important;
+  font-size:var(--mgw-profile-card-title-size)!important;line-height:1.08!important;
+  overflow:hidden!important;text-overflow:ellipsis!important;white-space:nowrap!important;
+}
 #screen-profile .profile-v2-entry-effect-copy>small,
-#screen-profile .profile-v2-victory-effect-copy>b,
-#screen-profile .profile-v2-victory-effect-copy>small{
-  display:block!important;
-  min-width:0!important;
-  margin:0!important;
-  padding:0!important;
-  font-size:0!important;
-  line-height:1!important;
-  overflow:hidden!important;
-  text-overflow:ellipsis!important;
-  white-space:nowrap!important;
-}
-#screen-profile [data-entry-effect-preview="profile-entry-effect-01"] .profile-v2-entry-effect-copy>b::after{content:'Небесные врата'!important}
-#screen-profile [data-entry-effect-preview="profile-entry-effect-02"] .profile-v2-entry-effect-copy>b::after{content:'Восхождение короля'!important}
-#screen-profile [data-entry-effect-preview="profile-entry-effect-03"] .profile-v2-entry-effect-copy>b::after{content:'Клинок владыки'!important}
-#screen-profile .profile-v2-entry-effect-copy>b::after{
-  display:block!important;
-  overflow:hidden!important;
-  text-overflow:ellipsis!important;
-  white-space:nowrap!important;
-}
-#screen-profile .profile-v2-entry-effect-copy>small::after{content:'Эффект входа'!important;display:block!important}
-#screen-profile .profile-v2-victory-effect-copy>b::after{
-  content:'Искровой залп'!important;
-  display:block!important;
-  overflow:hidden!important;
-  text-overflow:ellipsis!important;
-  white-space:nowrap!important;
-}
-#screen-profile .profile-v2-victory-effect-copy>small::after{content:'Эффект победы'!important;display:block!important}
-
+#screen-profile .profile-v2-victory-effect-copy>small{display:none!important}
+#screen-profile .profile-v2-entry-effect-copy>b::after,
+#screen-profile .profile-v2-entry-effect-copy>small::after,
+#screen-profile .profile-v2-victory-effect-copy>b::after,
+#screen-profile .profile-v2-victory-effect-copy>small::after{content:none!important;display:none!important}
 /* Reactions participate in the same title/subtitle contract, with no fade. */
 #screen-profile .profile-v2-reaction-card>strong,
 #screen-profile .profile-v2-reaction-card>small{margin:0!important;padding:0!important;opacity:1!important}
