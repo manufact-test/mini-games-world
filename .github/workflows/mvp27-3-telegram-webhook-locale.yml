@@ -3,9 +3,16 @@ on:
   pull_request:
     paths:
       - 'bot/localization/ServerLocalization.php'
+      - 'bot/localization/TelegramLocalePreference.php'
+      - 'bot/telegram-locale.php'
+      - 'bot/invites.php'
+      - 'app/assets/js/localization/i18n.js'
+      - 'app/assets/js/games/game-invites-v110.js'
+      - 'app/runtime/client/version-manifest.php'
       - 'bot/webhook.php'
       - 'app/locales/en.json'
       - 'bot/tests/Mvp27_3TelegramWebhookLocaleTest.php'
+      - 'bot/tests/Mvp27_3ManualLocaleCorrectiveTest.php'
       - '.github/workflows/mvp27-3-telegram-webhook-locale.yml'
   push:
     branches: [agent/mvp-13-2-staging]
@@ -25,10 +32,23 @@ jobs:
       - name: PHP lint
         run: |
           php -l bot/localization/ServerLocalization.php
+          php -l bot/localization/TelegramLocalePreference.php
+          php -l bot/telegram-locale.php
+          php -l bot/invites.php
+          php -l app/runtime/client/version-manifest.php
+          node --check app/assets/js/localization/i18n.js
+          node --check app/assets/js/games/game-invites-v110.js
           php -l bot/webhook.php
           php -l bot/tests/Mvp27_3TelegramWebhookLocaleTest.php
+          php -l bot/tests/Mvp27_3ManualLocaleCorrectiveTest.php
       - name: Localized Telegram update contracts
         run: |
           php bot/tests/Mvp27_3TelegramWebhookLocaleTest.php
+          php bot/tests/Mvp27_3ManualLocaleCorrectiveTest.php
           php bot/tests/Mvp162LocalizationInfrastructureTest.php
           php bot/tests/Mvp25_5WebhookIngressSecurityContractTest.php
+          php bot/tests/Mvp18_3InviteV2ContractTest.php
+          php bot/tests/Mvp18_7FriendsInvitesRegressionContractTest.php
+          php bot/tests/Mvp26_3_12InviteSyncBalanceOwnershipContractTest.php
+          node ops/checks/mvp27_1_game_invites_localization_contract.mjs
+          node ops/checks/mvp27_1_backend_invites_endpoint_localization_contract.mjs
