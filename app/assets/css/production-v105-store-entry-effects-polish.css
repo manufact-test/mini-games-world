@@ -55,41 +55,13 @@
   row-gap:6px!important;
 }
 
-/* --- Avatars: one-word fantasy names + useful subtitle --- */
+/* Avatar text is rendered from the active RU/EN product catalog, not CSS copies. */
 .store-v2-product:has(.store-v2-avatar-preview) .store-v2-product-name{
-  font-size:0!important;
-  line-height:1.1!important;
-  min-height:27px!important;
+  font-size:10.5px!important;line-height:1.12!important;color:var(--text)!important;
+  min-height:0!important;
 }
-.store-v2-product:has(.store-v2-avatar-preview) .store-v2-product-name::before{
-  display:block;
-  font-size:12px;
-  line-height:1.05;
-  font-weight:900;
-  color:inherit;
-}
-.store-v2-product:has(.store-v2-avatar-preview) .store-v2-product-name::after{
-  content:'Аватар';
-  display:block;
-  margin-top:3px;
-  font-size:9px;
-  line-height:1;
-  font-weight:700;
-  color:rgba(255,255,255,.58);
-}
-.store-v2-product:has(.store-v2-avatar-preview[data-avatar-item-id="starter-default-01"]) .store-v2-product-name::before{content:'Брам'}
-.store-v2-product:has(.store-v2-avatar-preview[data-avatar-item-id="starter-default-02"]) .store-v2-product-name::before{content:'Мира'}
-.store-v2-product:has(.store-v2-avatar-preview[data-avatar-item-id="starter-default-03"]) .store-v2-product-name::before{content:'Тобин'}
-.store-v2-product:has(.store-v2-avatar-preview[data-avatar-item-id="store-avatar-01"]) .store-v2-product-name::before{content:'Сайлас'}
-.store-v2-product:has(.store-v2-avatar-preview[data-avatar-item-id="store-avatar-02"]) .store-v2-product-name::before{content:'Каэл'}
-.store-v2-product:has(.store-v2-avatar-preview[data-avatar-item-id="store-avatar-03"]) .store-v2-product-name::before{content:'Рук'}
-.store-v2-product:has(.store-v2-avatar-preview[data-avatar-item-id="store-avatar-04"]) .store-v2-product-name::before{content:'Вейр'}
-.store-v2-product:has(.store-v2-avatar-preview[data-avatar-item-id="store-avatar-05"]) .store-v2-product-name::before{content:'Аурекс'}
-.store-v2-product:has(.store-v2-avatar-preview[data-avatar-item-id="store-avatar-06"]) .store-v2-product-name::before{content:'Эйра'}
-.store-v2-product:has(.store-v2-avatar-preview[data-avatar-item-id="store-avatar-07"]) .store-v2-product-name::before{content:'Ноктар'}
-.store-v2-product:has(.store-v2-avatar-preview[data-avatar-item-id="store-avatar-08"]) .store-v2-product-name::before{content:'Соларис'}
-.store-v2-product:has(.store-v2-avatar-preview[data-avatar-item-id="store-avatar-09"]) .store-v2-product-name::before{content:'Дракс'}
-
+.store-v2-product:has(.store-v2-avatar-preview) .store-v2-product-name::before,
+.store-v2-product:has(.store-v2-avatar-preview) .store-v2-product-name::after{content:none!important;display:none!important}
 /* --- Entry Effect Store previews: artwork on the stage itself, not only a legacy inner <b>. --- */
 .mgw-entry-effect-preview[data-entry-effect-variant]{
   background-repeat:no-repeat!important;
@@ -248,70 +220,23 @@
   gap:7px!important;
 }
 
-/* Avatar names: remove the technical numbered copy with a selector that does not rely on :has(). */
+/* The real Store avatar name is authoritative. Preserve compact geometry. */
 .store-v2-content[data-store-v2-panel="profile"] .store-v2-avatar-preview+.store-v2-product-name{
-  min-height:29px!important;
-  margin:5px 1px 3px!important;
-  font-size:0!important;
-  line-height:1!important;
+  font-size:10.5px!important;line-height:1.12!important;color:var(--text)!important;
 }
-.store-v2-content[data-store-v2-panel="profile"] .store-v2-avatar-preview+.store-v2-product-name::before{
-  display:block!important;
-  font-size:10.5px!important;
-  line-height:1.12!important;
-  font-weight:800!important;
-  color:var(--text)!important;
-}
+.store-v2-content[data-store-v2-panel="profile"] .store-v2-avatar-preview+.store-v2-product-name::before,
 .store-v2-content[data-store-v2-panel="profile"] .store-v2-avatar-preview+.store-v2-product-name::after{
-  content:'Аватар'!important;
-  display:block!important;
-  margin-top:2px!important;
-  font-size:8.5px!important;
-  line-height:1.15!important;
-  font-weight:700!important;
-  color:var(--muted)!important;
+  content:none!important;display:none!important;
 }
-.store-v2-avatar-preview[data-avatar-item-id="starter-default-01"]+.store-v2-product-name::before{content:'Брам'!important}
-.store-v2-avatar-preview[data-avatar-item-id="starter-default-02"]+.store-v2-product-name::before{content:'Мира'!important}
-.store-v2-avatar-preview[data-avatar-item-id="starter-default-03"]+.store-v2-product-name::before{content:'Тобин'!important}
-.store-v2-avatar-preview[data-avatar-item-id="store-avatar-01"]+.store-v2-product-name::before{content:'Сайлас'!important}
-.store-v2-avatar-preview[data-avatar-item-id="store-avatar-02"]+.store-v2-product-name::before{content:'Каэл'!important}
-.store-v2-avatar-preview[data-avatar-item-id="store-avatar-03"]+.store-v2-product-name::before{content:'Рук'!important}
-.store-v2-avatar-preview[data-avatar-item-id="store-avatar-04"]+.store-v2-product-name::before{content:'Вейр'!important}
-.store-v2-avatar-preview[data-avatar-item-id="store-avatar-05"]+.store-v2-product-name::before{content:'Аурекс'!important}
-.store-v2-avatar-preview[data-avatar-item-id="store-avatar-06"]+.store-v2-product-name::before{content:'Эйра'!important}
-.store-v2-avatar-preview[data-avatar-item-id="store-avatar-07"]+.store-v2-product-name::before{content:'Ноктар'!important}
-.store-v2-avatar-preview[data-avatar-item-id="store-avatar-08"]+.store-v2-product-name::before{content:'Соларис'!important}
-.store-v2-avatar-preview[data-avatar-item-id="store-avatar-09"]+.store-v2-product-name::before{content:'Дракс'!important}
-
-/* Entry Effects: Store exposes only the real product names, never technical tier labels. */
-.store-v2-content .store-v2-entry-effect-copy{
-  min-height:26px!important;
-  display:flex!important;
-  align-items:flex-start!important;
-}
+/* Entry Effects: translated product names are real text nodes; hide tier copy as before. */
+.store-v2-content .store-v2-entry-effect-copy{min-height:26px!important;display:flex!important;align-items:flex-start!important}
 .store-v2-content .store-v2-entry-effect-copy small{display:none!important}
 .store-v2-content .store-v2-entry-effect-copy strong{
-  display:block!important;
-  width:100%!important;
-  min-height:24px!important;
-  font-size:0!important;
-  line-height:1.12!important;
+  display:block!important;width:100%!important;min-height:24px!important;
+  font-size:10.5px!important;line-height:1.12!important;color:var(--text)!important;
 }
-.store-v2-content .store-v2-entry-effect-copy strong::before{content:none!important;display:none!important}
-.store-v2-content .store-v2-entry-effect-copy strong::after{
-  display:block!important;
-  font-size:10.5px!important;
-  line-height:1.12!important;
-  font-weight:800!important;
-  letter-spacing:0!important;
-  color:var(--text)!important;
-  white-space:normal!important;
-}
-.store-v2-entry-effect-preview[data-entry-effect-variant="entry-01"]+.store-v2-entry-effect-copy strong::after{content:'Небесные врата'!important}
-.store-v2-entry-effect-preview[data-entry-effect-variant="entry-02"]+.store-v2-entry-effect-copy strong::after{content:'Восхождение короля'!important}
-.store-v2-entry-effect-preview[data-entry-effect-variant="entry-03"]+.store-v2-entry-effect-copy strong::after{content:'Клинок владыки'!important}
-
+.store-v2-content .store-v2-entry-effect-copy strong::before,
+.store-v2-content .store-v2-entry-effect-copy strong::after{content:none!important;display:none!important}
 /* Store-only artwork. These SVGs are valid browser assets and intentionally do not touch live-game art. */
 .store-v2-content .store-v2-entry-effect-preview[data-entry-effect-variant]{
   isolation:isolate!important;
@@ -366,42 +291,19 @@
   letter-spacing:0!important;
 }
 
-/* Avatar cards show exactly one product name. Hide the legacy text node and old subtitle. */
+/* Compact localized avatar title; no CSS-owned content or hidden real text. */
 .store-v2-content[data-store-v2-panel="profile"] .store-v2-product>.store-v2-avatar-preview+.store-v2-product-name{
-  min-height:12px!important;
-  margin:5px 1px 3px!important;
-  padding:0!important;
-  font-size:0!important;
-  line-height:0!important;
-  color:transparent!important;
+  min-height:12px!important;margin:5px 1px 3px!important;padding:0!important;
+  font-size:10.5px!important;line-height:1.12!important;color:var(--text)!important;
   text-shadow:none!important;
 }
-.store-v2-content[data-store-v2-panel="profile"] .store-v2-product>.store-v2-avatar-preview+.store-v2-product-name::before{
-  display:block!important;
-  margin:0!important;
-  padding:0!important;
-  font-family:inherit!important;
-  font-size:10.5px!important;
-  line-height:1.12!important;
-  font-weight:800!important;
-  letter-spacing:0!important;
-  color:var(--text)!important;
-  text-shadow:none!important;
+.store-v2-content[data-store-v2-panel="profile"] .store-v2-product>.store-v2-avatar-preview+.store-v2-product-name::before,
+.store-v2-content[data-store-v2-panel="profile"] .store-v2-product>.store-v2-avatar-preview+.store-v2-product-name::after{content:none!important;display:none!important}
+/* Entry Effect title uses the same Badge-card type scale without pseudo-copy. */
+.store-v2-content[data-store-v2-panel] .store-v2-entry-effect-copy>strong{
+  font-family:inherit!important;font-size:10.5px!important;line-height:1.12!important;
+  font-weight:800!important;letter-spacing:0!important;
 }
-.store-v2-content[data-store-v2-panel="profile"] .store-v2-product>.store-v2-avatar-preview+.store-v2-product-name::after{
-  content:none!important;
-  display:none!important;
-}
-
-/* Entry Effect titles use the same Badge-card token while preserving the accepted names/art. */
-.store-v2-content[data-store-v2-panel] .store-v2-entry-effect-copy>strong::after{
-  font-family:inherit!important;
-  font-size:10.5px!important;
-  line-height:1.12!important;
-  font-weight:800!important;
-  letter-spacing:0!important;
-}
-
 /* ========================================================================== */
 /* STORE FRAME NAME / TITLE-ONLY SPACING CORRECTIVE — manual screenshot pass. */
 /* ========================================================================== */
