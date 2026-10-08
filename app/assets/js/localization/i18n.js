@@ -92,6 +92,26 @@ export function readInlineLocalization(documentRef = globalThis.document){
 }
 
 let clientI18n = null;
+let syncedTelegramLocale = null;
+
+function syncTelegramBotLocale(locale){
+  const initData = String(globalThis.Telegram?.WebApp?.initData || '');
+  if (!initData || !['ru', 'en'].includes(locale) || syncedTelegramLocale === locale) return;
+  syncedTelegramLocale = locale;
+  // Explicit Mini App language controls future Telegram bot replies on this
+  // Telegram account; full MGW cross-device preference remains MVP-27.5.
+  void fetch('/bot/telegram-locale.php', {
+    method:'POST',
+    headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({initData, locale}),
+    credentials:'same-origin',
+    cache:'no-store',
+  }).then(response => {
+    if (!response.ok && syncedTelegramLocale === locale) syncedTelegramLocale = null;
+  }).catch(() => {
+    if (syncedTelegramLocale === locale) syncedTelegramLocale = null;
+  });
+}
 export function getI18n(){ clientI18n ||= readInlineLocalization(); return clientI18n; }
 
 export function resolvePreferredLocale({ explicitLocale = null, accountLocale = null, platformLocale = null, fallbackLocale = 'ru' } = {}){
@@ -113,13 +133,16 @@ export function applyAccountLocalePreference(accountLocale = null){
   const explicitLocale = explicitLocaleOverride();
   const platformLocale = globalThis.navigator?.languages?.[0] || globalThis.navigator?.language || null;
   const fallbackLocale = inlinePayload()?.manifest?.fallback_locale || 'ru';
-  return activateLocale(resolvePreferredLocale({ explicitLocale, accountLocale, platformLocale, fallbackLocale }));
+  const activated = activateLocale(resolvePreferredLocale({ explicitLocale, accountLocale, platformLocale, fallbackLocale }));
+  if (explicitLocale) syncTelegramBotLocale(activated);
+  return activated;
 }
 
 export function setExplicitLocale(locale){
   const previous = clientI18n?.locale || readInlineLocalization().locale;
   const activated = activateLocale(locale);
   try { globalThis.localStorage?.setItem(EXPLICIT_LOCALE_KEY, activated); } catch (error) {}
+  syncTelegramBotLocale(activated);
   if (activated !== previous && globalThis.document?.dispatchEvent) {
     globalThis.document.dispatchEvent(new CustomEvent('mgw:locale-changed', {
       detail:{ previous, locale:activated },
