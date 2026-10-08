@@ -68,9 +68,9 @@ for (const path of [
   'app/assets/css/components/mgw-profile-backgrounds.css',
 ]) {
   const css = read(path);
-  assert.doesNotMatch(css, /content\\s*:\\s*['"][^'"]*[А-Яа-яЁё]/, `Russian CSS pseudo-copy leaked: ${path}`);
+  assert.doesNotMatch(css, /content\s*:\s*['"][^'"]*[А-Яа-яЁё]/, `Russian CSS pseudo-copy leaked: ${path}`);
 }
-assert.match(read('app/assets/css/components/mgw-profile-backgrounds.css'), /content:attr\\(data-mgw-profile-subtitle\\)/);
+assert.match(read('app/assets/css/components/mgw-profile-backgrounds.css'), /content:attr\(data-mgw-profile-subtitle\)/);
 for (const path of ['app/assets/js/screens/profile-screen-v110.js', 'app/assets/js/profile/mgw-profile-badges.js', 'app/assets/js/profile/mgw-profile-frames.js']) {
   assert.match(read(path), /data-mgw-profile-subtitle/);
 }
@@ -81,3 +81,15 @@ for (const lang of [en,ru]) {
 assert.equal(en.store.products['profile-entry-effect-01'], 'Celestial Gate');
 assert.equal(ru.store.products['profile-entry-effect-01'], 'Небесные врата');
 console.log('MVP-27.2 CSS-owned Russian copy regression: PASS');
+
+for (const [path, marker] of [
+  ['app/assets/css/main.css', 'mgw-profile-backgrounds.css?v=3'],
+  ['app/assets/css/production-v106-store-avatar-frame-density.css', 'production-v105-store-entry-effects-polish.css?v=7'],
+  ['app/assets/css/production-v107-four-ios-grid-owned.css', 'production-v106-store-avatar-frame-density.css?v=12'],
+  ['app/assets/css/production-v108-profile-entry-preview-live-owner.css', 'production-v107-four-ios-grid-owned.css?v=2'],
+  ['app/assets/css/production-v108-profile-entry-preview-live-owner-checkers-fit.css', 'production-v108-profile-entry-preview-live-owner.css?v=2'],
+  ['app/assets/css/production-v108-profile-entry-preview-live-owner-checkers-fit-granite-v2.css', 'production-v108-profile-entry-preview-live-owner-checkers-fit.css?v=13'],
+]) assert.ok(read(path).includes(marker), `Missing CSS cache invalidation ${path}`);
+for (const marker of ['mvp27_2_pseudo_copy=v1', 'mgw-profile-victory-effects-card-parity.js']) {
+  assert.ok(read('app/runtime/client/version-manifest.php').includes(marker));
+}
