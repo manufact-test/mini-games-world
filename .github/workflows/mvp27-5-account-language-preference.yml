@@ -1,0 +1,50 @@
+name: MVP-27.5 Account Language Preference
+on:
+  pull_request:
+    paths:
+      - 'bot/accounts/MgwIdentityPolicy.php'
+      - 'app/assets/js/localization/i18n.js'
+      - 'app/assets/js/api/client.js'
+      - 'app/assets/js/screens/home-screen.js'
+      - 'app/runtime/client/version-manifest.php'
+      - 'ops/checks/mvp27_5_account_language_contract.mjs'
+      - 'bot/tests/Mvp27_5AccountLocalePreferenceTest.php'
+      - '.github/workflows/mvp27-5-account-language-preference.yml'
+  push:
+    branches: [agent/mvp-13-2-staging]
+    paths:
+      - 'bot/accounts/MgwIdentityPolicy.php'
+      - 'app/assets/js/localization/i18n.js'
+      - 'app/assets/js/api/client.js'
+      - 'app/assets/js/screens/home-screen.js'
+      - 'app/runtime/client/version-manifest.php'
+      - 'ops/checks/mvp27_5_account_language_contract.mjs'
+      - 'bot/tests/Mvp27_5AccountLocalePreferenceTest.php'
+      - '.github/workflows/mvp27-5-account-language-preference.yml'
+permissions:
+  contents: read
+jobs:
+  account-locale:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - name: Syntax
+        run: |
+          php -l bot/accounts/MgwIdentityPolicy.php
+          php -l bot/profile-v2.php
+          php -l bot/tests/Mvp27_5AccountLocalePreferenceTest.php
+          php -l app/runtime/client/version-manifest.php
+          node --check app/assets/js/localization/i18n.js
+          node --check app/assets/js/api/client.js
+          node --check app/assets/js/screens/home-screen.js
+      - name: Account and localization regression
+        run: |
+          node ops/checks/mvp27_5_account_language_contract.mjs
+          php bot/tests/Mvp27_5AccountLocalePreferenceTest.php
+          php bot/tests/Mvp162LocalizationInfrastructureTest.php
+          php bot/tests/Mvp27_3TelegramWebhookLocaleTest.php
+          php bot/tests/Mvp27_3ManualLocaleCorrectiveTest.php
+          php bot/tests/Mvp26_3_11ProfileV2BalanceOwnershipContractTest.php
+          node ops/checks/mvp27_2_locale_cards_inplace_contract.mjs
+          node ops/checks/mvp27_3_invite_share_locale_transport_contract.mjs

@@ -15,7 +15,7 @@ final class MgwIdentityPolicy
         'starter-default-02',
         'starter-default-03',
     ];
-    public const SUPPORTED_LOCALES = ['ru'];
+    public const SUPPORTED_LOCALES = ['ru', 'en'];
 
     public static function generateNickname(): string
     {

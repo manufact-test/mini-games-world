@@ -22,3 +22,10 @@
 ## Real Android manual gate — pending
 
 Install signed staging APK **over** the existing app (no uninstall). Check Android app language English then Russian; native loading/network error/Retry and device-lock reauth; Account Data ZIP and ordinary attachment notifications; resume/Back/keyboard/rotation; linked MGW account/wallet preserved. The test owner must confirm PASS before MVP-27.4 is closed. Android provider adapters remain disabled through MVP-29.
+
+## Real-device manual acceptance — confirmed 2026-10-08
+
+Test owner confirmed successful in-place restoration, preserved existing
+app state, working application and language switching on Android.
+MVP-27.4 is CLOSED. ZIP/reauth edge cases were not separately reported.
+Staging merge PR #2158: 90367a86ac3ad9421595830fcc71ad7538566e75.
