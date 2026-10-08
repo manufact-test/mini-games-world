@@ -119,8 +119,14 @@ $assertTrue(str_contains($acceptanceCss, 'padding:12px !important'), 'Every Prof
 $assertTrue(str_contains($acceptanceCss, '.profile-v2-frame-card .mgw-profile-frame-preview::before') && str_contains($acceptanceCss, 'inset:0 !important'), 'Profile frame previews must not visually erase the canonical 12px card inset with negative overhang');
 $assertTrue(str_contains($acceptanceCss, '[data-entry-effect-variant="entry-01"]') && str_contains($acceptanceCss, '[data-entry-effect-variant="entry-02"]') && str_contains($acceptanceCss, '[data-entry-effect-variant="entry-03"]'), 'Entry Effect visual owner must provide three materially distinct tier presentations');
 $assertTrue(str_contains($acceptanceCss, 'position:fixed !important') && str_contains($acceptanceCss, 'grid-template-columns:minmax(0,1fr) !important'), 'Live Entry Effects must be viewport-centred rather than attached to a side of the game surface');
-$assertTrue(str_contains($showcaseCss, '.store-v2-confirm .btn:disabled') && str_contains($showcaseCss, 'Недостаточно коинов для покупки'), 'Store confirmation must make insufficient balance explicit and readable across cosmetic purchases');
-$assertTrue(str_contains($showcaseCss, 'mgwEntryLegendRealSword') && str_contains($showcaseCss, 'mgwEntryLegendArcImpact') && str_contains($showcaseCss, 'clip-path:polygon'), 'Legacy showcase layer must preserve the accepted explicit insufficient-funds and sword-impact fallback underneath the cinematic asset layer');
+$assertTrue(
+    str_contains($showcaseCss, '.store-v2-confirm .btn:disabled')
+        && str_contains($showcaseCss, '.store-v2-confirm:has(.btn:disabled)::after{content:none;display:none}')
+        && str_contains($entryUi, "entryText('purchase.missing'")
+        && !str_contains($showcaseCss, 'Недостаточно коинов для покупки'),
+    'Store confirmation must show localized insufficient balance on the disabled CTA, without duplicate hardcoded-RU CSS copy.'
+);
+$assertTrue(str_contains($showcaseCss, 'mgwEntryLegendRealSword') && str_contains($showcaseCss, 'mgwEntryLegendArcImpact') && str_contains($showcaseCss, 'clip-path:polygon'), 'Legacy showcase layer must preserve accepted sword-impact fallbacks underneath cinematic assets; localized purchase safety is checked separately');
 $assertTrue(str_contains($cinematicCss, 'entry-effect-02-portal-knight.webp') && str_contains($cinematicCss, 'mgwEntryPortalKnightEmerge') && str_contains($cinematicCss, 'mgwEntryPortalOpen'), 'Mid-tier Entry Effect must use the dedicated cinematic portal-knight asset with an animated portal/emergence sequence');
 $assertTrue(str_contains($cinematicCss, 'entry-effect-03-knight-strike.webp') && str_contains($cinematicCss, 'mgwEntryLegendaryKnightSlash') && str_contains($cinematicCss, 'mgwEntryLegendarySlashArc') && str_contains($cinematicCss, 'mgwEntryLegendaryShockwave'), 'Legendary Entry Effect must use the dedicated cinematic strike asset with synchronized slash and shockwave motion');
 $assertTrue(str_contains($cinematicCss, '@media(prefers-reduced-motion:reduce)') && is_file($root . '/app/media/cosmetics/entry-effects/entry-effect-02-portal-knight.webp') && is_file($root . '/app/media/cosmetics/entry-effects/entry-effect-03-knight-strike.webp'), 'Cinematic Entry Effects must preserve reduced-motion support and ship both dedicated media assets');
