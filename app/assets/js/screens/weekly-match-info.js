@@ -7,6 +7,7 @@ let cachedStatus = null;
 let refreshPromise = null;
 
 export function initWeeklyMatchInfo(){
+  document.addEventListener('mgw:locale-changed', () => syncWeeklyMatchButton());
   document.addEventListener('click', event => {
     const target = event.target.closest('button, [role="button"]');
     if (!target) return;
