@@ -274,10 +274,8 @@
 [data-profile-frame-store-section] .store-v2-product-name::after{
   display:block;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--muted);font-size:7.4px;font-weight:650;line-height:1.08
 }
-[data-profile-frame-store-section] .store-v2-avatar-preview[data-profile-frame-avatar-item-id="profile-frame-01"] + .store-v2-product-name::after{content:"Обычная"}
-[data-profile-frame-store-section] .store-v2-avatar-preview[data-profile-frame-avatar-item-id="profile-frame-02"] + .store-v2-product-name::after{content:"Редкая"}
-[data-profile-frame-store-section] .store-v2-avatar-preview[data-profile-frame-avatar-item-id="profile-frame-03"] + .store-v2-product-name::after{content:"Эпическая"}
-[data-profile-frame-store-section] .store-v2-avatar-preview[data-profile-frame-avatar-item-id="profile-frame-animated"] + .store-v2-product-name::after{content:"Анимированная"}
+/* Store frame tier is an i18n-owned attribute from the frame card renderer. */
+[data-profile-frame-store-section] .store-v2-product-name::after{content:attr(data-mgw-frame-subtitle)}
 [data-profile-frame-store-section] .store-v2-product-foot,
 [data-profile-frame-store-section] .mgw-profile-cosmetic-foot{margin-top:2px!important;min-height:43px!important;gap:4px!important}
 [data-profile-frame-store-section] .store-v2-product-foot>b,

@@ -66,6 +66,7 @@ for (const path of [
   'app/assets/css/production-v110-profile-store-visual-repair-v2.css',
   'app/assets/css/production-v111-profile-avatar-geometry.css',
   'app/assets/css/components/mgw-profile-backgrounds.css',
+  'app/assets/css/main.css',
 ]) {
   const css = read(path);
   assert.doesNotMatch(css, /content\s*:\s*['"][^'"]*[А-Яа-яЁё]/, `Russian CSS pseudo-copy leaked: ${path}`);
@@ -93,3 +94,5 @@ for (const [path, marker] of [
 for (const marker of ['mvp27_2_pseudo_copy=v1', 'mgw-profile-victory-effects-card-parity.js']) {
   assert.ok(read('app/runtime/client/version-manifest.php').includes(marker));
 }
+assert.match(read('app/assets/css/main.css'), /content:attr\(data-mgw-frame-subtitle\)/);
+assert.match(read('app/assets/js/profile/mgw-profile-frames.js'), /data-mgw-frame-subtitle/);

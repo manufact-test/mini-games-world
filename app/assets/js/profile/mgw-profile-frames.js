@@ -196,7 +196,7 @@ function storeFrameCard(item, activeItemId){
   return `
     <article class="store-v2-product ${owned ? 'owned' : ''} ${active ? 'equipped' : ''}">
       ${framePreviewMarkup(itemId, 'store-v2-avatar-preview', active)}
-      <strong class="store-v2-product-name">${escapeHtml(frameName(item))}</strong>
+      <strong class="store-v2-product-name" data-mgw-frame-subtitle="${escapeAttr(frameTierLabel(item))}">${escapeHtml(frameName(item))}</strong>
       <div class="store-v2-product-foot store-v2-profile-frame-foot">
         ${owned
           ? (active
