@@ -286,7 +286,7 @@ function renderAvatarOffer(offer){
         <span>${String(number).padStart(2, '0')}</span>
         ${equipped ? `<i class="store-v2-selected-check" aria-label="${escapeAttr(t('store.actions.selected_feminine'))}">✓</i>` : ''}
       </div>
-      <strong class="store-v2-product-name">${escapeHtml(t('store.profile.avatar_name',{number:number || ''}))}</strong>
+      <strong class="store-v2-product-name">${escapeHtml(localizedOfferName(offer, t('store.profile.avatar_name',{number:number || ''})))}</strong>
       <div class="store-v2-product-foot">
         ${owned
           ? `<b>${equipped ? '' : escapeHtml(t('store.actions.purchased'))}</b>`
