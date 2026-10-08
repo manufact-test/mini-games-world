@@ -1,0 +1,85 @@
+name: MVP-27.6 Cross-Platform RU EN Release QA
+
+on:
+  pull_request:
+    branches:
+      - agent/mvp-13-2-staging
+    paths:
+      - 'app/locales/**'
+      - 'app/assets/js/localization/**'
+      - 'app/assets/js/api/client.js'
+      - 'app/assets/js/screens/home-screen.js'
+      - 'app/assets/js/games/game-invites-v110.js'
+      - 'bot/localization/**'
+      - 'bot/accounts/MgwIdentityPolicy.php'
+      - 'bot/profile-v2.php'
+      - 'bot/telegram-locale.php'
+      - 'bot/invites.php'
+      - 'bot/webhook.php'
+      - 'android-app/app/src/main/**'
+      - 'android-app/tools/verify-native-localization.py'
+      - 'ops/checks/mvp27_*.mjs'
+      - 'docs/MVP27_6_BILINGUAL_QA.md'
+      - '.github/workflows/mvp27-6-bilingual-release-qa.yml'
+  push:
+    branches: [agent/mvp-13-2-staging]
+    paths:
+      - 'app/locales/**'
+      - 'app/assets/js/localization/**'
+      - 'app/assets/js/api/client.js'
+      - 'app/assets/js/screens/home-screen.js'
+      - 'app/assets/js/games/game-invites-v110.js'
+      - 'bot/localization/**'
+      - 'bot/accounts/MgwIdentityPolicy.php'
+      - 'bot/profile-v2.php'
+      - 'bot/telegram-locale.php'
+      - 'bot/invites.php'
+      - 'bot/webhook.php'
+      - 'android-app/app/src/main/**'
+      - 'android-app/tools/verify-native-localization.py'
+      - 'ops/checks/mvp27_*.mjs'
+      - 'docs/MVP27_6_BILINGUAL_QA.md'
+      - '.github/workflows/mvp27-6-bilingual-release-qa.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  release-localization-contract:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Syntax and catalog runtime
+        run: |
+          set -euo pipefail
+          node --check ops/checks/mvp27_6_bilingual_release_contract.mjs
+          node ops/checks/mvp27_6_bilingual_release_contract.mjs
+          node ops/checks/mvp27_2_english_catalog_draft_contract.mjs
+      - name: Account switching, bot, invites, and fallback regression
+        run: |
+          set -euo pipefail
+          node ops/checks/mvp27_5_account_language_contract.mjs
+          node ops/checks/mvp27_5_instant_language_switch_contract.mjs
+          node ops/checks/mvp27_3_invite_share_locale_transport_contract.mjs
+          node ops/checks/mvp27_2_locale_cards_inplace_contract.mjs
+          php bot/tests/Mvp162LocalizationInfrastructureTest.php
+          php bot/tests/Mvp27_3TelegramWebhookLocaleTest.php
+          php bot/tests/Mvp27_3ManualLocaleCorrectiveTest.php
+          php bot/tests/Mvp27_5AccountLocalePreferenceTest.php
+          php bot/tests/Mvp26_3_11ProfileV2BalanceOwnershipContractTest.php
+      - name: Android native shell localization regression
+        run: |
+          set -euo pipefail
+          python3 android-app/tools/verify-native-localization.py
+          python3 android-app/tools/verify-native-shell-settings.py
+          python3 android-app/tools/verify-device-lifecycle-qa.py
+          python3 android-app/tools/verify-product-rc.py
+      - name: Secret scan and patch hygiene
+        run: |
+          set -euo pipefail
+          node scripts/ci/check-secrets.mjs
+          git diff --check
