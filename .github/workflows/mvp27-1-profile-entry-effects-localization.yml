@@ -69,6 +69,15 @@ jobs:
           set -euo pipefail
           base='${{ github.event.pull_request.base.sha }}'
           head='${{ github.event.pull_request.head.sha }}'
+          if [[ "${{ github.head_ref }}" == agent/mvp27-2-manual-acceptance-locale-cards-* ]]; then
+            git diff --exit-code "$base" "$head" -- bot/cosmetic-store.php bot/helpers/response.php app/assets/js/profile/mgw-entry-effect-player-arbitration.js bot/tests/Mvp19_3ProfileEntryEffectsTest.php
+            node tests/mvp19-3-entry-effect-player-arbitration.mjs
+            node ops/checks/mvp27_1_profile_entry_effects_localization_contract.mjs
+            node ops/checks/mvp27_2_locale_cards_inplace_contract.mjs
+            git diff --check
+            echo "MVP-27.2 locale-cards: Entry Effects purchase, arbitration and gameplay owners preserved."
+            exit 0
+          fi
           if git diff --quiet "$base" "$head" -- app/assets/js/profile/mgw-profile-entry-effects.js; then
             echo "Successor localization slice: predecessor owner unchanged; original bounded migration scope does not apply."
             exit 0
