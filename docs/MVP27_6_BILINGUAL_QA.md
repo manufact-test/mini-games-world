@@ -13,7 +13,7 @@
 - Compare every RU/EN player-catalog leaf and format placeholder. Reject accidental EN Cyrillic except deliberately unchanged legacy parser aliases.
 - All eight game-rule titles and bilingual language availability through **actual** client createI18n runtime.
 - Coin plural forms for RU/EN (1, 2, 5, 21), localized number/date/time, invalid/unsupported locale and absent-key behavior.
-- Exact allowlist for 46 RU-only historical/admin/shop/payment/prize/response server strings. Do NOT treat this as evidence of runtime unreachability. Review it if any such copy is observed by a player.
+- Exact allowlist for 47 RU-only historical/admin/shop/payment/prize/response server strings. Do NOT treat this as evidence of runtime unreachability. Review it if any such copy is observed by a player.
 - Re-run canonical account preference, immediate switching, Telegram bot/invite copy transport, localization infrastructure, native Android resource/owner/device checks.
 - This workflow is a *focused static/runtime QA gate*, not a claim that on-device visual parity or eight real multiplayer games have been tested.
 
