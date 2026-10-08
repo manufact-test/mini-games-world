@@ -97,8 +97,10 @@ $assert(
 
 $assert(
     str_contains($payments, "'mode' => 'archive_read_only'")
-        && str_contains($policy, 'Legacy Match/Gold операции доступны только для просмотра'),
-    'Legacy payment data must remain available through an explicit read-only compatibility policy.'
+        && str_contains($policy, "ServerLocalization::copy('server.game_runtime.legacy_zone.read_only'")
+        && str_contains($read('app/locales/ru.json'), 'Legacy Match/Gold операции доступны только для просмотра')
+        && str_contains($read('app/locales/en.json'), 'Legacy Match/Gold operations are view-only'),
+    'Legacy payment data must remain archive-only through the shared bilingual localization policy.'
 );
 
 foreach ([

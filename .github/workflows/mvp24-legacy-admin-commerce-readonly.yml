@@ -62,6 +62,21 @@ jobs:
           set -euo pipefail
           base='${{ github.event.pull_request.base.sha }}'
           head='${{ github.event.pull_request.head.sha }}'
+          if [[ "${{ github.head_ref }}" == agent/mvp27-3-telegram-webhook-* ]]; then
+            # Successor: enforce both old semantics and exact allowed-file scope.
+            php bot/tests/Mvp25_5WebhookIngressSecurityContractTest.php
+            php bot/tests/Mvp27_3TelegramWebhookLocaleTest.php
+            php bot/tests/Mvp24LegacyAdminCommerceReadOnlyContractTest.php
+            git diff --exit-code "$base" "$head" -- bot/helpers/TelegramWebhookSecurity.php bot/staging-webhook-security.php bot/webhook-diagnostic.php bot/setup-webhook.php bot/check-webhook.php bot/staging-e2e-readiness.php ops/deploy/telegram-webhook-repair.php ops/deploy/telegram-webhook-diagnostic-route.php bot/handlers/WebhookHandler.php bot/services/AdminService.php bot/services/PaymentService.php bot/runtime/UnifiedGameZonePolicy.php
+            while IFS= read -r changed; do
+              case "$changed" in
+                \.github/workflows/mvp25-5-webhook-ingress-security\.yml|\.github/workflows/mvp27-3-telegram-webhook-locale\.yml|\.github/workflows/mvp24-legacy-admin-commerce-readonly\.yml|\.github/workflows/mvp27-1-backend-account-chain-localization\.yml|app/locales/en\.json|bot/localization/ServerLocalization\.php|bot/webhook\.php|bot/tests/Mvp24LegacyAdminCommerceReadOnlyContractTest\.php|bot/tests/Mvp27_3TelegramWebhookLocaleTest\.php) ;;
+                *) echo "Unexpected successor path: $changed" >&2; exit 1 ;;
+              esac
+            done < <(git diff --name-only "$base" "$head")
+            git diff --check
+            exit 0
+          fi
           changed="$(git diff --name-only "$base" "$head")"
           printf '%s\n' "$changed"
           allowed='^(bot/(webhook\.php|handlers/WebhookHandler\.php|services/(AdminService|PaymentService)\.php|tests/Mvp24LegacyAdminCommerceReadOnlyContractTest\.php)|\.github/workflows/mvp24-legacy-admin-commerce-readonly\.yml)$'

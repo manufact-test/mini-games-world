@@ -1,0 +1,34 @@
+name: MVP-27.3 Telegram webhook locale
+on:
+  pull_request:
+    paths:
+      - 'bot/localization/ServerLocalization.php'
+      - 'bot/webhook.php'
+      - 'app/locales/en.json'
+      - 'bot/tests/Mvp27_3TelegramWebhookLocaleTest.php'
+      - '.github/workflows/mvp27-3-telegram-webhook-locale.yml'
+  push:
+    branches: [agent/mvp-13-2-staging]
+    paths:
+      - 'bot/localization/ServerLocalization.php'
+      - 'bot/webhook.php'
+      - 'app/locales/en.json'
+      - 'bot/tests/Mvp27_3TelegramWebhookLocaleTest.php'
+      - '.github/workflows/mvp27-3-telegram-webhook-locale.yml'
+permissions:
+  contents: read
+jobs:
+  telegram-webhook-locale:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: PHP lint
+        run: |
+          php -l bot/localization/ServerLocalization.php
+          php -l bot/webhook.php
+          php -l bot/tests/Mvp27_3TelegramWebhookLocaleTest.php
+      - name: Localized Telegram update contracts
+        run: |
+          php bot/tests/Mvp27_3TelegramWebhookLocaleTest.php
+          php bot/tests/Mvp162LocalizationInfrastructureTest.php
+          php bot/tests/Mvp25_5WebhookIngressSecurityContractTest.php

@@ -1,7 +1,7 @@
 {
   "_meta": {
     "locale": "en",
-    "version": 37,
+    "version": 38,
     "status": "active"
   },
   "common": {
@@ -3060,6 +3060,23 @@
     "orders_status_hint": "Track the status in “My requests”."
   },
   "server": {
+    "welcome": {
+      "invite_text": "🎮 You've been challenged in Mini Games World!\n\nOpen the invitation, review the terms and accept the match.",
+      "start_text": "🎮 Mini Games World\n\nPress the button below to start playing.",
+      "invite_button": "🎮 Open invitation",
+      "start_button": "🎮 Start game"
+    },
+    "webhook": {
+      "start_hint": "Press /start to open Mini Games World.",
+      "unavailable": "Unavailable"
+    },
+    "telegram": {
+      "start_text": "Welcome to Mini Games World.\n\nOpen the app and play your first match.",
+      "start_button": "Open game",
+      "payment_applied": "✅ Top-up confirmed\n\nRequest: {id}\nRoom: {room}\nAmount: {price} {currency}\nCredited: {coins} coins",
+      "payment_rejected": "🚫 Top-up request rejected\n\nRequest: {id}\nRoom: {room}\nAmount: {price} {currency}\nWould have credited: {coins} coins\nReason: {reason}",
+      "payment_rejected_default_reason": "rejected by administrator"
+    },
     "support": {
       "platforms": {
         "telegram": "Telegram app",

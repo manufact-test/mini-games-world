@@ -5,6 +5,26 @@ require_once dirname(__DIR__, 2) . '/app/runtime/localization/LocalizationCatalo
 
 final class ServerLocalization
 {
+    private static bool $telegramUpdateBound = false;
+    private static ?string $telegramUpdateLocale = null;
+
+    /**
+     * Use Telegram's authenticated update actor, not an incidental HTTP header.
+     * This is update-scoped; account-wide preference remains MVP-27.5.
+     */
+    public static function bindTelegramUpdate(array $update): void
+    {
+        $actor = $update['callback_query']['from']
+            ?? $update['message']['from']
+            ?? $update['edited_message']['from']
+            ?? null;
+        $code = is_array($actor) ? (string)($actor['language_code'] ?? '') : '';
+        $normalized = str_replace('_', '-', strtolower(trim($code)));
+        $candidate = explode('-', $normalized, 2)[0] ?? '';
+        self::$telegramUpdateLocale = in_array($candidate, ['ru', 'en'], true) ? $candidate : null;
+        self::$telegramUpdateBound = true;
+    }
+
     public static function copy(string $key, string $emergencyFallback, array $params = []): string
     {
         try {
@@ -21,6 +41,9 @@ final class ServerLocalization
 
     private static function requestLocale(LocalizationCatalog $catalog): ?string
     {
+        // A missing/unsupported Telegram language falls back to catalog RU.
+        if (self::$telegramUpdateBound) return self::$telegramUpdateLocale;
+
         $raw = strtolower(trim((string)($_SERVER['HTTP_X_MGW_LOCALE'] ?? '')));
         if ($raw === '') return null;
 
