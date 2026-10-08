@@ -6,6 +6,9 @@ const assert = (condition, message) => { if (!condition) throw new Error(message
 const owner = read('app/assets/js/profile/mgw-profile-frames.js');
 const cleanEntry = read('app/assets/js/production-clean-entry-v110.js');
 const manifest = read('app/runtime/client/version-manifest.php');
+
+// Successor-safe: only the bounded MVP-27.2 locale-card delivery marker is permitted.
+const acceptedLocaleManifestIdentity = identity => manifest.includes(identity) || manifest.includes(identity.replace(/'$/, "&mvp27_2_locale_cards=v1'"));
 const css = read('app/assets/css/components/mgw-profile-frames.css');
 const ru = JSON.parse(read('app/locales/ru.json'));
 const baseline = JSON.parse(read('ops/checks/mvp27_1_hardcoded_text_baseline.json'));
@@ -19,7 +22,7 @@ for (const itemId of ['profile-frame-01','profile-frame-02','profile-frame-03','
 assert(owner.includes('api.cosmeticStorePurchase') && owner.includes('api.cosmeticStoreEquip') && owner.includes('api.cosmeticStoreUnequip'), 'Canonical frame purchase/equip/unequip transport must remain unchanged.');
 assert(owner.includes('FRAME_NAME_KEYS') && owner.includes("'profile-frame-01':'names.sky'") && owner.includes("'profile-frame-animated':'names.spectrum'"), 'Frame product identity must remain bound to deterministic locale keys.');
 assert(cleanEntry.includes("mgw-profile-frames.js?v=4&mvp19_3=profile-frame-avatar-card-parity"), 'Active clean-entry must retain the canonical Profile Frames import key.');
-assert(manifest.includes("'./assets/js/profile/mgw-profile-frames.js?v=4&mvp19_3=profile-frame-avatar-card-parity' => './assets/js/profile/mgw-profile-frames.js?v=5&mvp19_3=profile-frame-avatar-card-parity&mvp27_1=localized-v1'"), 'Manifest must map the factual active frame key to localized v5.');
+assert(acceptedLocaleManifestIdentity("'./assets/js/profile/mgw-profile-frames.js?v=4&mvp19_3=profile-frame-avatar-card-parity' => './assets/js/profile/mgw-profile-frames.js?v=5&mvp19_3=profile-frame-avatar-card-parity&mvp27_1=localized-v1'"), 'Manifest must map the factual active frame key to localized v5.');
 assert(css.includes('[data-profile-frame-avatar-item-id]::before') && css.includes('profile-frame-animated'), 'Avatar frame overlay and animated top tier CSS owners must remain unchanged.');
 assert(css.includes('@media (prefers-reduced-motion:reduce)') && css.includes('animation:none!important'), 'Reduced-motion behavior must remain unchanged.');
 
