@@ -17,6 +17,12 @@
 - Re-run canonical account preference, immediate switching, Telegram bot/invite copy transport, localization infrastructure, native Android resource/owner/device checks.
 - This workflow is a *focused static/runtime QA gate*, not a claim that on-device visual parity or eight real multiplayer games have been tested.
 
+## Live staging browser smoke (MVP-27.6.2)
+- Two mobile widths (390 and 320) exercise the **actual** Telegram launch entry and active import-map i18n owner.
+- Real staging synthetic Player A OIDC session, actual Home/Settings copy and both language selectors in RU and EN.
+- Uses preview-only switching and makes **no** account/DB language update; it cannot replace real authenticated persistence or native Android acceptance.
+- Runs as part of the existing staging Playwright E2E after merge, not as a substitute for manual Telegram/Android checks.
+
 ## Remaining release acceptance matrix — manual/end-to-end, not yet PASS
 
 | Product surface | Telegram RU | Telegram EN | Android RU | Android EN |
