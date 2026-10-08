@@ -25,6 +25,14 @@ final class ServerLocalization
         self::$telegramUpdateBound = true;
     }
 
+    /** Explicit Telegram Mini App choice wins over the Telegram client language. */
+    public static function preferAuthenticatedTelegramLocale(?string $locale): void
+    {
+        if (self::$telegramUpdateBound && in_array($locale, ['ru', 'en'], true)) {
+            self::$telegramUpdateLocale = $locale;
+        }
+    }
+
     public static function copy(string $key, string $emergencyFallback, array $params = []): string
     {
         try {
