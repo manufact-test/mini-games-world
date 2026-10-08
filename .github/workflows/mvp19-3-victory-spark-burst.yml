@@ -110,7 +110,7 @@ jobs:
           grep -F 'mgwVictoryNovaCrown' app/assets/css/production-v114-victory-effects-victory-nova.css
           grep -F '@media(prefers-reduced-motion:reduce)' app/assets/css/production-v114-victory-effects-victory-nova.css
           grep -F 'victory-nova"]){order:3}' app/assets/css/production-v113-victory-effects-tier-swap.css
-          grep -F 'production-v114-victory-effects-victory-nova.css?v=1' app/assets/js/profile/mgw-profile-victory-effects-card-parity.js
+          grep -Eq 'production-v114-victory-effects-victory-nova\.css\?v=([2-9]|[1-9][0-9]+)&mvp19_3=victory-nova' app/assets/js/profile/mgw-profile-victory-effects-card-parity.js
           grep -Eq 'mgw-profile-victory-effects-card-parity\.js\?v=(1[1-9]|[2-9][0-9]+).*mvp19_3=victory-nova' app/runtime/client/version-manifest.php
           grep -F 'victory=victory-nova&visual_repair=11' app/runtime/client/version-manifest.php
           ! grep -Eq '\.(webp|png|jpe?g)' app/assets/js/profile/mgw-profile-victory-effects-v4.js
