@@ -89,7 +89,7 @@ function mgw_invite_game_title(array $invite): string
         'tictactoe', 'four_in_a_row', 'battleship', 'checkers',
         'reversi', 'chess', 'go', 'domino',
     ], true)) return $fallback;
-    return mgw_invite_copy('games.' . $gameType . '.name', [], $fallback);
+    return mgw_invite_copy('game_invites.game_titles.' . $gameType, [], $fallback);
 }
 
 function mgw_invite_share_text(array $invite): string
