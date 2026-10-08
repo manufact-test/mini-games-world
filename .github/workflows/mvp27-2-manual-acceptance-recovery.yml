@@ -105,5 +105,9 @@ jobs:
       - name: Diff hygiene and secret scan
         run: |
           set -euo pipefail
-          git diff --check "${{ github.event.pull_request.base.sha || github.sha^ }}" "${{ github.event.pull_request.head.sha || github.sha }}"
+          if [[ "${{ github.event_name }}" == "pull_request" ]]; then
+            git diff --check "${{ github.event.pull_request.base.sha }}" "${{ github.event.pull_request.head.sha }}"
+          else
+            git diff --check HEAD^ HEAD
+          fi
           node scripts/ci/check-secrets.mjs
