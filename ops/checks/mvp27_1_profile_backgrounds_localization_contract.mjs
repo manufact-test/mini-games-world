@@ -7,6 +7,9 @@ const owner = read('app/assets/js/profile/mgw-profile-backgrounds.js');
 const mainShell = read('app/assets/js/main-v110-handoff-shell.js');
 const cleanEntry = read('app/assets/js/production-clean-entry-v110.js');
 const manifest = read('app/runtime/client/version-manifest.php');
+
+// Successor-safe: only the bounded MVP-27.2 locale-card delivery marker is permitted.
+const acceptedLocaleManifestIdentity = identity => manifest.includes(identity) || manifest.includes(identity.replace(/'$/, "&mvp27_2_locale_cards=v1'"));
 const ru = JSON.parse(read('app/locales/ru.json'));
 const baseline = JSON.parse(read('ops/checks/mvp27_1_hardcoded_text_baseline.json'));
 
@@ -21,7 +24,7 @@ assert(owner.includes("document.addEventListener('mgw:app-ready'") && owner.incl
 const importKey = "./profile/mgw-profile-backgrounds.js?v=2&mvp19_3=profile-backgrounds-ux-corrective";
 assert(mainShell.includes(importKey) && cleanEntry.includes(importKey),
   'Main shell and clean-entry route owner must retain the canonical Profile backgrounds import key.');
-assert(manifest.includes("'./assets/js/profile/mgw-profile-backgrounds.js?v=2&mvp19_3=profile-backgrounds-ux-corrective' => './assets/js/profile/mgw-profile-backgrounds.js?v=4&mvp19_3=full-profile-surface&mvp27_1=localized-v1'"),
+assert(acceptedLocaleManifestIdentity("'./assets/js/profile/mgw-profile-backgrounds.js?v=2&mvp19_3=profile-backgrounds-ux-corrective' => './assets/js/profile/mgw-profile-backgrounds.js?v=4&mvp19_3=full-profile-surface&mvp27_1=localized-v1'"),
   'Canonical manifest must publish the localized Profile backgrounds owner.');
 assert(Number(ru._meta?.version || 0) >= 42, 'RU locale revision must retain Profile backgrounds localization v42 or a newer successor.');
 assert(ru.profile?.backgrounds?.title === 'Фоны профиля', 'Accepted RU Profile backgrounds title must remain unchanged.');
