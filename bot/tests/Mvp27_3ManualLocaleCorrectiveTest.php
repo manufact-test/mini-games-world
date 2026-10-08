@@ -99,12 +99,12 @@ $assert(str_contains($client, "'X-MGW-Locale':getI18n().locale"),
     'Real invite HTTP transport must propagate current in-memory locale.');
 $assert(str_contains($client, 'gameTitle(String(invite?.game_type || \'\'))'),
     'Waiting game title must be derived from game_type rather than stored Russian title.');
-$assert(str_contains($client, "${getI18n().locale}"),
+$assert(str_contains($client, '${getI18n().locale}'),
     'Prewarmed prepared messages must be scoped by locale.');
 $assert(str_contains($i18n, '/bot/telegram-locale.php') && str_contains($i18n, 'syncTelegramBotLocale(activated)'),
     'Explicit settings selection must propagate to the Telegram-channel preference.');
 $assert(str_contains($manifest, 'mvp27_3=telegram-channel-locale-v1')
-    && str_contains($manifest, './assets/js/games/game-invites-v110.js?v=1151'),
+    && str_contains($manifest, './assets/js/games/game-invites-v110.js?v=1150&mvp27_3=locale-share-v1'),
     'Real v110 import map must invalidate both modified clients.');
 
 echo "Mvp27_3ManualLocaleCorrectiveTest: {$checked} assertions passed\n";
