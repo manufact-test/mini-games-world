@@ -75,7 +75,7 @@ $assert(FakeTelegramLocaleStore::$data['users']['111']['balance'] === 50,
 $gameTypes = ['tictactoe','four_in_a_row','battleship','checkers','reversi','chess','go','domino'];
 foreach ($gameTypes as $type) {
     foreach (['ru','en'] as $locale) {
-        $name = $catalog->translate('games.' . $type . '.name', [], $locale);
+        $name = $catalog->translate('game_invites.game_titles.' . $type, [], $locale);
         $assert($name !== '', "Missing {$locale} game title: {$type}");
         if ($locale === 'en') $assert(preg_match('/[А-Яа-яЁё]/u', $name) !== 1, "English game title is Russian: {$type}");
     }
