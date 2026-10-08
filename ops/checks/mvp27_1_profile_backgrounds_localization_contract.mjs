@@ -9,7 +9,15 @@ const cleanEntry = read('app/assets/js/production-clean-entry-v110.js');
 const manifest = read('app/runtime/client/version-manifest.php');
 
 // Successor-safe: only the bounded MVP-27.2 locale-card delivery marker is permitted.
-const acceptedLocaleManifestIdentity = identity => manifest.includes(identity) || manifest.includes(identity.replace(/'$/, "&mvp27_2_locale_cards=v1'"));
+// Keep the factual import key and localized owner/version exact; only allow
+// explicitly versioned MVP-27.2 cache markers after that accepted identity.
+const acceptedLocaleManifestIdentity = identity => {
+  if (manifest.includes(identity)) return true;
+  const stem = identity.endsWith("'") ? identity.slice(0, -1) : identity;
+  const at = manifest.indexOf(stem);
+  if (at < 0) return false;
+  return /^(&mvp27_2_[a-z0-9_]+=[a-z0-9_-]+)+'/.test(manifest.slice(at + stem.length));
+};
 const ru = JSON.parse(read('app/locales/ru.json'));
 const baseline = JSON.parse(read('ops/checks/mvp27_1_hardcoded_text_baseline.json'));
 
