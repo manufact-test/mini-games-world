@@ -37,8 +37,8 @@ $assert(
 );
 
 $assert(
-    str_contains($mainCss, "mgw-profile-backgrounds.css?v=2")
-        && str_contains($mainCss, 'mvp25_4=mobile-compositor-v1'),
+    preg_match('/mgw-profile-backgrounds\\.css\\?v=(\\d+)[^\\']*mvp25_4=mobile-compositor-v1/', $mainCss, $backgroundCssVersion) === 1
+        && (int)$backgroundCssVersion[1] >= 2,
     'Main CSS must publish a fresh Profile background compositor asset identity.'
 );
 
