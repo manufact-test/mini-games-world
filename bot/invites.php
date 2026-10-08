@@ -162,7 +162,7 @@ function mgw_send_invite_message(array $config, array $invite, string $recipient
     $gameFallback = mgw_invite_copy('server.invites.game_lower_fallback', [], 'game');
     $messageParams = [
         'name' => (string)($invite['inviter_name'] ?? $playerFallback),
-        'game' => mgw_invite_game_title($invite)
+        'game' => mgw_invite_game_title($invite),
         'board' => mgw_invite_board_label($invite),
         'bet' => (int)($invite['bet'] ?? 0),
     ];
