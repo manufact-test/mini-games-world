@@ -185,7 +185,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          if [[ ( "${{ github.head_ref }}" == agent/mvp27-1-backend-*-localization-* && "${{ github.head_ref }}" != agent/mvp27-1-backend-account-chain-localization-* ) || "${{ github.head_ref }}" == agent/mvp27-1-backend-nonplayer-classification-bundle-* || "${{ github.head_ref }}" == agent/mvp27-1-backend-residual-nonplayer-classification-* || "${{ github.head_ref }}" == agent/mvp27-1-ci-successor-tail-* || "${{ github.head_ref }}" == agent/mvp27-2-* ]]; then
+          if [[ ( "${{ github.head_ref }}" == agent/mvp27-1-backend-*-localization-* && "${{ github.head_ref }}" != agent/mvp27-1-backend-account-chain-localization-* ) || "${{ github.head_ref }}" == agent/mvp27-1-backend-nonplayer-classification-bundle-* || "${{ github.head_ref }}" == agent/mvp27-1-backend-residual-nonplayer-classification-* || "${{ github.head_ref }}" == agent/mvp27-1-ci-successor-tail-* || "${{ github.head_ref }}" == agent/mvp27-2-* || "${{ github.head_ref }}" == agent/mvp27-3-telegram-webhook-* ]]; then
             echo 'Successor branch: Account-chain runtime owners remain covered by focused semantic/MySQL regressions; historical localization slice allow-list does not apply.'
             exit 0
           fi
