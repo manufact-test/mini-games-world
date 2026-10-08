@@ -4,7 +4,7 @@ import { openSheet, closeSheet } from '../components/sheet.js?v=68';
 import { toast } from '../components/toast.js?v=27';
 import { renderBalances } from '../ui.js?v=89';
 import { arbitratePlayerEntryEffects } from './mgw-entry-effect-player-arbitration.js?v=1';
-import { t, formatNumber as formatLocalizedNumber } from '@mgw/i18n';
+import { t, getI18n, formatNumber as formatLocalizedNumber } from '@mgw/i18n';
 
 const entryText = (key, params = {}) => t(`profile.entry_effects.${key}`, params);
 
@@ -41,6 +41,7 @@ export function initMgwProfileEntryEffects(){
     observer = new MutationObserver(scheduleDecorate);
     observeRoots();
 
+    document.addEventListener('mgw:locale-changed', scheduleDecorate);
     document.addEventListener('mgw:cosmetic-inventory-changed', event => {
       scheduleDecorate();
       if (String(event?.detail?.slot || '').trim() !== ENTRY_EFFECT_SLOT) return;
@@ -185,7 +186,9 @@ function currentEntryEffectId(){
 function meta(item){ return item?.metadata && typeof item.metadata === 'object' ? item.metadata : {}; }
 function itemName(item){
   const fallbackKey = ENTRY_EFFECT_PRESENTATION[item?.item_id]?.fallbackKey || 'names.fallback';
-  return String(meta(item).display_name || entryText(fallbackKey));
+  const itemId = String(item?.item_id || '');
+  try { return t(`store.products.${itemId}`); } catch (_) {}
+  return entryText(fallbackKey);
 }
 function itemPrice(item){ return Math.max(0, Number(meta(item).price_coins || 0)); }
 function itemOfferId(item){ return String(meta(item).offer_id || String(item?.item_id || '').replace(/^profile-/, '')); }
@@ -209,7 +212,7 @@ function renderStoreSection(catalog){
   const panel = document.querySelector('.store-v2-content[data-store-v2-panel="profile"]');
   if (!(panel instanceof HTMLElement)) return;
   const active = currentEntryEffectId();
-  const signature = catalog.map(item => `${item.item_id}:${item.owned === true ? 1 : 0}`).join('|') + `|${active}`;
+  const signature = catalog.map(item => `${item.item_id}:${item.owned === true ? 1 : 0}`).join('|') + `|${active}` + `|${getI18n().locale}`;
   let section = panel.querySelector('[data-profile-entry-effect-store-section]');
   const anchor = panel.querySelector('[data-profile-reaction-store-section]')
     || panel.querySelector('[data-profile-background-store-section]')
@@ -272,7 +275,7 @@ function renderProfileCollection(catalog){
   }
 
   const active = currentEntryEffectId();
-  const signature = owned.map(item => item.item_id).join('|') + `|${active}`;
+  const signature = owned.map(item => item.item_id).join('|') + `|${active}` + `|${getI18n().locale}`;
   if (section instanceof HTMLElement && section.dataset.profileEntryEffectSignature === signature) return;
   const markup = `<div class="profile-v2-entry-effect-collection" data-profile-entry-effect-collection data-profile-entry-effect-signature="${escapeAttr(signature)}" aria-label="${escapeAttr(entryText('title'))}">
     <div class="profile-v2-collection-title">${escapeHtml(entryText('title'))}</div>
