@@ -71,7 +71,7 @@ function ensureFireworkSalvoStylesheet(){
   const link = document.createElement('link');
   link.rel = 'stylesheet';
   link.dataset.mgwVictoryFireworkSalvoCss = 'v1';
-  link.href = new URL('../../css/production-v112-victory-effects-firework-salvo.css?v=1&mvp19_3=firework-salvo', import.meta.url).href;
+  link.href = new URL('../../css/production-v112-victory-effects-firework-salvo.css?v=2&mvp19_3=firework-salvo', import.meta.url).href;
   document.head.append(link);
 }
 
@@ -89,6 +89,6 @@ function ensureVictoryNovaStylesheet(){
   const link = document.createElement('link');
   link.rel = 'stylesheet';
   link.dataset.mgwVictoryNovaCss = 'v1';
-  link.href = new URL('../../css/production-v114-victory-effects-victory-nova.css?v=1&mvp19_3=victory-nova', import.meta.url).href;
+  link.href = new URL('../../css/production-v114-victory-effects-victory-nova.css?v=2&mvp19_3=victory-nova', import.meta.url).href;
   document.head.append(link);
 }

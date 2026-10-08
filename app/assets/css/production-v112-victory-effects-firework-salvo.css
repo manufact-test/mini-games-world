@@ -81,7 +81,7 @@
 .mgw-victory-effect-layer[data-victory-effect-variant="firework-salvo"]::before{background:radial-gradient(circle at 50% 35%,rgba(93,162,255,.14),transparent 32%),radial-gradient(circle at 50% 62%,rgba(255,91,190,.11),transparent 38%);animation:mgwVictorySalvoBackdrop 2.9s ease-out both}
 .mgw-victory-effect-layer[data-victory-effect-variant="firework-salvo"]::after{border-color:rgba(163,208,255,.24);box-shadow:0 0 56px rgba(100,146,255,.13) inset;animation:mgwVictorySalvoOuterHalo 2.9s ease-out both}
 
-#screen-profile [data-victory-effect-preview="profile-victory-effect-02"] .profile-v2-victory-effect-copy>b::after{content:'Салют победителя'!important}
+/* Victory effect title is already localized by its owning Profile renderer. */
 
 @keyframes mgwVictorySalvoTrailLeft{0%,4%{opacity:0;transform:scaleY(.04)}8%{opacity:.95}24%{opacity:.9;transform:scaleY(1)}30%,100%{opacity:0;transform:scaleY(1)}}
 @keyframes mgwVictorySalvoRocketLeft{0%,5%{opacity:0;transform:translate(-50%,42px) scale(.2)}9%{opacity:1}24%{opacity:1;transform:translate(-50%,0) scale(1)}29%,100%{opacity:0;transform:translate(-50%,-3px) scale(.35)}}

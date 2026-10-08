@@ -67,6 +67,10 @@ for (const path of [
   'app/assets/css/production-v111-profile-avatar-geometry.css',
   'app/assets/css/components/mgw-profile-backgrounds.css',
   'app/assets/css/main.css',
+  'app/assets/css/production-v102-entry-effects-showcase.css',
+  'app/assets/css/production-v104-entry-effects-public-assets.css',
+  'app/assets/css/production-v112-victory-effects-firework-salvo.css',
+  'app/assets/css/production-v114-victory-effects-victory-nova.css',
 ]) {
   const css = read(path);
   assert.doesNotMatch(css, /content\s*:\s*['"][^'"]*[А-Яа-яЁё]/, `Russian CSS pseudo-copy leaked: ${path}`);
@@ -96,3 +100,12 @@ for (const marker of ['mvp27_2_pseudo_copy=v1', 'mgw-profile-victory-effects-car
 }
 assert.match(read('app/assets/css/main.css'), /content:attr\(data-mgw-frame-subtitle\)/);
 assert.match(read('app/assets/js/profile/mgw-profile-frames.js'), /data-mgw-frame-subtitle/);
+
+for (const [path, marker] of [
+  ['app/assets/css/production-v103-entry-effects-cinematic-assets.css', 'production-v102-entry-effects-showcase.css?v=2'],
+  ['app/assets/css/production-v104-entry-effects-public-assets.css', 'production-v103-entry-effects-cinematic-assets.css?v=2'],
+  ['app/assets/css/production-v105-store-entry-effects-polish.css', 'production-v104-entry-effects-public-assets.css?v=3'],
+  ['app/assets/js/profile/mgw-profile-victory-effects-card-parity.js', 'production-v112-victory-effects-firework-salvo.css?v=2'],
+  ['app/assets/js/profile/mgw-profile-victory-effects-card-parity.js', 'production-v114-victory-effects-victory-nova.css?v=2'],
+]) assert.ok(read(path).includes(marker), `CSS cache chain not invalidated: ${path}`);
+assert.doesNotMatch(read('app/assets/css/production-v102-entry-effects-showcase.css'), /Недостаточно коинов для покупки/);

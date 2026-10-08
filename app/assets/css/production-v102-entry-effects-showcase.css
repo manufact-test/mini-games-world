@@ -38,20 +38,9 @@
   line-height:1;
   font-weight:1000;
 }
-.store-v2-confirm:has(.btn:disabled)::after{
-  content:'Недостаточно коинов для покупки';
-  display:block;
-  margin-top:-1px;
-  padding:8px 10px;
-  border:1px solid rgba(255,104,128,.36);
-  border-radius:12px;
-  background:rgba(118,30,48,.15);
-  color:#ffc2cc;
-  font-size:10.5px;
-  line-height:1.25;
-  font-weight:900;
-  text-align:center;
-}
+/* The disabled purchase CTA already explains the shortfall in the active locale.
+ * Never paint an additional hardcoded-RU duplicate warning with CSS. */
+.store-v2-confirm:has(.btn:disabled)::after{content:none;display:none}
 
 /* Tier II — closer to the approved portal reference: the character is no longer
  * a tiny badge inside geometry. It is the focal point inside a layered portal. */
