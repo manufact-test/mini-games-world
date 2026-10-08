@@ -6,7 +6,7 @@ import { openSheet, closeSheet } from '../components/sheet.js?v=68';
 import { showScreen } from '../router.js?v=27';
 import { haptic } from '../telegram/telegram-app.js?v=27';
 import { renderBalances } from '../ui.js?v=90-wallet-15-3';
-import { t, getI18n, formatDate as formatLocalizedDate, formatDateTime as formatLocalizedDateTime } from '@mgw/i18n';
+import { t, getI18n, previewAccountLocale, formatDate as formatLocalizedDate, formatDateTime as formatLocalizedDateTime } from '@mgw/i18n';
 import { accountLinkProfileMarkup } from '../profile/mgw-account-link-ui.js?v=3';
 
 const HISTORY_CACHE_MAX_AGE_MS = 15000;
@@ -136,30 +136,31 @@ function openSettingsSheet(){
   document.getElementById('languageSettingsBtn')?.addEventListener('click', openLanguageSettingsSheet);
 }
 
+let languageChangeIntent = 0;
+
 function openLanguageSettingsSheet(){
   const currentLocale = currentInterfaceLocale();
   const option = (id, locale, label) => `<button class="btn menu-item${currentLocale === locale ? ' active' : ''}" id="${id}" type="button">${escapeHtml(label)}<span>${currentLocale === locale ? '✓' : ''}</span></button>`;
   openSheet(`<div class="sheet-head"><div><h2>${escapeHtml(t('settings.language'))}</h2><p>${escapeHtml(t('settings.language_note'))}</p></div><button class="close" data-close-sheet type="button">×</button></div><div class="menu-list">${option('languageRuBtn','ru',t('settings.language_ru'))}${option('languageEnBtn','en',t('settings.language_en'))}</div>`);
 
-  let saving = false;
-  const activate = async locale => {
-    if (saving) return;
-    if (locale === currentLocale && state.mgwProfile?.preferred_locale === locale) {
+  const activate = locale => {
+    if (locale === currentInterfaceLocale() && state.mgwProfile?.preferred_locale === locale) {
       closeSheet();
       return;
     }
-    saving = true;
-    const buttons = [document.getElementById('languageRuBtn'), document.getElementById('languageEnBtn')];
-    buttons.forEach(button => { if (button) button.disabled = true; });
-    try {
-      // Never claim an account-wide change until the authenticated write succeeds.
-      await api.saveAccountLocale(locale);
-      closeSheet();
-    } catch (error) {
+    const previousLocale = currentInterfaceLocale();
+    const requestIntent = ++languageChangeIntent;
+
+    // Close the panel and switch the visible language immediately. Saving the
+    // authenticated account takes place in the background, not on the tap path.
+    closeSheet();
+    previewAccountLocale(locale);
+    void api.saveAccountLocale(locale).catch(error => {
+      // An older failed request must not undo a newer language selection.
+      if (requestIntent !== languageChangeIntent) return;
+      previewAccountLocale(state.mgwProfile?.preferred_locale || previousLocale);
       toast(error?.message || t('network.request_failed'));
-      saving = false;
-      buttons.forEach(button => { if (button) button.disabled = false; });
-    }
+    });
   };
   document.getElementById('languageRuBtn')?.addEventListener('click', () => activate('ru'));
   document.getElementById('languageEnBtn')?.addEventListener('click', () => activate('en'));
