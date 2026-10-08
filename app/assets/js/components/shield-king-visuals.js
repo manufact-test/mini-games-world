@@ -1,5 +1,3 @@
-import { t } from '@mgw/i18n';
-
 const ICON_ENDPOINT = './assets/shield-king-icon.php?v=c1efd5af&asset=';
 
 const MENU_ICONS = {
@@ -35,9 +33,8 @@ export function initShieldKingVisuals(){
     setIconOnly(button, 'ui/actions/rules.webp');
   });
 
-  const balances = document.querySelectorAll('.balance-card .balance-label');
-  setLabelIcon(balances[0], 'ui/economy/coins.webp', t('acceptance_runtime.search.room_match'));
-  setLabelIcon(balances[1], 'ui/economy/premium-currency.webp', t('acceptance_runtime.search.room_gold'));
+  // Home wallet label belongs only to runtime-dom localization; no image re-injection.
+  // On Telegram WebView the old unsupported wallet icon rendered as a square.
 
   applyDynamicIcons(document);
 
@@ -95,11 +92,6 @@ function setIconOnly(target, asset){
   const current = target.querySelector(':scope > img[data-sk-asset]');
   if (current?.dataset.skAsset === asset) return;
   target.replaceChildren(createImage(asset));
-}
-
-function setLabelIcon(label, asset, text){
-  if (!(label instanceof HTMLElement)) return;
-  label.replaceChildren(createImage(asset, 'shield-king-label-icon'), document.createTextNode(text));
 }
 
 function prependTextIcon(button, asset){

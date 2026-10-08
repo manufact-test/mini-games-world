@@ -27,9 +27,12 @@ for (const path of OWNERS) {
   assert.ok(!cyrillic.test(source), `Active shell owner still contains Cyrillic: ${path}`);
 }
 
-for (const path of OWNERS.filter(path => !path.endsWith('main-v110-handoff-shell.js'))) {
+// Shield King is a presentation-only image decorator after MVP-27.2; it must
+// not consume text translations or overwrite the runtime-dom-owned Home wallet.
+for (const path of OWNERS.filter(path => !path.endsWith('main-v110-handoff-shell.js') && !path.endsWith('/shield-king-visuals.js'))) {
   assert.ok(read(path).includes("@mgw/i18n"), `Active shell owner must consume canonical i18n: ${path}`);
 }
+assert.ok(!read('app/assets/js/components/shield-king-visuals.js').includes("@mgw/i18n"), 'Image-only decorator must stay independent from locale text.');
 assert.ok(read('app/assets/js/main-v110-handoff-shell.js').includes("import { t } from '@mgw/i18n';"), 'Root shell must keep canonical i18n ownership');
 
 const runtime = read('app/assets/js/runtime-status.js');

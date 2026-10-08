@@ -55,6 +55,17 @@ assert.match(store, /localizedOfferName\(offer, t\('store\.profile\.avatar_name'
 const runtime = read('app/assets/js/localization/runtime-dom.js');
 assert.match(runtime, /home_match_room_label/);
 assert.match(runtime, /weekly_match\.button_aria/);
+// Regression: only runtime-dom owns the Home wallet text on RU/EN; the icon
+// decorator must not replace the translated label with a broken-image glyph.
+const shieldVisuals = read('app/assets/js/components/shield-king-visuals.js');
+const homeTemplate = read('app/index.html');
+const walletManifest = read('app/runtime/client/version-manifest.php');
+assert.match(runtime, /roomLabel\.textContent = t\('shell\.home_match_room_label'\)/);
+assert.doesNotMatch(shieldVisuals, /setLabelIcon\s*\(/, 'Shield visuals must not overwrite localized Home wallet text.');
+assert.doesNotMatch(shieldVisuals, /shield-king-label-icon/, 'Broken wallet image must stay removed.');
+assert.doesNotMatch(homeTemplate, /🪙 MGW Coins/, 'Initial Home wallet label must not contain unsupported emoji.');
+assert.match(walletManifest, /mvp27_2_wallet_label=text-only-v1/, 'Cache-bust wallet visuals and shell after fix.');
+
 assert.match(read('app/assets/js/localization/i18n.js'), /mgw:locale-changed/);
 console.log('MVP-27.2 in-place locale and cosmetic cards: PASS');
 
