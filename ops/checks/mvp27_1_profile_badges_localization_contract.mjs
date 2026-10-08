@@ -6,6 +6,9 @@ const assert = (condition, message) => { if (!condition) throw new Error(message
 const owner = read('app/assets/js/profile/mgw-profile-badges.js');
 const cleanEntry = read('app/assets/js/production-clean-entry-v110.js');
 const manifest = read('app/runtime/client/version-manifest.php');
+
+// Successor-safe: only the bounded MVP-27.2 locale-card delivery marker is permitted.
+const acceptedLocaleManifestIdentity = identity => manifest.includes(identity) || manifest.includes(identity.replace(/'$/, "&mvp27_2_locale_cards=v1'"));
 const css = read('app/assets/css/components/mgw-profile-badges.css');
 const ru = JSON.parse(read('app/locales/ru.json'));
 const baseline = JSON.parse(read('ops/checks/mvp27_1_hardcoded_text_baseline.json'));
@@ -21,7 +24,7 @@ assert(owner.includes('data-profile-badge-store-section') && owner.includes('dat
 assert(owner.includes("String(players[index]?.badge_item_id") && owner.includes('dataset.profileBadgeAvatarItemId'), 'Live avatar badge projection must remain unchanged.');
 assert(owner.includes("const BADGE_PREVIEW_AVATAR = 'starter-default-01'") && owner.includes('style="border-radius:24%"'), 'Accepted rounded-square badge preview identity must remain unchanged.');
 assert(cleanEntry.includes("mgw-profile-badges.js?v=5&mvp19_3=profile-badge-avatar-shape"), 'Active clean-entry must retain the canonical Profile Badges import key.');
-assert(manifest.includes("'./assets/js/profile/mgw-profile-badges.js?v=5&mvp19_3=profile-badge-avatar-shape' => './assets/js/profile/mgw-profile-badges.js?v=6&mvp19_3=profile-badge-avatar-shape&mvp27_1=localized-v1'"), 'Manifest must map the factual active badge key to localized v6.');
+assert(acceptedLocaleManifestIdentity("'./assets/js/profile/mgw-profile-badges.js?v=5&mvp19_3=profile-badge-avatar-shape' => './assets/js/profile/mgw-profile-badges.js?v=6&mvp19_3=profile-badge-avatar-shape&mvp27_1=localized-v1'"), 'Manifest must map the factual active badge key to localized v6.');
 assert(css.includes('profile-badge-spark') && css.includes('profile-badge-crest') && css.includes('profile-badge-pulse'), 'All three accepted badge visual variants must remain unchanged.');
 assert(css.includes('[data-profile-badge-avatar-item-id]') && css.includes('pointer-events:none'), 'Equipped badges must remain zero-width avatar overlays.');
 assert(css.includes('@media (prefers-reduced-motion:reduce)') && css.includes('animation:none!important'), 'Reduced-motion badge behavior must remain unchanged.');
