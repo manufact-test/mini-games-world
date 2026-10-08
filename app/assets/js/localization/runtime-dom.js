@@ -12,6 +12,10 @@ function setAttr(selector, attribute, key){
 export function localizeRuntimeDom(){
   setText('#screen-home .hero-title', 'shell.home_hero_title');
   setText('#screen-home .hero-sub', 'shell.home_hero_subtitle');
+  const roomLabel = document.querySelector('#screen-home .balance-label');
+  if (roomLabel) roomLabel.textContent = `🪙 ${t('shell.home_match_room_label')}`;
+  setText('#weeklyMatchInfo', 'weekly_match.button');
+  setAttr('#weeklyMatchInfo', 'aria-label', 'weekly_match.button_aria');
   setText('#screen-home .balance-note', 'profile.balance_note');
   setText('#activityTitle h2', 'shell.home_activity_title');
   setText('#screen-home .section-title:not(#activityTitle) h2', 'shell.home_games_title');
