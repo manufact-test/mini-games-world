@@ -7,6 +7,9 @@ const owner = read('app/assets/js/profile/mgw-profile-reactions.js');
 const header = read('app/assets/js/profile/mgw-profile-reactions-header.js');
 const watcher = read('app/assets/js/production-v110-readonly-game-sync.js');
 const manifest = read('app/runtime/client/version-manifest.php');
+
+// Successor-safe: only the bounded MVP-27.2 locale-card delivery marker is permitted.
+const acceptedLocaleManifestIdentity = identity => manifest.includes(identity) || manifest.includes(identity.replace(/'$/, "&mvp27_2_locale_cards=v1'"));
 const ru = JSON.parse(read('app/locales/ru.json'));
 const baseline = JSON.parse(read('ops/checks/mvp27_1_hardcoded_text_baseline.json'));
 
@@ -25,9 +28,9 @@ assert(header.includes("from './mgw-profile-reactions.js?v=2&mvp19_3=ingame-corr
   'Accepted reaction header must retain the canonical base import key.');
 assert(watcher.includes("document.addEventListener('mgw:app-ready', initMgwProfileReactions"),
   'Reaction UI must still initialize through the accepted read-only game watcher after app-ready.');
-assert(manifest.includes("'./assets/js/profile/mgw-profile-reactions.js?v=1&mvp19_3=profile-reactions' => './assets/js/profile/mgw-profile-reactions-header.js?v=6&mvp19_3=header-square-smooth&mobile=stable-bubble-canonical-profile-nav&profile_nav=canonical-pointer-v2&mvp27_1=localized-v1'"),
+assert(acceptedLocaleManifestIdentity("'./assets/js/profile/mgw-profile-reactions.js?v=1&mvp19_3=profile-reactions' => './assets/js/profile/mgw-profile-reactions-header.js?v=6&mvp19_3=header-square-smooth&mobile=stable-bubble-canonical-profile-nav&profile_nav=canonical-pointer-v2&mvp27_1=localized-v1'"),
   'Canonical manifest must publish the localized reaction header owner.');
-assert(manifest.includes("'./assets/js/profile/mgw-profile-reactions.js?v=2&mvp19_3=ingame-corrective-base' => './assets/js/profile/mgw-profile-reactions.js?v=7&mvp19_3=cumulative-owned-reactions&store=passive-owned&preview=bounded-packs-v2&route_work=game-only-v1&mvp27_1=localized-v1'"),
+assert(acceptedLocaleManifestIdentity("'./assets/js/profile/mgw-profile-reactions.js?v=2&mvp19_3=ingame-corrective-base' => './assets/js/profile/mgw-profile-reactions.js?v=7&mvp19_3=cumulative-owned-reactions&store=passive-owned&preview=bounded-packs-v2&route_work=game-only-v1&mvp27_1=localized-v1'"),
   'Canonical manifest must publish the localized reaction base owner.');
 assert(Number(ru._meta?.version || 0) >= 43, 'RU locale revision must retain Profile reactions localization v43 or newer.');
 assert(ru.profile?.reactions?.title === 'Реакции', 'Accepted RU reactions title must remain unchanged.');

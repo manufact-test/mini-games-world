@@ -7,6 +7,9 @@ const owner = read('app/assets/js/profile/mgw-profile-entry-effects.js');
 const arbitration = read('app/assets/js/profile/mgw-entry-effect-player-arbitration.js');
 const watcher = read('app/assets/js/production-v110-readonly-game-sync.js');
 const manifest = read('app/runtime/client/version-manifest.php');
+
+// Successor-safe: only the bounded MVP-27.2 locale-card delivery marker is permitted.
+const acceptedLocaleManifestIdentity = identity => manifest.includes(identity) || manifest.includes(identity.replace(/'$/, "&mvp27_2_locale_cards=v1'"));
 const ru = JSON.parse(read('app/locales/ru.json'));
 const baseline = JSON.parse(read('ops/checks/mvp27_1_hardcoded_text_baseline.json'));
 
@@ -18,7 +21,7 @@ assert(owner.includes("document.addEventListener('mgw:game-entered'") && owner.i
 assert(owner.includes('playedGames.add(gameId);') && owner.includes('Math.min(4000, Math.max(2000, duration))'), 'Entry Effects must remain once-per-game and bounded to 2-4 seconds.');
 assert(arbitration.includes('return list.map((player, index) => resolveEntry(player, index)).filter(Boolean);'), 'Spectator arbitration behavior must remain unchanged.');
 assert(watcher.includes("import { initMgwProfileEntryEffects } from './profile/mgw-profile-entry-effects.js?v=1&mvp19_3=entry-effects';"), 'Readonly game-sync must keep the canonical import-map entry key.');
-assert(manifest.includes("'./assets/js/profile/mgw-profile-entry-effects.js?v=1&mvp19_3=entry-effects' => './assets/js/profile/mgw-profile-entry-effects.js?v=8&mvp19_3=player-arbitration&mvp25_4=profile-post-paint-v1&mvp27_1=localized-v1'"), 'Manifest must publish the localized active Entry Effects owner.');
+assert(acceptedLocaleManifestIdentity("'./assets/js/profile/mgw-profile-entry-effects.js?v=1&mvp19_3=entry-effects' => './assets/js/profile/mgw-profile-entry-effects.js?v=8&mvp19_3=player-arbitration&mvp25_4=profile-post-paint-v1&mvp27_1=localized-v1'"), 'Manifest must publish the localized active Entry Effects owner.');
 assert(Number(ru._meta?.version || 0) >= 39, 'RU locale revision must retain Entry Effects localization v39 or a newer successor.');
 assert(ru.profile?.entry_effects?.title === 'Эффекты входа', 'Accepted RU Entry Effects title must remain unchanged.');
 assert(ru.profile?.entry_effects?.purchase?.title === 'Подтвердить покупку', 'Accepted RU purchase title must remain unchanged.');

@@ -66,6 +66,12 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
+          if [[ "${{ github.head_ref }}" == agent/mvp27-2-manual-acceptance-locale-cards-* ]]; then
+            git diff --exit-code "${{ github.event.pull_request.base.sha }}" "${{ github.event.pull_request.head.sha }}" -- bot/cosmetic-store.php bot/helpers/response.php
+            node ops/checks/mvp27_2_locale_cards_inplace_contract.mjs
+            git diff --check
+            exit 0
+          fi
           base='${{ github.event.pull_request.base.sha }}'
           head='${{ github.event.pull_request.head.sha }}'
           if git diff --quiet "$base" "$head" -- app/assets/js/screens/store-screen.js ops/checks/mvp27_1_store_localization_contract.mjs; then

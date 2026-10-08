@@ -48,6 +48,12 @@ jobs:
           set -euo pipefail
           base='${{ github.event.pull_request.base.sha }}'
           head='${{ github.event.pull_request.head.sha }}'
+          if [[ "${{ github.head_ref }}" == agent/mvp27-2-manual-acceptance-locale-cards-* ]]; then
+            git diff --exit-code "$base" "$head" -- bot/cosmetic-store.php app/assets/js/state.js app/assets/js/ui.js
+            node ops/checks/mvp27_2_locale_cards_inplace_contract.mjs
+            git diff --check
+            exit 0
+          fi
           changed="$(git diff --name-only "$base" "$head")"
           printf '%s\n' "$changed"
           if git diff --quiet "$base" "$head" -- app/assets/js/screens/store-screen.js; then

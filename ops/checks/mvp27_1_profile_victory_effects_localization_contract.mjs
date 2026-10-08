@@ -11,7 +11,7 @@ const baseline = JSON.parse(read('ops/checks/mvp27_1_hardcoded_text_baseline.jso
 
 assert(!/[\u0400-\u04FF]/.test(owner), 'Active Profile Victory Effects owner must contain zero hardcoded Cyrillic.');
 assert(owner.includes("from '@mgw/i18n'") && owner.includes('const victoryText ='), 'Victory Effects owner must use canonical @mgw/i18n.');
-assert(wrapper.includes("mgw-profile-victory-effects-v4.js?v=3") && wrapper.includes('mvp27_1=localized-v1'), 'Active wrapper must cache-bust the localized v4 owner.');
+assert(((wrapper.includes("mgw-profile-victory-effects-v4.js?v=3") && wrapper.includes('mvp27_1=localized-v1')) || (wrapper.includes("mgw-profile-victory-effects-v4.js?v=4") && wrapper.includes('mvp27_2=locale-cards-v1'))), 'Active wrapper must cache-bust the localized v4 owner.');
 assert(manifest.includes("mgw-profile-victory-effects-card-parity.js?v=13") && manifest.includes('mvp27_1=localized-v1'), 'Manifest must publish the localized active Victory Effects chain.');
 assert(owner.includes('api.cosmeticStorePurchase') && owner.includes('api.cosmeticStoreEquip') && owner.includes('api.cosmeticStoreUnequip'), 'Canonical purchase/equip ownership must remain unchanged.');
 assert(owner.includes('selectWinnerVictoryEffect(game)') && owner.includes("#resultSummary[data-result-game-id]"), 'Winner selection and authoritative result trigger must remain unchanged.');

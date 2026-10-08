@@ -18,7 +18,7 @@ import { renderUser, renderBalances, clearTimer } from './ui.js?v=89';
 import { initHomeScreen } from './screens/home-screen.js?v=74';
 import { initTournamentsScreen } from './screens/tournaments-screen-v1.js?v=4&arena=final-table-polish-v1';
 import { initNotificationsScreen } from './screens/notifications-screen-v110r13.js?v=1162&mvp18=friend-request-lifecycle';
-import { initWeeklyMatchInfo, syncWeeklyMatchButton } from './screens/weekly-match-info.js?v=79&complete=green';
+import { initWeeklyMatchInfo, syncWeeklyMatchButton } from './screens/weekly-match-info.js?v=80&complete=green&mvp27_2=bonus-label-inplace';
 import { initSearchScreen } from './screens/search-screen-v102.js?v=103';
 import { initGameScreen, enterGame } from './screens/game-screen-v102-safe.js?v=102';
 import { initProfileScreen } from './screens/profile-screen-v110.js?v=1109';
@@ -36,7 +36,7 @@ import { initV110ReadonlyGameSync } from './production-v110-readonly-game-sync.j
 import { initV110Presence } from './production-v110-presence.js?v=1121&b=f5a28b030c69';
 import { beginStatsRequest, applyStatsSnapshot } from './stats-owner-v110.js?v=1121';
 import { t } from '@mgw/i18n';
-import { initRuntimeDomLocalization, localizeRuntimeDom } from './localization/runtime-dom.js?v=1';
+import { initRuntimeDomLocalization, localizeRuntimeDom } from './localization/runtime-dom.js?v=2&mvp27_2=home-labels-inplace';
 import { settlePendingAccountLinkBeforeBoot } from './profile/mgw-account-link-ui.js?v=3';
 
 const SHELL_ROUTES = new Set(['home', 'tournaments', 'store', 'profile']);

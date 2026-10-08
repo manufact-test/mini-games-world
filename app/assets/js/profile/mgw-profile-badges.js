@@ -3,7 +3,7 @@ import { state } from '../state.js?v=27';
 import { openSheet, closeSheet } from '../components/sheet.js?v=68';
 import { toast } from '../components/toast.js?v=27';
 import { renderBalances } from '../ui.js?v=89';
-import { t, formatNumber as formatLocalizedNumber } from '@mgw/i18n';
+import { t, getI18n, formatNumber as formatLocalizedNumber } from '@mgw/i18n';
 
 const badgeText = (key, params = {}) => t(`profile.badges.${key}`, params);
 
@@ -30,6 +30,7 @@ export function initMgwProfileBadges(){
     observer?.disconnect();
     observer = new MutationObserver(scheduleDecorate);
     observer.observe(document.body, { childList:true, subtree:true });
+    document.addEventListener('mgw:locale-changed', scheduleDecorate);
     document.addEventListener('mgw:cosmetic-inventory-changed', scheduleDecorate);
     scheduleDecorate();
     void ensureBadgeSnapshot();
@@ -182,7 +183,7 @@ function renderStoreBadgeSection(catalog){
   const panel = document.querySelector('.store-v2-content[data-store-v2-panel="profile"]');
   if (!(panel instanceof HTMLElement)) return;
   const active = currentBadgeItemId();
-  const signature = catalog.map(item => `${item.item_id}:${item.owned === true ? 1 : 0}`).join('|') + `|${active}`;
+  const signature = catalog.map(item => `${item.item_id}:${item.owned === true ? 1 : 0}`).join('|') + `|${active}` + `|${getI18n().locale}`;
   let section = panel.querySelector('[data-profile-badge-store-section]');
   if (section instanceof HTMLElement && section.dataset.profileBadgeSignature === signature) return;
 
@@ -244,7 +245,7 @@ function renderProfileBadgeCollection(catalog){
   }
 
   const active = currentBadgeItemId();
-  const signature = owned.map(item => item.item_id).join('|') + `|${active}`;
+  const signature = owned.map(item => item.item_id).join('|') + `|${active}` + `|${getI18n().locale}`;
   if (section instanceof HTMLElement && section.dataset.profileBadgeSignature === signature) return;
   const markup = `
     <div class="profile-v2-badge-collection" data-profile-badge-collection data-profile-badge-signature="${escapeAttr(signature)}" aria-label="${escapeAttr(badgeText('title'))}">
