@@ -11,7 +11,10 @@ function mgw_invite_copy(string $key, array $params = [], string $emergencyFallb
         if (!$catalog instanceof LocalizationCatalog) {
             $catalog = new LocalizationCatalog(dirname(__DIR__) . '/app/locales');
         }
-        return $catalog->translate($key, $params);
+        $rawLocale = strtolower(trim((string)($_SERVER['HTTP_X_MGW_LOCALE'] ?? '')));
+        $requestedLocale = explode('-', str_replace('_', '-', $rawLocale), 2)[0] ?? '';
+        $locale = in_array($requestedLocale, $catalog->supportedLocales(), true) ? $requestedLocale : null;
+        return $catalog->translate($key, $params, $locale);
     } catch (Throwable $error) {
         error_log('[MiniGamesWorld invite localization] ' . $error->getMessage());
         $fallback = $emergencyFallback;
@@ -77,6 +80,18 @@ function mgw_invite_board_label(array $invite): string
     return $size . '×' . $size;
 }
 
+/** Keep stored game_title and game_type untouched; localize only presentation. */
+function mgw_invite_game_title(array $invite): string
+{
+    $gameType = (string)($invite['game_type'] ?? '');
+    $fallback = (string)($invite['game_title'] ?? mgw_invite_copy('server.invites.game_fallback', [], 'Game'));
+    if (!in_array($gameType, [
+        'tictactoe', 'four_in_a_row', 'battleship', 'checkers',
+        'reversi', 'chess', 'go', 'domino',
+    ], true)) return $fallback;
+    return mgw_invite_copy('games.' . $gameType . '.name', [], $fallback);
+}
+
 function mgw_invite_share_text(array $invite): string
 {
     $playerFallback = mgw_invite_copy('server.invites.player_fallback', [], 'Player');
@@ -85,7 +100,7 @@ function mgw_invite_share_text(array $invite): string
         'server.invites.share_text',
         [
             'name' => (string)($invite['inviter_name'] ?? $playerFallback),
-            'game' => (string)($invite['game_title'] ?? $gameFallback),
+            'game' => mgw_invite_game_title($invite),
             'board' => mgw_invite_board_label($invite),
             'bet' => (int)($invite['bet'] ?? 0),
         ],
@@ -109,7 +124,7 @@ function mgw_prepare_invite_message(
                 'type' => 'article',
                 'id' => 'invite_' . (string)($invite['token'] ?? ''),
                 'title' => mgw_invite_copy('server.invites.prepared_title', [], 'Mini Games World invitation'),
-                'description' => (string)($invite['game_title'] ?? mgw_invite_copy('server.invites.game_fallback', [], 'Game'))
+                'description' => mgw_invite_game_title($invite)
                     . ' · ' . mgw_invite_board_label($invite),
                 'input_message_content' => [
                     'message_text' => $shareText,
@@ -147,7 +162,7 @@ function mgw_send_invite_message(array $config, array $invite, string $recipient
     $gameFallback = mgw_invite_copy('server.invites.game_lower_fallback', [], 'game');
     $messageParams = [
         'name' => (string)($invite['inviter_name'] ?? $playerFallback),
-        'game' => (string)($invite['game_title'] ?? $gameFallback),
+        'game' => mgw_invite_game_title($invite)
         'board' => mgw_invite_board_label($invite),
         'bet' => (int)($invite['bet'] ?? 0),
     ];
