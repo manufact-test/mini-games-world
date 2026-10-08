@@ -61,8 +61,11 @@ assert(en.settings?.language_ru === 'Russian' && en.settings?.language_en === 'E
   'EN settings must expose both interface language choices.');
 assert(i18nSource.includes("localStorage?.getItem(EXPLICIT_LOCALE_KEY)"),
   'Explicit locale selection must be restored from local storage on the next Mini App boot.');
-assert(homeSource.includes("languageEnBtn") && homeSource.includes("setExplicitLocale(locale)"),
-  'Settings must expose and activate the English interface option.');
+// MVP-27.5 superseded the old device-local click writer: Settings now previews
+// immediately, then saves through the authenticated canonical MGW account.
+assert(homeSource.includes("languageEnBtn") && homeSource.includes("previewAccountLocale(locale)")
+  && homeSource.includes("api.saveAccountLocale(locale)"),
+  'Settings must expose English and use canonical account-save with instant preview.');
 assert(homeSource.includes("data-open-moderation-center")
   && homeSource.includes("accountLinkProfileMarkup(")
   && homeSource.includes("profile.linked_accounts"),
