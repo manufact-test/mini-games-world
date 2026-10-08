@@ -4,7 +4,7 @@ import { openSheet, closeSheet } from '../components/sheet.js?v=68';
 import { toast } from '../components/toast.js?v=27';
 import { renderBalances } from '../ui.js?v=89';
 import { selectWinnerVictoryEffect } from './mgw-victory-effect-selector.js?v=1';
-import { t, formatNumber as formatLocalizedNumber } from '@mgw/i18n';
+import { t, getI18n, formatNumber as formatLocalizedNumber } from '@mgw/i18n';
 
 const victoryText = (key, params = {}) => t(`profile.victory_effects.${key}`, params);
 
@@ -52,6 +52,7 @@ export function initMgwProfileVictoryEffects(){
   ensureOnDemandPreviewStyles();
 
   const start = () => {
+    document.addEventListener('mgw:locale-changed', scheduleDecorate);
     document.addEventListener('mgw:cosmetic-inventory-changed', event => {
       scheduleDecorate();
       if (String(event?.detail?.slot || '').trim() === VICTORY_EFFECT_SLOT) scheduleResultProbeAfterPaint();
@@ -282,7 +283,7 @@ function currentVictoryEffectId(){
 }
 
 function meta(item){ return item?.metadata && typeof item.metadata === 'object' ? item.metadata : {}; }
-function itemName(item){ const key = VICTORY_PRESENTATION[item?.item_id]?.fallbackKey || 'names.fallback'; return String(meta(item).display_name || victoryText(key)); }
+function itemName(item){ const key = VICTORY_PRESENTATION[item?.item_id]?.fallbackKey || 'names.fallback'; const itemId = String(item?.item_id || ''); try { return t(`store.products.${itemId}`); } catch (_) {} return victoryText(key); }
 function itemPrice(item){ return Math.max(0, Number(meta(item).price_coins || 0)); }
 function itemOfferId(item){ return String(meta(item).offer_id || String(item?.item_id || '').replace(/^profile-/, '')); }
 function itemTier(item){ const key = VICTORY_PRESENTATION[item?.item_id]?.tierKey || 'tiers.fallback'; return victoryText(key); }
@@ -495,7 +496,7 @@ function renderStoreSection(catalog){
   const panel = document.querySelector('.store-v2-content[data-store-v2-panel="profile"]');
   if (!(panel instanceof HTMLElement)) return;
   const active = currentVictoryEffectId();
-  const signature = catalog.map(item => `${item.item_id}:${item.owned === true ? 1 : 0}`).join('|') + `|${active}`;
+  const signature = catalog.map(item => `${item.item_id}:${item.owned === true ? 1 : 0}`).join('|') + `|${active}` + `|${getI18n().locale}`;
   let section = panel.querySelector('[data-profile-victory-effect-store-section]');
   const anchor = panel.querySelector('[data-profile-entry-effect-store-section]')
     || panel.querySelector('[data-profile-reaction-store-section]')
@@ -558,7 +559,7 @@ function renderProfileCollection(catalog){
   if (section instanceof HTMLElement && anchor instanceof HTMLElement && section.previousElementSibling !== anchor) anchor.insertAdjacentElement('afterend', section);
 
   const active = currentVictoryEffectId();
-  const signature = owned.map(item => item.item_id).join('|') + `|${active}`;
+  const signature = owned.map(item => item.item_id).join('|') + `|${active}` + `|${getI18n().locale}`;
   if (section instanceof HTMLElement && section.dataset.profileVictoryEffectSignature === signature) {
     bindProfileActions(section);
     return;
