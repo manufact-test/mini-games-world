@@ -1,0 +1,152 @@
+name: MVP-27.4 Android Native RU EN
+
+on:
+  pull_request:
+    branches:
+      - agent/mvp-13-2-staging
+    paths:
+      - 'android-app/**'
+      - '.github/workflows/mvp27-4-android-native-locale.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  native-locale-contract:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          persist-credentials: false
+          fetch-depth: 0
+      - name: Native locale RU/EN ownership and fallback
+        run: |
+          set -euo pipefail
+          python3 android-app/tools/verify-native-localization.py
+          python3 android-app/tools/verify-native-shell-settings.py
+          python3 android-app/tools/verify-device-lifecycle-qa.py
+          python3 android-app/tools/verify-product-rc.py
+          python3 android-app/tools/verify-foundation.py
+          python3 android-app/tools/verify-orientation-lifecycle.py
+          python3 android-app/tools/verify-platform-adapters.py
+          python3 android-app/tools/verify-product-parity.py
+          bash -n android-app/tools/native-locale-smoke.sh
+          git diff --check
+      - name: Guard against unrelated frozen product changes
+        if: github.event_name == 'pull_request'
+        shell: bash
+        run: |
+          set -euo pipefail
+          git diff --exit-code "${{ github.event.pull_request.base.sha }}" "${{ github.event.pull_request.head.sha }}" -- \
+            app bot \
+            android-app/app/src/main/java/com/minigamesworld/app/DeviceCredentialStore.java \
+            android-app/app/src/main/java/com/minigamesworld/app/NavigationPolicy.java \
+            android-app/app/src/main/java/com/minigamesworld/app/ShellConfig.java \
+            android-app/app/src/main/java/com/minigamesworld/app/platform
+      - name: Tracked secret scan
+        run: node scripts/ci/check-secrets.mjs
+
+  build-localized-apk:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    needs: native-locale-contract
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          persist-credentials: false
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '9.5.0'
+      - name: Android SDK 36
+        run: |
+          set -euo pipefail
+          SDKMANAGER="${ANDROID_SDK_ROOT}/cmdline-tools/latest/bin/sdkmanager"
+          yes | "$SDKMANAGER" --licenses >/dev/null || true
+          "$SDKMANAGER" 'platforms;android-36' 'build-tools;36.0.0'
+      - name: Unit, lint and signed installable staging APK
+        working-directory: android-app
+        env:
+          MGW_BASE_URL: https://seashell-okapi-889488.hostingersite.com/
+        run: gradle --no-daemon clean test lint assembleDebug
+      - name: Verify signing and unchanged package
+        shell: bash
+        run: |
+          set -euo pipefail
+          apk=android-app/app/build/outputs/apk/debug/app-debug.apk
+          test -s "$apk"
+          "${ANDROID_SDK_ROOT}/build-tools/36.0.0/apksigner" verify --print-certs "$apk" | tee /tmp/mgw-native-locale-signature.txt
+          grep -F 'CN=MGW Acceptance, O=Mini Games World, C=PL' /tmp/mgw-native-locale-signature.txt
+          grep -Fi 'efda9b86b0b0edfaa22064864aaddc025f15bdc063bf53cfb58d569f504f5484' /tmp/mgw-native-locale-signature.txt
+          "${ANDROID_SDK_ROOT}/build-tools/36.0.0/aapt" dump badging "$apk" | grep -F 'package: name='
+          "${ANDROID_SDK_ROOT}/build-tools/36.0.0/aapt" dump badging "$apk" | grep -F "versionCode='2616'"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: mgw-mvp27-4-ru-en-staging-v2616-debug-apk
+          path: android-app/app/build/outputs/apk/debug/app-debug.apk
+          retention-days: 14
+          if-no-files-found: error
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: mgw-mvp27-4-build-reports
+          path: |
+            android-app/app/build/reports/**
+            android-app/app/build/test-results/**
+          retention-days: 14
+          if-no-files-found: warn
+
+  native-locale-runtime:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    needs: native-locale-contract
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          persist-credentials: false
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '9.5.0'
+      - name: Android SDK 36
+        run: |
+          set -euo pipefail
+          SDKMANAGER="${ANDROID_SDK_ROOT}/cmdline-tools/latest/bin/sdkmanager"
+          yes | "$SDKMANAGER" --licenses >/dev/null || true
+          "$SDKMANAGER" 'platforms;android-36' 'build-tools;36.0.0'
+      - name: Build isolated diagnostic resource probe (not acceptance APK)
+        working-directory: android-app
+        env:
+          MGW_BASE_URL: ''
+        run: gradle --no-daemon clean assembleDebug
+      - name: Enable emulator KVM acceleration
+        run: |
+          if [[ -e /dev/kvm ]]; then sudo chmod 666 /dev/kvm; fi
+      - name: Emulator RU/EN and unsupported-locale fallback
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 35
+          target: google_apis
+          arch: x86_64
+          profile: pixel_2
+          disable-animations: true
+          emulator-options: -no-window -no-audio -no-boot-anim -no-snapshot -gpu swiftshader_indirect
+          script: MGW_LOCALE_EVIDENCE_DIR=android-app/build/locale-evidence bash android-app/tools/native-locale-smoke.sh android-app/app/build/outputs/apk/debug/app-debug.apk
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: mgw-mvp27-4-android-locale-ui-evidence
+          path: android-app/build/locale-evidence/**
+          retention-days: 14
+          if-no-files-found: warn

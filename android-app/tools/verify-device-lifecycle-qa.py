@@ -23,10 +23,14 @@ build = read(BUILD)
 smoke = read(SMOKE)
 
 version = re.search(r"\bversionCode\s+(\d+)\b", build)
-require(version is not None and int(version.group(1)) == 2615,
-        "MVP-26.7 candidate must use real versionCode 2615")
-require("versionName '0.26.7.0-device-lifecycle-qa'" in build,
-        "MVP-26.7 versionName missing")
+require(version is not None and int(version.group(1)) >= 2615,
+        "MVP-26.7 lifecycle invariant must survive Android successors beyond v2615")
+if version is not None and int(version.group(1)) == 2615:
+    require("versionName '0.26.7.0-device-lifecycle-qa'" in build,
+            "Historical accepted v2615 versionName missing")
+elif version is not None:
+    require(re.search(r"\bversionName\s+'0\.26\.[0-9]+\.[^']+'", build) is not None,
+            "Android successor versionName missing or malformed")
 require(re.search(r"\bminSdk\s+26\b", build) is not None, "minSdk 26 must remain supported")
 require(re.search(r"\btargetSdk\s+36\b", build) is not None, "targetSdk 36 must remain current")
 require(re.search(r"\bcompileSdk\s+36\b", build) is not None, "compileSdk 36 must remain current")

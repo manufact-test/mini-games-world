@@ -18,4 +18,8 @@
     <string name="download_started">Скачивание ZIP началось.</string>
     <string name="download_failed">Не удалось начать скачивание ZIP.</string>
     <string name="download_permission_required">Разрешите сохранение файлов, чтобы скачать ZIP.</string>
+    <string name="file_download_description">Скачивание файла Mini Games World</string>
+    <string name="file_download_started">Скачивание файла началось.</string>
+    <string name="file_download_failed">Не удалось начать скачивание файла.</string>
+    <string name="file_download_permission_required">Разрешите сохранение файлов, чтобы скачать вложение.</string>
 </resources>

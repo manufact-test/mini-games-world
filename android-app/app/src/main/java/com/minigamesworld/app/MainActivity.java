@@ -759,7 +759,7 @@ public final class MainActivity extends Activity {
                     && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
                 enqueueWebDownload(url, userAgent, contentDisposition, mimeType);
             } else {
-                Toast.makeText(this, R.string.download_permission_required, Toast.LENGTH_LONG).show();
+                Toast.makeText(this, R.string.file_download_permission_required, Toast.LENGTH_LONG).show();
             }
             return;
         }
@@ -774,7 +774,7 @@ public final class MainActivity extends Activity {
             long contentLength
     ) {
         if (navigationPolicy == null || url == null || !navigationPolicy.isInternal(url)) {
-            Toast.makeText(this, R.string.download_failed, Toast.LENGTH_SHORT).show();
+            Toast.makeText(this, R.string.file_download_failed, Toast.LENGTH_SHORT).show();
             return;
         }
 
@@ -802,13 +802,13 @@ public final class MainActivity extends Activity {
             String mimeType
     ) {
         if (navigationPolicy == null || url == null || !navigationPolicy.isInternal(url)) {
-            Toast.makeText(this, R.string.download_failed, Toast.LENGTH_SHORT).show();
+            Toast.makeText(this, R.string.file_download_failed, Toast.LENGTH_SHORT).show();
             return;
         }
 
         String cookie = CookieManager.getInstance().getCookie(url);
         if (cookie == null || !cookie.contains("mgw_android_auth=")) {
-            Toast.makeText(this, R.string.download_failed, Toast.LENGTH_SHORT).show();
+            Toast.makeText(this, R.string.file_download_failed, Toast.LENGTH_SHORT).show();
             return;
         }
 
@@ -830,7 +830,7 @@ public final class MainActivity extends Activity {
             DownloadManager.Request request = new DownloadManager.Request(Uri.parse(url));
             request.setMimeType(normalizedMime);
             request.setTitle(fileName);
-            request.setDescription(getString(R.string.download_description));
+            request.setDescription(getString(R.string.file_download_description));
             request.setNotificationVisibility(
                     DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED
             );
@@ -842,9 +842,9 @@ public final class MainActivity extends Activity {
             }
             request.setDestinationInExternalPublicDir(Environment.DIRECTORY_DOWNLOADS, fileName);
             manager.enqueue(request);
-            Toast.makeText(this, R.string.download_started, Toast.LENGTH_SHORT).show();
+            Toast.makeText(this, R.string.file_download_started, Toast.LENGTH_SHORT).show();
         } catch (RuntimeException error) {
-            Toast.makeText(this, R.string.download_failed, Toast.LENGTH_SHORT).show();
+            Toast.makeText(this, R.string.file_download_failed, Toast.LENGTH_SHORT).show();
         }
     }
 

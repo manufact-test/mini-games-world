@@ -94,6 +94,19 @@ jobs:
               bot/helpers/validators.php \
               bot/storage/JsonDatabase.php \
               bot/social/SocialInviteGuard.php
+          elif [[ "${{ github.head_ref }}" == agent/mvp27-4-android-native-locale-* ]]; then
+            current_base='${{ github.event.pull_request.base.sha }}'
+            echo 'MVP-27.4 native locale successor: preserve Web/backend, account, platform providers, Android credential and navigation owners.'
+            python3 android-app/tools/verify-native-localization.py
+            git diff --exit-code "${current_base}" HEAD -- \
+              .well-known/assetlinks.json \
+              bot/android-auth.php bot/support-attachment-download.php \
+              bot/helpers/validators.php bot/storage/JsonDatabase.php \
+              bot/social/SocialInviteGuard.php \
+              android-app/app/src/main/java/com/minigamesworld/app/DeviceCredentialStore.java \
+              android-app/app/src/main/java/com/minigamesworld/app/NavigationPolicy.java \
+              android-app/app/src/main/java/com/minigamesworld/app/ShellConfig.java \
+              android-app/app/src/main/java/com/minigamesworld/app/platform
           else
             current_base='${{ github.event.pull_request.base.sha }}'
             echo 'Successor PR: protect frozen Android product identity against the current accepted PR base.'
