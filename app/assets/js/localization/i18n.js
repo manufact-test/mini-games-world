@@ -142,8 +142,10 @@ export function applyAccountLocalePreference(accountLocale = null){
   }));
   if (canonicalLocale) {
     try { globalThis.localStorage?.removeItem(EXPLICIT_LOCALE_KEY); } catch (error) {}
-    syncTelegramBotLocale(activated);
   }
+  // Preserve the previously accepted Telegram sync for a legacy explicit
+  // device selection when the canonical account has no saved preference yet.
+  if (canonicalLocale || explicitLocale) syncTelegramBotLocale(activated);
   if (activated !== previous && globalThis.document?.dispatchEvent) {
     globalThis.document.dispatchEvent(new CustomEvent('mgw:locale-changed', {
       detail:{ previous, locale:activated, source:'account' },
