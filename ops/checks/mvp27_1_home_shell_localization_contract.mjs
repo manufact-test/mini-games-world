@@ -71,4 +71,18 @@ for (const acceptedOwner of [
   assert(home.includes(acceptedOwner), `Accepted Home owner missing after localization migration: ${acceptedOwner}`);
 }
 
+// Telegram WebView may render the unsupported coin emoji as a tofu square.
+// Both initial HTML and live RU/EN updates must use plain localized text.
+const runtimeHome = fs.readFileSync('app/assets/js/localization/runtime-dom.js', 'utf8');
+const handoffShell = fs.readFileSync('app/assets/js/main-v110-handoff-shell.js', 'utf8');
+const entryHtml = fs.readFileSync('app/index.html', 'utf8');
+assert(runtimeHome.includes("roomLabel.textContent = t('shell.home_match_room_label')"),
+  'Live Home room label must use locale text without decorative emoji.');
+assert(!runtimeHome.includes('🪙'), 'Live Home room label must not contain unsupported coin emoji.');
+assert(!entryHtml.includes('🪙 MGW Coins'), 'Initial Home room label must not flash unsupported coin emoji.');
+assert(handoffShell.includes('runtime-dom.js?v=3&mvp27_2=home-room-label-glyph-free-v1'),
+  'The active runtime-dom import must be cache-busted for the glyph correction.');
+assert(manifest.includes('mvp27_2_home_room=glyph-free-v1'),
+  'The active shell manifest must be cache-busted for the glyph correction.');
+
 console.log('MVP27_1_HOME_SHELL_LOCALIZATION_CONTRACT=PASS');
