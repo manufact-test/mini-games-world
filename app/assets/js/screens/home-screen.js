@@ -29,6 +29,9 @@ window.__MGW_MATCH_HISTORY_UI_BUILD__ = 'mvp17-5-history-economy-live-owner-v3';
 window.__MGW_HISTORY_MODAL_UX_BUILD__ = 'mvp17-5-prefetched-history-v3';
 
 export function initHomeScreen(){
+  document.addEventListener('mgw:locale-changed', () => {
+    if (state.stats && typeof state.stats === 'object') renderStats(state.stats);
+  });
   document.addEventListener('click', event => {
     const target = event.target.closest('button, [role="button"]');
     if (!target) return;
