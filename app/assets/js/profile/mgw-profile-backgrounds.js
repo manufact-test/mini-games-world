@@ -3,7 +3,7 @@ import { state } from '../state.js?v=27';
 import { openSheet, closeSheet } from '../components/sheet.js?v=68';
 import { toast } from '../components/toast.js?v=27';
 import { renderBalances } from '../ui.js?v=89';
-import { t, formatNumber as formatLocalizedNumber } from '@mgw/i18n';
+import { t, getI18n, formatNumber as formatLocalizedNumber } from '@mgw/i18n';
 
 const backgroundText = (key, params = {}) => t(`profile.backgrounds.${key}`, params);
 
@@ -31,6 +31,7 @@ export function initMgwProfileBackgrounds(){
     observer?.disconnect();
     observer = new MutationObserver(scheduleDecorate);
     observer.observe(document.body, { childList:true, subtree:true });
+    document.addEventListener('mgw:locale-changed', scheduleDecorate);
     document.addEventListener('mgw:cosmetic-inventory-changed', scheduleDecorate);
     scheduleDecorate();
 
@@ -156,7 +157,7 @@ function renderStoreBackgroundSection(catalog){
   const panel = document.querySelector('.store-v2-content[data-store-v2-panel="profile"]');
   if (!(panel instanceof HTMLElement)) return;
   const active = currentBackgroundItemId();
-  const signature = catalog.map(item => `${item.item_id}:${item.owned === true ? 1 : 0}`).join('|') + `|${active}`;
+  const signature = catalog.map(item => `${item.item_id}:${item.owned === true ? 1 : 0}`).join('|') + `|${active}` + `|${getI18n().locale}`;
   let section = panel.querySelector('[data-profile-background-store-section]');
   const frameSection = panel.querySelector('[data-profile-frame-store-section]');
   const badgeSection = panel.querySelector('[data-profile-badge-store-section]');
@@ -234,7 +235,7 @@ function renderProfileBackgroundCollection(catalog){
     anchor.insertAdjacentElement('afterend', section);
   }
   const active = currentBackgroundItemId();
-  const signature = owned.map(item => item.item_id).join('|') + `|${active}`;
+  const signature = owned.map(item => item.item_id).join('|') + `|${active}` + `|${getI18n().locale}`;
   if (section instanceof HTMLElement && section.dataset.profileBackgroundSignature === signature) return;
   const markup = `
     <div class="profile-v2-background-collection" data-profile-background-collection data-profile-background-signature="${escapeAttr(signature)}" aria-label="${escapeAttr(backgroundText('title'))}">
