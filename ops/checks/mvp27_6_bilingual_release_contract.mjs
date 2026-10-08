@@ -146,7 +146,7 @@ for (const [locale, cases] of [
 assert.equal(english.formatNumber(1234567), '1,234,567');
 assert.notEqual(russian.formatDate('2026-10-09T12:30:00Z', 'long'),
   english.formatDate('2026-10-09T12:30:00Z', 'long'));
-assert.equal(english.t('game_invites' in en ? 'settings.language_saved' : 'settings.language_saved'),
+assert.equal(english.t('settings.language_saved'),
   en.settings.language_saved);
 assert.equal(english.t('notifications.unread_count', { count: 7 }).includes('7'), true);
 console.log('MVP-27.6 bilingual runtime catalog/8 games/placeholders/plural/date/fallback PASS; ' +
