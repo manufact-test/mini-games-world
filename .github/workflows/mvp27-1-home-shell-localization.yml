@@ -53,7 +53,7 @@ jobs:
           fi
           base='${{ github.event.pull_request.base.sha }}'
           head='${{ github.event.pull_request.head.sha }}'
-          if [[ "\${{ github.head_ref }}" == agent/mvp27-5-1-instant-language-switch-* ]]; then
+          if [[ "${{ github.head_ref }}" == agent/mvp27-5-1-instant-language-switch-* ]]; then
             # Narrow successor-scope guard for the targeted 27.5.1 corrective.
             allowed='^(app/assets/js/screens/home-screen\.js|app/assets/js/localization/i18n\.js|app/assets/js/api/client\.js|bot/profile-v2\.php|app/runtime/client/version-manifest\.php|ops/checks/mvp27_5_account_language_contract\.mjs|ops/checks/mvp27_5_instant_language_switch_contract\.mjs|docs/MVP27_5_1_LANGUAGE_SWITCH_LATENCY_FIX\.md|\.github/workflows/mvp27-5-1-instant-language-switch\.yml|\.github/workflows/mvp27-1-home-shell-localization\.yml)$'
             bad="$(git diff --name-only "$base" "$head" | grep -Ev "$allowed" || true)"
