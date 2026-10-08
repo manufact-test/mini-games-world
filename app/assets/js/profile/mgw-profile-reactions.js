@@ -4,7 +4,7 @@ import { openSheet, closeSheet } from '../components/sheet.js?v=68';
 import { toast } from '../components/toast.js?v=27';
 import { renderBalances } from '../ui.js?v=89';
 import { haptic } from '../telegram/telegram-app.js?v=27';
-import { t, formatNumber as formatLocalizedNumber } from '@mgw/i18n';
+import { t, getI18n, formatNumber as formatLocalizedNumber } from '@mgw/i18n';
 
 const reactionText = (key, params = {}) => t(`profile.reactions.${key}`, params);
 
@@ -41,6 +41,7 @@ export function initMgwProfileReactions(){
     observer?.disconnect();
     observer = new MutationObserver(scheduleDecorate);
     observer.observe(document.body, { childList:true, subtree:true });
+    document.addEventListener('mgw:locale-changed', scheduleDecorate);
     document.addEventListener('mgw:cosmetic-inventory-changed', scheduleDecorate);
     document.addEventListener('mgw:screen-changed', event => {
       paletteOpen = false;
@@ -121,8 +122,8 @@ function reactionSort(item){
 }
 
 function meta(item){ return item?.metadata && typeof item.metadata === 'object' ? item.metadata : {}; }
-function itemName(item){ return String(meta(item).display_name || reactionText('fallback_name')); }
-function itemSubtitle(item){ return String(meta(item).subtitle || reactionText('fallback_subtitle')); }
+function itemName(item){ const itemId = String(item?.item_id || ''); try { return t(`store.products.${itemId}`); } catch (_) {} return reactionText('fallback_name'); }
+function itemSubtitle(item){ const id = String(item?.item_id || ''); return reactionText(`item_subtitles.${id === 'profile-reaction-pack-4' ? 'pack4' : id === 'profile-reaction-pack-large' ? 'pack8' : 'single'}`); }
 function itemPrice(item){ return Math.max(0, Number(meta(item).price_coins || 0)); }
 function itemOfferId(item){ return String(meta(item).offer_id || String(item?.item_id || '').replace(/^profile-/, '')); }
 function itemCodes(item){
@@ -152,7 +153,7 @@ function previewMarkup(item, compact = false){
 function renderStoreSection(catalog){
   const panel = document.querySelector('.store-v2-content[data-store-v2-panel="profile"]');
   if (!(panel instanceof HTMLElement)) return;
-  const signature = catalog.map(item => `${item.item_id}:${item.owned === true ? 1 : 0}`).join('|');
+  const signature = catalog.map(item => `${item.item_id}:${item.owned === true ? 1 : 0}`).join('|') + `|${getI18n().locale}`;
   let section = panel.querySelector('[data-profile-reaction-store-section]');
   if (section instanceof HTMLElement && section.dataset.profileReactionSignature === signature) return;
 
@@ -198,7 +199,7 @@ function renderProfileCollection(catalog){
   let section = collection.querySelector('[data-profile-reaction-collection]');
   if (!owned.length) { section?.remove(); return; }
 
-  const signature = owned.map(item => item.item_id).join('|');
+  const signature = owned.map(item => item.item_id).join('|') + `|${getI18n().locale}`;
   if (section instanceof HTMLElement && section.dataset.profileReactionSignature === signature) return;
   const markup = `
     <div class="profile-v2-reaction-collection" data-profile-reaction-collection data-profile-reaction-signature="${escapeAttr(signature)}" aria-label="${escapeAttr(reactionText('title'))}">
@@ -275,7 +276,7 @@ function renderGameComposer(){
     && codes.length > 0;
   if (!eligible) { toolbar?.remove(); paletteOpen = false; return; }
 
-  const signature = `${String(game.id || '')}|${codes.join(',')}|${paletteOpen ? 1 : 0}`;
+  const signature = `${String(game.id || '')}|${codes.join(',')}|${paletteOpen ? 1 : 0}` + `|${getI18n().locale}`;
   if (toolbar instanceof HTMLElement && toolbar.dataset.signature === signature) return;
   const markup = `<div class="mgw-reaction-toolbar" id="mgwReactionToolbar" data-signature="${escapeAttr(signature)}">
     <button class="mgw-reaction-trigger" id="mgwReactionTrigger" type="button" aria-label="${escapeAttr(reactionText('game.trigger'))}" title="${escapeAttr(reactionText('game.trigger'))}" aria-expanded="${paletteOpen ? 'true' : 'false'}"><span aria-hidden="true">🙂</span></button>
