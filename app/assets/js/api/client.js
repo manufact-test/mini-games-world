@@ -1,5 +1,5 @@
 import { APP_CONFIG } from '../config.js?v=38';
-import { t, getI18n } from '@mgw/i18n';
+import { t, getI18n, applyAccountLocalePreference } from '@mgw/i18n';
 import { state } from '../state.js?v=27';
 import { getInitData } from '../telegram/telegram-app.js?v=21';
 import { getSessionId, getDeviceId } from '../session.js?v=1131';
@@ -21,6 +21,14 @@ const ANDROID_REAUTH_URL = `${window.location.origin}/bot/android-reauth.php`;
 
 const PROFILE_V2_READ_PROMISE_KEY = '__MGW_PROFILE_V2_READ_PROMISE_V1__';
 let tournamentPrestigeReadPromise = null;
+let accountLocaleWriteEpoch = 0;
+function hydrateCanonicalLanguage(result, readEpoch){
+  if (readEpoch === accountLocaleWriteEpoch
+      && result?.profile && Object.prototype.hasOwnProperty.call(result.profile, 'preferred_locale')) {
+    applyAccountLocalePreference(result.profile.preferred_locale);
+  }
+  return result;
+}
 
 async function requestUrl(url, payload = {}){
   let response;
@@ -161,6 +169,19 @@ function publishProfileV2(result){
   return result;
 }
 
+async function saveAccountLocale(locale){
+  if (!['ru', 'en'].includes(locale)) throw new TypeError('Unsupported language');
+  const epoch = ++accountLocaleWriteEpoch;
+  const result = await requestUrl(PROFILE_V2_URL, { profile_update:{ preferred_locale:locale } });
+  if (result?.profile?.preferred_locale !== locale) throw new Error(t('network.request_failed'));
+  publishProfileV2(result);
+  if (epoch === accountLocaleWriteEpoch) {
+    state.mgwProfile = result.profile;
+    applyAccountLocalePreference(result.profile.preferred_locale);
+  }
+  return result;
+}
+
 async function requestCosmeticStore(payload){
   return publishCosmeticInventory(await requestUrl(COSMETIC_STORE_URL, payload));
 }
@@ -179,10 +200,12 @@ async function requestHistory(){
 }
 
 async function requestMgwProfile(){
+  const epoch = accountLocaleWriteEpoch;
   const result = await requestUrl(`${window.location.origin}/bot/profile.php`);
   if (result?.inventory && typeof result.inventory === 'object') {
     state.profileInventory = result.inventory;
   }
+  hydrateCanonicalLanguage(result, epoch);
   return result;
 }
 
@@ -231,6 +254,7 @@ export const api = {
   profileReactionUnequip: () => requestUrl(GAME_REACTION_URL, { action:'unequip' }),
   profile: () => request('profile'),
   profileV2: (profileUpdate = null) => requestProfileV2(profileUpdate),
+  saveAccountLocale,
   tournamentPrestige: () => requestTournamentPrestige(),
   leaderboard: (gameType = 'tictactoe') => requestUrl(LEADERBOARD_URL, { game_type:gameType }),
   ratingArchiveOverview: () => requestRatingArchive({ mode:'overview' }),

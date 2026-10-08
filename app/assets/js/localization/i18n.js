@@ -130,11 +130,27 @@ function activateLocale(requestedLocale){
 }
 
 export function applyAccountLocalePreference(accountLocale = null){
-  const explicitLocale = explicitLocaleOverride();
+  // Authenticated account preference is canonical; reject unsupported values.
+  const candidate = normalizeLocaleCandidate(accountLocale);
+  const canonicalLocale = ['ru','en'].includes(candidate) ? candidate : null;
+  const explicitLocale = canonicalLocale ? null : explicitLocaleOverride();
   const platformLocale = globalThis.navigator?.languages?.[0] || globalThis.navigator?.language || null;
   const fallbackLocale = inlinePayload()?.manifest?.fallback_locale || 'ru';
-  const activated = activateLocale(resolvePreferredLocale({ explicitLocale, accountLocale, platformLocale, fallbackLocale }));
-  if (explicitLocale) syncTelegramBotLocale(activated);
+  const previous = clientI18n?.locale || readInlineLocalization().locale;
+  const activated = activateLocale(resolvePreferredLocale({
+    explicitLocale, accountLocale:canonicalLocale, platformLocale, fallbackLocale,
+  }));
+  if (canonicalLocale) {
+    try { globalThis.localStorage?.removeItem(EXPLICIT_LOCALE_KEY); } catch (error) {}
+  }
+  // Preserve the previously accepted Telegram sync for a legacy explicit
+  // device selection when the canonical account has no saved preference yet.
+  if (canonicalLocale || explicitLocale) syncTelegramBotLocale(activated);
+  if (activated !== previous && globalThis.document?.dispatchEvent) {
+    globalThis.document.dispatchEvent(new CustomEvent('mgw:locale-changed', {
+      detail:{ previous, locale:activated, source:'account' },
+    }));
+  }
   return activated;
 }
 

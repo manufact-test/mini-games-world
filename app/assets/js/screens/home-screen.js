@@ -6,7 +6,7 @@ import { openSheet, closeSheet } from '../components/sheet.js?v=68';
 import { showScreen } from '../router.js?v=27';
 import { haptic } from '../telegram/telegram-app.js?v=27';
 import { renderBalances } from '../ui.js?v=90-wallet-15-3';
-import { t, getI18n, setExplicitLocale, formatDate as formatLocalizedDate, formatDateTime as formatLocalizedDateTime } from '@mgw/i18n';
+import { t, getI18n, formatDate as formatLocalizedDate, formatDateTime as formatLocalizedDateTime } from '@mgw/i18n';
 import { accountLinkProfileMarkup } from '../profile/mgw-account-link-ui.js?v=3';
 
 const HISTORY_CACHE_MAX_AGE_MS = 15000;
@@ -141,13 +141,25 @@ function openLanguageSettingsSheet(){
   const option = (id, locale, label) => `<button class="btn menu-item${currentLocale === locale ? ' active' : ''}" id="${id}" type="button">${escapeHtml(label)}<span>${currentLocale === locale ? '✓' : ''}</span></button>`;
   openSheet(`<div class="sheet-head"><div><h2>${escapeHtml(t('settings.language'))}</h2><p>${escapeHtml(t('settings.language_note'))}</p></div><button class="close" data-close-sheet type="button">×</button></div><div class="menu-list">${option('languageRuBtn','ru',t('settings.language_ru'))}${option('languageEnBtn','en',t('settings.language_en'))}</div>`);
 
-  const activate = locale => {
-    if (locale === currentLocale) {
+  let saving = false;
+  const activate = async locale => {
+    if (saving) return;
+    if (locale === currentLocale && state.mgwProfile?.preferred_locale === locale) {
       closeSheet();
       return;
     }
-    setExplicitLocale(locale);
-    closeSheet();
+    saving = true;
+    const buttons = [document.getElementById('languageRuBtn'), document.getElementById('languageEnBtn')];
+    buttons.forEach(button => { if (button) button.disabled = true; });
+    try {
+      // Never claim an account-wide change until the authenticated write succeeds.
+      await api.saveAccountLocale(locale);
+      closeSheet();
+    } catch (error) {
+      toast(error?.message || t('network.request_failed'));
+      saving = false;
+      buttons.forEach(button => { if (button) button.disabled = false; });
+    }
   };
   document.getElementById('languageRuBtn')?.addEventListener('click', () => activate('ru'));
   document.getElementById('languageEnBtn')?.addEventListener('click', () => activate('en'));
