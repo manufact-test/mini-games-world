@@ -84,6 +84,9 @@ test('RU/EN renders real Home + Settings on 320px and 390px mobile staging', asy
         await page.locator('#moreMenuOpen').click();
         await expect(page.locator('#settingsBtn')).toContainText(locale.settings);
         await page.locator('#settingsBtn').click();
+        await expect(page.locator('.sheet-head h2').last()).toHaveText(locale.settings);
+        await expect(page.locator('#languageSettingsBtn')).toBeVisible();
+        await page.locator('#languageSettingsBtn').click();
         await expect(page.locator('.sheet-head h2').last()).toHaveText(locale.language);
         await expect(page.locator('#languageRuBtn')).toBeVisible();
         await expect(page.locator('#languageEnBtn')).toBeVisible();
