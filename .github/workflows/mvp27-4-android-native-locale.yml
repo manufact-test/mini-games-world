@@ -130,6 +130,9 @@ jobs:
         env:
           MGW_BASE_URL: ''
         run: gradle --no-daemon clean assembleDebug
+      - name: Enable emulator KVM acceleration
+        run: |
+          if [[ -e /dev/kvm ]]; then sudo chmod 666 /dev/kvm; fi
       - name: Emulator RU/EN and unsupported-locale fallback
         uses: reactivecircus/android-emulator-runner@v2
         with:
