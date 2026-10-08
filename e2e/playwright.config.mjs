@@ -9,6 +9,7 @@ const currentTests = [
   'mvp25-4-profile-route-latency.spec.mjs',
   'checkers-layout-diagnostic.spec.mjs',
   'go-store-live-catalog.spec.mjs',
+  'mvp27-6-bilingual-smoke.spec.mjs',
 ];
 if (runLiveTournamentMutation) currentTests.push('tournament-registration-live.spec.mjs');
 
