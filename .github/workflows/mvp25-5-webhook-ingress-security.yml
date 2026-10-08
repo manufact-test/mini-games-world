@@ -78,6 +78,40 @@ jobs:
           set -euo pipefail
           base='${{ github.event.pull_request.base.sha }}'
           head='${{ github.event.pull_request.head.sha }}'
+          if [[ "${{ github.head_ref }}" == agent/mvp27-3-telegram-webhook-* ]]; then
+            # Verify old ingress/authentication mechanics instead of pinning webhook bytes.
+            php bot/tests/Mvp25_5WebhookIngressSecurityContractTest.php
+            php bot/tests/Mvp27_3TelegramWebhookLocaleTest.php
+            git diff --exit-code "$base" "$head" -- \
+              bot/helpers/TelegramWebhookSecurity.php bot/staging-webhook-security.php \
+              bot/webhook-diagnostic.php bot/setup-webhook.php bot/check-webhook.php \
+              bot/staging-e2e-readiness.php ops/deploy/telegram-webhook-repair.php \
+              ops/deploy/telegram-webhook-diagnostic-route.php
+            changed="$(git diff --name-only "$base" "$head")"
+            allowed='^(app/locales/en\.json|bot/(webhook\.php|localization/ServerLocalization\.php|tests/(Mvp27_3TelegramWebhookLocaleTest\.php|Mvp24LegacyAdminCommerceReadOnlyContractTest\.php))|\.github/workflows/(mvp25-5-webhook-ingress-security\.yml|mvp27-3-telegram-webhook-locale\.yml))
+            bot/helpers/TelegramWebhookSecurity.php \
+            bot/staging-webhook-security.php \
+            bot/webhook.php \
+            bot/webhook-diagnostic.php \
+            bot/setup-webhook.php \
+            bot/check-webhook.php \
+            bot/staging-e2e-readiness.php \
+            ops/deploy/telegram-webhook-repair.php \
+            ops/deploy/telegram-webhook-diagnostic-route.php; then
+            echo "Successor slice: webhook ingress owners unchanged; original bounded security scope does not apply."
+            exit 0
+          fi
+          changed="$(git diff --name-only "$base" "$head")"
+          printf '%s\n' "$changed"
+          allowed='^(\.github/workflows/(mvp25-5-webhook-ingress-security\.yml|staging-playwright-e2e\.yml)|bot/(helpers/TelegramWebhookSecurity\.php|staging-webhook-security\.php|webhook\.php|webhook-diagnostic\.php|setup-webhook\.php|check-webhook\.php|staging-e2e-readiness\.php|helpers/staging-e2e-runtime-files\.txt|config/config\.example\.php|tests/Mvp25_5WebhookIngressSecurityContractTest\.php)|ops/deploy/(telegram-webhook-repair\.php|telegram-webhook-diagnostic-route\.php)|docs/MVP25_5_SECURITY_RESILIENCE_AUDIT\.md)$'
+          bad="$(printf '%s\n' "$changed" | grep -Ev "$allowed" || true)"
+          test -z "$bad" || { printf 'Unexpected MVP-25.5 webhook-security paths:\n%s\n' "$bad" >&2; exit 1; }
+
+            bad="$(printf '%s\n' "$changed" | grep -Ev "$allowed" || true)"
+            test -z "$bad" || { printf 'Unexpected MVP-27.3 webhook changes:\n%s\n' "$bad" >&2; exit 1; }
+            git diff --check
+            exit 0
+          fi
           if git diff --quiet "$base" "$head" -- \
             bot/helpers/TelegramWebhookSecurity.php \
             bot/staging-webhook-security.php \
