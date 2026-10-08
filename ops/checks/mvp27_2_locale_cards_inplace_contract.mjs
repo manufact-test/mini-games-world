@@ -49,6 +49,7 @@ assert.match(weekly, /mgw:locale-changed[\s\S]{0,80}syncWeeklyMatchButton/);
 const store = read('app/assets/js/screens/store-screen.js');
 assert.match(store, /mgw:locale-changed[\s\S]{0,900}renderStore\(\)/);
 assert.match(store, /labelKey:tab\.labelKey/);
+assert.match(store, /localizedOfferName\(offer, t\('store\.profile\.avatar_name'/);
 const runtime = read('app/assets/js/localization/runtime-dom.js');
 assert.match(runtime, /home_match_room_label/);
 assert.match(runtime, /weekly_match\.button_aria/);
