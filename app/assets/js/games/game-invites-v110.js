@@ -746,7 +746,7 @@ function defaultInviteContext(gameType){
 
 function inviteContextKey(context){
   const normalized = normalizeInviteContext(context);
-  return `${normalized.gameType}|${normalized.boardSize}`;
+  return `${normalized.gameType}|${normalized.boardSize}|${getI18n().locale}`;
 }
 
 function showPreparedLink(invite, context){
@@ -1385,7 +1385,7 @@ async function watchIncomingInvite(){
       : window.fetch.bind(window);
     const response = await fetcher(WATCH_URL, {
       method:'POST',
-      headers:{ 'Content-Type':'application/json' },
+      headers:{ 'Content-Type':'application/json', 'X-MGW-Locale':getI18n().locale },
       body:JSON.stringify({ initData:getInitData(), sessionId:getSessionId() }),
       priority:'low',
       cache:'no-store',
@@ -1585,7 +1585,7 @@ function mountInviteCountdown(invite, label){
 function inviteSummary(invite){
   return `
     <div class="topup-success">
-      <div><span>${escapeHtml(inviteText('summary.game'))}</span><strong>${escapeHtml(invite?.game_title || inviteText('game_fallback'))}</strong></div>
+      <div><span>${escapeHtml(inviteText('summary.game'))}</span><strong>${escapeHtml(gameTitle(String(invite?.game_type || '')))}</strong></div>
       <div><span>${escapeHtml(inviteText('summary.variant'))}</span><strong>${escapeHtml(inviteBoardLabel(invite))}</strong></div>
       <div><span>${escapeHtml(inviteText('summary.entry'))}</span><strong>${escapeHtml(inviteText('summary.entry_value',{count:Number(invite?.bet || APP_CONFIG.matchBet || 0)}))}</strong></div>
     </div>
