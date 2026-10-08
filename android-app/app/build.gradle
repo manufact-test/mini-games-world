@@ -57,8 +57,8 @@ android {
         applicationId 'com.minigamesworld.app.acceptance'
         minSdk 26
         targetSdk 36
-        versionCode 2615
-        versionName '0.26.7.0-device-lifecycle-qa'
+        versionCode 2616
+        versionName '0.26.7.1-mvp27-4-native-locale'
         buildConfigField 'String', 'MGW_BASE_URL', '"' + escapedMgwBaseUrl + '"'
         manifestPlaceholders = [mgwInviteHost: configuredMgwInviteHost]
     }

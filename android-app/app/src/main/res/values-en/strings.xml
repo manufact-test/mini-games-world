@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Mini Games World</string>
+    <string name="loading">Loading…</string>
+    <string name="retry">Try again</string>
+    <string name="network_error_title">Could not open Mini Games World</string>
+    <string name="network_error_text">Check your internet connection and try again.</string>
+    <string name="configuration_error_title">App setup is incomplete</string>
+    <string name="configuration_error_text">This version of Mini Games World does not have a valid secure connection address.</string>
+    <string name="security_error_text">The connection could not be verified as secure. Check your connection and try again.</string>
+    <string name="external_link_error">Could not open the link.</string>
+    <string name="reauth_prompt_title">Confirm this action</string>
+    <string name="reauth_prompt_text">Unlock your device to continue with your account data.</string>
+    <string name="reauth_device_lock_required">Set up a screen lock on your device to continue.</string>
+    <string name="reauth_failed">Could not confirm this action. Try again.</string>
+    <string name="download_title">Mini Games World — account data</string>
+    <string name="download_description">Downloading the ZIP archive of your account data</string>
+    <string name="download_started">ZIP download started.</string>
+    <string name="download_failed">Could not start the ZIP download.</string>
+    <string name="download_permission_required">Allow file storage access to download the ZIP archive.</string>
+    <string name="file_download_description">Downloading a Mini Games World file</string>
+    <string name="file_download_started">File download started.</string>
+    <string name="file_download_failed">Could not start the file download.</string>
+    <string name="file_download_permission_required">Allow file storage access to download the attachment.</string>
+</resources>

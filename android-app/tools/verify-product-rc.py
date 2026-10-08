@@ -27,10 +27,16 @@ manifest = read(REPO / "app/runtime/client/version-manifest.php")
 closure = read(REPO / "docs/MVP26_8_ANDROID_PRODUCT_RC.md")
 
 version = re.search(r"\bversionCode\s+(\d+)\b", build)
-require(version is not None and int(version.group(1)) == 2615,
-        "MVP-26.8 RC must reuse the manually accepted v2615 binary unless Android native code changes")
-require("versionName '0.26.7.0-device-lifecycle-qa'" in build,
-        "MVP-26.8 RC must preserve the exact manually accepted v2615 binary identity")
+require(version is not None and int(version.group(1)) >= 2615,
+        "Android Product RC successor must not downgrade accepted v2615")
+if version is not None and int(version.group(1)) == 2615:
+    require("versionName '0.26.7.0-device-lifecycle-qa'" in build,
+            "Historical accepted v2615 binary identity changed")
+elif version is not None:
+    require(re.search(r"\bversionName\s+'0\.26\.[0-9]+\.[^']+'", build) is not None,
+            "Android successor versionName missing or malformed")
+    require((APP / "src/main/res/values-en/strings.xml").is_file(),
+            "Post-v2615 native successor must include English platform resources")
 require("applicationId 'com.minigamesworld.app.acceptance'" in build,
         "accepted Android package identity changed")
 require("mgw-acceptance-stable.keystore" in build,
@@ -101,4 +107,4 @@ if errors:
     raise SystemExit(1)
 
 print("MVP-26.8 Android Product RC verification PASS")
-print("closure: accepted v2615 binary + current v110 runtime + all providers disabled")
+print("closure: accepted v2615 baseline or monotonic localized Android successor + v110 + providers disabled")
