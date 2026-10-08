@@ -25,6 +25,7 @@ let storeLoadPromise = null;
 let purchaseBusy = false;
 let equipBusy = false;
 let bundlePreviewResizeBound = false;
+let storeLocaleListenerBound = false;
 
 ensureBundlePrototypeStyles();
 
@@ -43,6 +44,20 @@ function ensureBundlePrototypeStyles(){
 }
 
 export function initStoreScreen(){
+  if (!storeLocaleListenerBound) {
+    storeLocaleListenerBound = true;
+    document.addEventListener('mgw:locale-changed', () => {
+      if (purchaseBusy || equipBusy) return;
+      const host = storeSurface === 'tab' ? document.getElementById('screen-store') : document.getElementById('sheetOverlay');
+      const visible = storeSurface === 'tab' ? host?.classList.contains('active') : host?.classList.contains('active') && document.getElementById('sheet')?.querySelector('.store-v2-shell');
+      if (!visible) return;
+      const scroll = host?.scrollTop || 0;
+      if (storeState) renderStore();
+      else renderStorePending();
+      if (host) host.scrollTop = scroll;
+      document.dispatchEvent(new CustomEvent('mgw:cosmetic-inventory-changed', { detail:{ reason:'locale-change' } }));
+    });
+  }
   document.addEventListener('click', event => {
     const trigger = event.target.closest('#storeOpen');
     if (!trigger) return;
@@ -212,7 +227,7 @@ function storeTabs(){
   const serverTabs = Array.isArray(storeState?.tabs) ? storeState.tabs : [];
   const serverById = new Map(serverTabs.map(tab => [String(tab?.id || ''), tab]));
   return STORE_TABS
-    .map(tab => ({ ...tab, ...(serverById.get(tab.id) || {}) }))
+    .map(tab => ({ ...tab, ...(serverById.get(tab.id) || {}), labelKey:tab.labelKey }))
     .filter(tab => tab.available !== false);
 }
 
