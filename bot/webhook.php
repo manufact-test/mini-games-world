@@ -8,6 +8,7 @@ header('Referrer-Policy: no-referrer');
 
 require __DIR__ . '/core/bootstrap.php';
 require_once __DIR__ . '/localization/ServerLocalization.php';
+require_once __DIR__ . '/localization/TelegramLocalePreference.php';
 require_once __DIR__ . '/helpers/TelegramWebhookSecurity.php';
 require_once __DIR__ . '/helpers/RuntimeAdminGuard.php';
 require_once __DIR__ . '/helpers/AdminSystemCheckGuard.php';
@@ -30,6 +31,9 @@ try {
 
     // Select locale after authenticated ingress, before any response guard.
     ServerLocalization::bindTelegramUpdate($update);
+    ServerLocalization::preferAuthenticatedTelegramLocale(
+        TelegramLocalePreference::fromUpdate($config, $update)
+    );
 
     $telegram = new TelegramService($config);
     try {
