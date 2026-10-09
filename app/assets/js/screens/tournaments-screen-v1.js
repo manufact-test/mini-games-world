@@ -183,7 +183,9 @@ export function initTournamentsScreen(){
   bindTabs(screen);
   bindScrollButtons(screen);
   bindTournamentActions(screen);
+  document.addEventListener('mgw:locale-changed', localizeCompetitionChrome);
   onScreenEnter('tournaments', () => {
+    localizeCompetitionChrome();
     void activateGame(activeGame);
     void loadArchiveOverview();
     void loadTournamentSnapshot();
@@ -277,6 +279,47 @@ export function initTournamentsScreen(){
     void loadArchiveOverview();
   }
   window.requestAnimationFrame(updateScrollAffordances);
+}
+
+// Tournament screen is constructed only once. Keep tabs, scroll, registrations,
+// and live hall state while updating static strings after account-locale changes.
+function localizeCompetitionChrome(){
+  const root = document.getElementById('tournamentsV2Root');
+  if (!root) return;
+  const copy = [
+    ['.tournaments-v2-page-head .page-title', 'shell.tournaments_title'],
+    ['[data-competition-mode="rating"]', 'shell.competition_rating'],
+    ['[data-competition-mode="tournaments"]', 'shell.competition_tournaments'],
+    ['#tournamentsLeaderboardTitle', 'profile.leaderboard_title'],
+    ['.tournaments-v2-board:not(.tournaments-v2-archive):not(.tournaments-v2-tournament-card) .tournaments-v2-board-head p', 'profile.leaderboard_open_note'],
+    ['#ratingArchiveTitle', 'shell.competition_archive_title'],
+    ['.tournaments-v2-archive .tournaments-v2-board-head p', 'shell.competition_archive_note'],
+    ['[data-rating-history-mode="seasons"]', 'shell.competition_archive_seasons'],
+    ['[data-rating-history-mode="tournaments"]', 'shell.competition_archive_tournaments'],
+    ['.tournaments-v2-tournament-card .tournaments-v2-board-head h2', 'arena.official_title'],
+  ];
+  for (const [selector, key] of copy) {
+    const element = root.querySelector(selector);
+    if (element) element.textContent = t(key);
+  }
+  root.querySelector('.tournaments-v2-mode-tabs')?.setAttribute('aria-label', t('shell.tournaments_title'));
+  root.querySelector('.tournaments-v2-archive-tabs')?.setAttribute('aria-label', t('shell.competition_archive_title'));
+  root.querySelector('#tournamentsLeaderboardTabs')?.setAttribute('aria-label', t('profile.leaderboard_title'));
+  for (const [selector, key] of [
+    ['[data-tournaments-scroll="-1"]', 'arena.scroll_left'],
+    ['[data-tournaments-scroll="1"]', 'arena.scroll_right'],
+  ]) root.querySelector(selector)?.setAttribute('aria-label', t(key));
+  root.querySelectorAll('[data-tournaments-game]').forEach(button => {
+    const game = String(button.dataset.tournamentsGame || '');
+    if (GAME_TYPES.includes(game)) button.textContent = gameName(game);
+  });
+  const board = cache.get(activeGame)?.board;
+  if (board) renderBoard(board);
+  // Only the current tournament projection owns its content; no extra API read
+  // or second competing tournament state owner is created on language changes.
+  if (tournamentSnapshot && !tournamentBusy && !tournamentHallBusy && !tournamentMatchBusy) {
+    renderTournamentSnapshot();
+  }
 }
 
 function bindArchiveModeTabs(screen){
