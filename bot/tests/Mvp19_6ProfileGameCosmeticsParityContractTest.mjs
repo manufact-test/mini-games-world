@@ -139,8 +139,10 @@ expect(activeProfile.includes('captureProfileScrollState') && activeProfile.incl
 expect(activeProfile.includes('options.deferWhileActive === true && shouldDeferActiveProfileRender()')
   && activeProfile.includes('hiddenProfileRenderPending = true;')
   && activeProfile.includes('bindProfileRenderLifecycle()')
-  && activeProfile.includes("event?.detail?.from !== 'profile'"),
-  'background Profile refreshes must never full-remount the visible Profile and must converge only after route leave');
+  && activeProfile.includes("event?.detail?.to === 'profile'")
+  && activeProfile.includes("event?.detail?.from === 'profile' && hiddenProfileRenderPending")
+  && activeProfile.includes('syncVisibleProfileHistory()'),
+  'background Profile refreshes must never full-remount the visible Profile; route enter hydrates only history, and full convergence follows route leave');
 expect(activeProfile.includes("screen.addEventListener('pointerdown'")
   && activeProfile.includes('pendingGameTabScrollState = captureProfileScrollState(gameTab)')
   && activeProfile.includes('switchProfileGameCollection(nextGame, captured)')
