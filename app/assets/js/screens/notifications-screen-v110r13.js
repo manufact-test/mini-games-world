@@ -111,7 +111,11 @@ export function initNotificationsScreen(){
   document.addEventListener('mgw:locale-changed', () => {
     setUnreadCount(unreadHint);
     if (isNotificationsSheetOpen()) renderNotifications(visibleSheetItems());
-    void refreshNotifications({ announce:false });
+    // A previous RU request must not write stale text after the player switches
+    // to EN (or vice versa). Serialize a fresh read after any pending one.
+    invalidateNotificationReads();
+    const prior = refreshPromise;
+    void Promise.resolve(prior).catch(() => {}).then(() => refreshNotifications({ announce:false }));
   });
 
   pollTimer = window.setInterval(() => {
@@ -451,6 +455,22 @@ function notificationCenterBlockedByMatch(){
   return !['finished','cancelled','canceled','abandoned'].includes(status);
 }
 
+// Only system-generated notification copy is locale-owned by the server.
+// User/Admin-authored task text stays intact; never machine-rewrite it here.
+const LOCALE_OWNED_NOTIFICATION_TYPES = new Set([
+  'weekly_match_bonus', 'first_game_bonus', 'welcome_match_grant',
+]);
+function freshSystemPresentation(existing, serverItem){
+  if (!serverItem || !LOCALE_OWNED_NOTIFICATION_TYPES.has(String(existing?.type || ''))) return existing;
+  if (String(existing?.type || '') !== String(serverItem.type || '')) return existing;
+  return {
+    ...existing,
+    title:String(serverItem.title || existing.title || ''),
+    message:String(serverItem.message || existing.message || ''),
+    text:String(serverItem.text || existing.text || ''),
+  };
+}
+
 function mergeServerItems(serverItems){
   pruneLocalAuthority();
   const preserved = [...localAuthority.values()]
@@ -461,7 +481,16 @@ function mergeServerItems(serverItems){
     return (!token || !consumedInviteTokens.has(token)) && isRetainedItem(item);
   });
   const merged = mergeNotificationItems(preserved, visibleServerItems);
-  items = new Map(merged.map(item => [item.id, item]));
+  // Existing local/pinned notification state still owns read/terminal behavior;
+  // the latest locale-aware server read owns *only* generated display copy.
+  const latestByIdentity = new Map(visibleServerItems.map(item => [notificationIdentity(item), item]));
+  items = new Map(merged.map(item => {
+    const current = freshSystemPresentation(item, latestByIdentity.get(notificationIdentity(item)));
+    return [current.id, current];
+  }));
+  for (const [key, pinned] of sheetState.pinned.entries()) {
+    sheetState.pinned.set(key, freshSystemPresentation(pinned, latestByIdentity.get(notificationIdentity(pinned))));
+  }
   persistItems();
 }
 
