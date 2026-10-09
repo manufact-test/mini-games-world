@@ -9,6 +9,8 @@ on:
       - 'app/assets/js/localization/**'
       - 'app/assets/js/api/client.js'
       - 'app/assets/js/screens/home-screen.js'
+      - 'app/assets/js/screens/profile-screen-v110.js'
+      - 'bot/services/HistoryService.php'
       - 'app/assets/js/games/game-invites-v110.js'
       - 'bot/localization/**'
       - 'bot/accounts/MgwIdentityPolicy.php'
@@ -30,6 +32,8 @@ on:
       - 'app/assets/js/localization/**'
       - 'app/assets/js/api/client.js'
       - 'app/assets/js/screens/home-screen.js'
+      - 'app/assets/js/screens/profile-screen-v110.js'
+      - 'bot/services/HistoryService.php'
       - 'app/assets/js/games/game-invites-v110.js'
       - 'bot/localization/**'
       - 'bot/accounts/MgwIdentityPolicy.php'
@@ -62,6 +66,9 @@ jobs:
           set -euo pipefail
           node --check ops/checks/mvp27_6_bilingual_release_contract.mjs
           node --check e2e/staging/mvp27-6-bilingual-smoke.spec.mjs
+          node --check app/assets/js/screens/profile-screen-v110.js
+          php -l bot/services/HistoryService.php
+          node ops/checks/mvp27_6_profile_history_locale_contract.mjs
           node ops/checks/mvp27_6_bilingual_release_contract.mjs
           node ops/checks/mvp27_2_english_catalog_draft_contract.mjs
       - name: Account switching, bot, invites, and fallback regression

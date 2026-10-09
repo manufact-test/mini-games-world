@@ -1572,7 +1572,12 @@ function historyRow(match){
     ? t('profile.history_economy',{entry:historyCoins(economy.entry),reward:historyCoins(economy.reward),delta:historyDelta(economy.ledger_delta),balance:historyCoins(economy.new_balance)})
     : '';
   const meta = [economyText, when ? formatDateTime(when) : ''].filter(Boolean).join(' · ');
-  return `<article class="profile-v2-history-row ${tone}"><div class="profile-v2-history-main"><strong>${escapeHtml(gameName(gameType))}${variant ? ` · ${escapeHtml(variant)}` : ''}</strong><span>${escapeHtml(String(match?.opponent || t('profile.opponent')))}</span></div><div class="profile-v2-history-result"><b>${escapeHtml(String(match?.result || '—'))}</b><small>${escapeHtml(meta)}</small></div></article>`;
+  // HistoryService emits a stable result key alongside presentation copy.
+  // The key, not the language in a cached API response, owns current UI text.
+  const resultKey = String(match?.result_key || '');
+  const knownResult = /^server\.history\.match\.(active|not_started|draw|victory_timeout|victory_opponent_left|victory|technical_defeat|defeat)$/.test(resultKey);
+  const resultLabel = knownResult ? t(resultKey) : String(match?.result || '—');
+  return `<article class="profile-v2-history-row ${tone}"><div class="profile-v2-history-main"><strong>${escapeHtml(gameName(gameType))}${variant ? ` · ${escapeHtml(variant)}` : ''}</strong><span>${escapeHtml(String(match?.opponent || t('profile.opponent')))}</span></div><div class="profile-v2-history-result"><b>${escapeHtml(resultLabel)}</b><small>${escapeHtml(meta)}</small></div></article>`;
 }
 function historyCoins(value){
   if (value === null || value === undefined || !Number.isFinite(Number(value))) return '—';

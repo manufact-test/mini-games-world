@@ -297,11 +297,11 @@ final class HistoryService
         $opponentId = $this->otherPlayerId($game, $userId);
         $opponentName = (string)($game['player_names'][$opponentId] ?? ServerLocalization::copy('server.history.match.opponent_fallback', 'Opponent'));
 
-        if ($status !== 'finished') { $result = ServerLocalization::copy('server.history.match.active', 'Game active'); $tone = 'zero'; }
-        elseif ($reason === 'preparation_timeout') { $result = ServerLocalization::copy('server.history.match.not_started', 'Match did not start'); $tone = 'zero'; }
-        elseif ($winnerId === null || $winnerId === '') { $result = ServerLocalization::copy('server.history.match.draw', 'Draw'); $tone = 'zero'; }
-        elseif ($winnerId === $userId) { $result = $reason === 'timeout' ? ServerLocalization::copy('server.history.match.victory_timeout', 'Timeout victory') : ($reason === 'player_left' ? ServerLocalization::copy('server.history.match.victory_opponent_left', 'Victory: opponent left') : ServerLocalization::copy('server.history.match.victory', 'Victory')); $tone = 'pos'; }
-        else { $result = in_array($reason, ['timeout', 'player_left'], true) ? ServerLocalization::copy('server.history.match.technical_defeat', 'Technical defeat') : ServerLocalization::copy('server.history.match.defeat', 'Defeat'); $tone = 'neg'; }
+        if ($status !== 'finished') { $resultKey = 'server.history.match.active'; $result = ServerLocalization::copy('server.history.match.active', 'Game active'); $tone = 'zero'; }
+        elseif ($reason === 'preparation_timeout') { $resultKey = 'server.history.match.not_started'; $result = ServerLocalization::copy('server.history.match.not_started', 'Match did not start'); $tone = 'zero'; }
+        elseif ($winnerId === null || $winnerId === '') { $resultKey = 'server.history.match.draw'; $result = ServerLocalization::copy('server.history.match.draw', 'Draw'); $tone = 'zero'; }
+        elseif ($winnerId === $userId) { $resultKey = $reason === 'timeout' ? 'server.history.match.victory_timeout' : ($reason === 'player_left' ? 'server.history.match.victory_opponent_left' : 'server.history.match.victory'); $result = $reason === 'timeout' ? ServerLocalization::copy('server.history.match.victory_timeout', 'Timeout victory') : ($reason === 'player_left' ? ServerLocalization::copy('server.history.match.victory_opponent_left', 'Victory: opponent left') : ServerLocalization::copy('server.history.match.victory', 'Victory')); $tone = 'pos'; }
+        else { $resultKey = in_array($reason, ['timeout', 'player_left'], true) ? 'server.history.match.technical_defeat' : 'server.history.match.defeat'; $result = in_array($reason, ['timeout', 'player_left'], true) ? ServerLocalization::copy('server.history.match.technical_defeat', 'Technical defeat') : ServerLocalization::copy('server.history.match.defeat', 'Defeat'); $tone = 'neg'; }
 
         $item = [
             'id' => (string)($game['id'] ?? ''),
@@ -310,6 +310,7 @@ final class HistoryService
             'room_label' => $this->roomLabel((string)($game['room'] ?? 'match')),
             'opponent' => $opponentName,
             'result' => $result,
+            'result_key' => $resultKey,
             'tone' => $tone,
             'game_type' => (string)($game['game_type'] ?? 'tictactoe'),
             'game_title' => $this->gameLabel($game),
