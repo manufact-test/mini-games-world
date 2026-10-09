@@ -22,6 +22,11 @@ $base = [
     'read_at'=>'2026-10-02T10:00:00+00:00',
 ];
 $service = new NotificationService();
+mgwAssert(
+    ServerLocalization::copyInLocale('server.notifications.service.task_due_message', 'ru')
+        === 'Наступил срок задачи «{title}».',
+    'Legacy RU envelope must be catalog-owned independently of reader locale'
+);
 $_SERVER['HTTP_X_MGW_LOCALE'] = 'en';
 $english = $service->userNotifications(['notifications'=>[$base]], 'locale-test');
 mgwAssert(count($english)===1, 'Task event must remain in the feed');

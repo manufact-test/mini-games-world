@@ -33,17 +33,38 @@ final class ServerLocalization
         }
     }
 
+    private static function catalog(): LocalizationCatalog
+    {
+        static $catalog = null;
+        if (!$catalog instanceof LocalizationCatalog) {
+            $catalog = new LocalizationCatalog(dirname(__DIR__, 2) . '/app/locales');
+        }
+        return $catalog;
+    }
+
     public static function copy(string $key, string $emergencyFallback, array $params = []): string
     {
         try {
-            static $catalog = null;
-            if (!$catalog instanceof LocalizationCatalog) {
-                $catalog = new LocalizationCatalog(dirname(__DIR__, 2) . '/app/locales');
-            }
+            $catalog = self::catalog();
             return $catalog->translate($key, $params, self::requestLocale($catalog));
         } catch (Throwable $error) {
             error_log('[MiniGamesWorld server localization] ' . $error->getMessage());
             return $emergencyFallback;
+        }
+    }
+
+    // Historical persisted copy must be recognized against the original RU
+    // envelope, independently of the current reader's chosen language.
+    public static function copyInLocale(string $key, string $locale, string $fallback = ''): string
+    {
+        try {
+            if (!in_array($locale, ['ru', 'en'], true)) {
+                throw new InvalidArgumentException('Unsupported fixed translation locale.');
+            }
+            return self::catalog()->translate($key, [], $locale);
+        } catch (Throwable $error) {
+            error_log('[MiniGamesWorld server localization] ' . $error->getMessage());
+            return $fallback;
         }
     }
 
