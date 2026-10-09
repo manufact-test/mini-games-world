@@ -91,6 +91,28 @@ test('RU/EN renders real Home + Settings on 320px and 390px mobile staging', asy
         await expect(page.locator('#languageRuBtn')).toBeVisible();
         await expect(page.locator('#languageEnBtn')).toBeVisible();
         await page.locator('[data-close-sheet]').last().click();
+
+        const labels = locale.code === 'en'
+          ? ['Home','Arena','Store','Profile']
+          : ['Главная','Арена','Магазин','Профиль'];
+        const nav = page.locator('#appBottomNav');
+        const routes = ['home','tournaments','store','profile'];
+        for (let i = 0; i < routes.length; i++) {
+          const button = nav.locator(`[data-shell-nav="${routes[i]}"]`);
+          await expect(button.locator('.app-bottom-nav-label')).toHaveText(labels[i]);
+          await expect(button).toHaveAttribute('aria-label', labels[i]);
+        }
+
+        await nav.locator('[data-shell-nav="tournaments"]').click();
+        await expect(page.locator('#screen-tournaments')).toHaveClass(/active/);
+        await expect(page.locator('#tournamentsV2Root .tournaments-v2-page-head .page-title'))
+          .toHaveText(locale.code === 'en' ? 'Competitions' : 'Соревнования');
+        await expect(page.locator('[data-competition-mode="rating"]'))
+          .toHaveText(locale.code === 'en' ? 'Rating' : 'Рейтинг');
+        await expect(page.locator('[data-competition-mode="tournaments"]'))
+          .toHaveText(locale.code === 'en' ? 'Tournaments' : 'Турниры');
+        await nav.locator('[data-shell-nav="home"]').click();
+        await expect(page.locator('#screen-home')).toHaveClass(/active/);
       }
     }
   } finally {
