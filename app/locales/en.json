@@ -1,7 +1,7 @@
 {
   "_meta": {
     "locale": "en",
-    "version": 38,
+    "version": 39,
     "status": "active"
   },
   "common": {
@@ -3315,7 +3315,9 @@
         "admin_gold_message": "Credited +{amount} Gold.",
         "welcome_title": "Welcome!",
         "welcome_message": "Thanks for joining Mini Games World. We credited +{amount} coins.",
-        "weekly_title": "Weekly coins credited",
+        "task_due_title": "⏰ Task deadline reached",
+      "task_due_message": "Task “{title}” is due.",
+      "weekly_title": "Weekly coins credited",
         "weekly_message": "Matches completed: {games}. Credited +{amount} coins.",
         "first_game_title": "New game bonus",
         "first_game_message": "First completed match in “{game}”. Credited +{amount} coins.",
