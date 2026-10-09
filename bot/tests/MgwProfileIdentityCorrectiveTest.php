@@ -106,12 +106,15 @@ $assertSame('starter-default-03', $avatar3['avatar']['item_id'] ?? null, 'Third 
 $locale = $profiles->updateProfile($first['mgw_id'], ['preferred_locale' => 'ru']);
 $assertSame('ru', $locale['preferred_locale'], 'Explicit supported locale must persist on MGW account');
 
+$english = $profiles->updateProfile($first['mgw_id'], ['preferred_locale' => 'en']);
+$assertSame('en', $english['preferred_locale'], 'MVP-27.5 supported English locale must persist on MGW account');
+$assertSame('en', $profiles->publicProfile($first['mgw_id'])['preferred_locale'] ?? null, 'English preference must remain visible after canonical account read');
 $assertions++;
 try {
-    $profiles->updateProfile($first['mgw_id'], ['preferred_locale' => 'en']);
-    throw new RuntimeException('Unsupported EN locale must not be offered or persisted before catalog readiness');
+    $profiles->updateProfile($first['mgw_id'], ['preferred_locale' => 'fr']);
+    throw new RuntimeException('Unsupported locale must not be offered or persisted');
 } catch (InvalidArgumentException) {
-    // Expected: RU is the only complete catalog in MVP-16.5.
+    // English is now supported; an unsupported locale remains rejected.
 }
 
 fwrite(STDOUT, "MgwProfileIdentityCorrectiveTest: {$assertions} assertions passed\n");
