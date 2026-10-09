@@ -80,7 +80,7 @@ assert(ru.notifications?.tournament_local_time === 'начнётся {date} по
 assert(ru.notifications?.terminal?.invite_declined === 'Вы отклонили приглашение.',
   'Accepted RU terminal invitation fallback must remain unchanged.');
 
-assert(manifest.includes("'./assets/js/screens/notifications-screen-v110r13.js?v=1162&mvp18=friend-request-lifecycle' => './assets/js/screens/notifications-screen-v110r13.js?v=1168&mvp27_1=active-shell-copy-v1&mvp21_3=read-authority-local-time&mvp22_1=support-ticket-deeplink-smooth-v2&mvp25_2=legacy-store-orders-retired-v1&mvp27_1=localized-user-copy-v1'"),
+assert(manifest.includes("'./assets/js/screens/notifications-screen-v110r13.js?v=1162&mvp18=friend-request-lifecycle' => './assets/js/screens/notifications-screen-v110r13.js?v=1168&mvp27_1=active-shell-copy-v1&mvp21_3=read-authority-local-time&mvp22_1=support-ticket-deeplink-smooth-v2&mvp25_2=legacy-store-orders-retired-v1&mvp27_1=localized-user-copy-v1&mvp27_6=notification-locale-copy-v2-task'"),
   'Canonical manifest must publish the active-shell localized Notification Center successor.');
 
 assert(Number(baseline.cyrillic_lines_total) <= 3373 && Number(baseline.by_scope?.client) <= 1692,
