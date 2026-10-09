@@ -359,6 +359,7 @@ function initAppShellChrome(){
   document.addEventListener('mgw:game-dismissed', () => syncAppShellChrome());
   document.addEventListener('mgw:locale-changed', () => {
     localizeRuntimeDom();
+    localizeBottomNavigation();
     syncAppShellChrome();
   });
   syncAppShellChrome();
@@ -451,6 +452,28 @@ function ensureBottomNavigation(app){
     </button>
   `).join('');
   app.append(nav);
+}
+
+// Shell navigation is persistent across screen changes. Re-localize labels
+// in place when the canonical account language is hydrated or switched.
+function localizeBottomNavigation(){
+  const nav = document.getElementById('appBottomNav');
+  if (!nav) return;
+  nav.setAttribute('aria-label', t('shell.navigation_label'));
+  const labels = {
+    home:'nav.home',
+    tournaments:'nav.tournaments',
+    store:'nav.store',
+    profile:'nav.profile',
+  };
+  for (const [route, key] of Object.entries(labels)) {
+    const button = nav.querySelector(`[data-shell-nav="${route}"]`);
+    if (!(button instanceof HTMLButtonElement)) continue;
+    const label = t(key);
+    button.setAttribute('aria-label', label);
+    const caption = button.querySelector('.app-bottom-nav-label');
+    if (caption && caption.textContent !== label) caption.textContent = label;
+  }
 }
 
 function handleShellNavigation(event){
