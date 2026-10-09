@@ -325,12 +325,7 @@ function showProfileImmediately(){
   // Profile is pre-rendered while hidden. Paint that existing DOM first so the
   // navigation tap never waits on the long render signature / collection build.
   showScreen('profile');
-  if (hasCachedProfileDom) {
-    // The hidden warm read may have completed while its full remount was
-    // deferred. Reconcile the small history region on first entry.
-    syncVisibleProfileHistory();
-    return;
-  }
+  if (hasCachedProfileDom) return;
 
   if (state.mgwProfile) state.user = mergeCanonicalMgwUser(state.user, {}, state.mgwProfile);
   currentAvatarItemId();
