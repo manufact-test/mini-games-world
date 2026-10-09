@@ -531,7 +531,17 @@ final class NotificationService
         $type = (string)($notification['type'] ?? '');
         if ($this->isSystemAdminTaskReminder($notification)) {
             $raw = (string)($notification['message'] ?? '');
-            if (preg_match('/^Наступил срок задачи «(.*)»\.$/us', $raw, $matches) === 1) {
+            $legacyTemplate = ServerLocalization::copyInLocale(
+                'server.notifications.service.task_due_message', 'ru'
+            );
+            $parts = explode('{title}', $legacyTemplate, 2);
+            // Keep the persisted RU envelope in the canonical catalog.
+            // Literal prefix/suffix are escaped; the middle is the task title.
+            if (count($parts) === 2 && preg_match(
+                '/^' . preg_quote($parts[0], '/') . '(.*)' . preg_quote($parts[1], '/') . '$/us',
+                $raw,
+                $matches
+            ) === 1) {
                 return ServerLocalization::copy(
                     'server.notifications.service.task_due_message',
                     'Task “{title}” is due.',
