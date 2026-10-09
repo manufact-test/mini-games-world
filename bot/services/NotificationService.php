@@ -531,7 +531,7 @@ final class NotificationService
         $type = (string)($notification['type'] ?? '');
         if ($this->isSystemAdminTaskReminder($notification)) {
             $raw = (string)($notification['message'] ?? '');
-            if (preg_match('/^Наступил срок задачи «(.*)»\\.$/us', $raw, $matches) === 1) {
+            if (preg_match('/^Наступил срок задачи «(.*)»\.$/us', $raw, $matches) === 1) {
                 return ServerLocalization::copy(
                     'server.notifications.service.task_due_message',
                     'Task “{title}” is due.',
