@@ -246,8 +246,17 @@ function bindProfileRenderLifecycle(){
   if (profileRenderLifecycleBound) return;
   profileRenderLifecycleBound = true;
   document.addEventListener('mgw:screen-changed', event => {
-    if (event?.detail?.from !== 'profile' || event?.detail?.to === 'profile') return;
-    if (hiddenProfileRenderPending) scheduleProfileRenderIdle();
+    if (event?.detail?.to === 'profile') {
+      // The bottom shell nav enters Profile directly via showScreen(), not
+      // openProfile(). Reconcile a completed hidden read on that real route
+      // and request a missing snapshot without delaying the first paint.
+      syncVisibleProfileHistory();
+      scheduleProfileRefreshAfterEntry();
+      return;
+    }
+    if (event?.detail?.from === 'profile' && hiddenProfileRenderPending) {
+      scheduleProfileRenderIdle();
+    }
   });
 }
 
