@@ -144,6 +144,21 @@ test('Cold-open history hydrate: first Profile entry and full reopen, RU/EN, no 
     expect((await auth.json()).ok).toBe(true);
 
     const page = await context.newPage();
+    let activeTrialLocale = 'en';
+    // Profile bootstrap may finish after the temporary locale preview. Serve
+    // the same trial locale in the browser-only canonical account read, so a
+    // persisted staging test account preference cannot race this RU/EN smoke.
+    // The real account and its preferred_locale are never updated.
+    await page.route('**/bot/profile.php', async route => {
+      const response = await route.fetch();
+      if (!response.ok()) return route.fulfill({ response });
+      const result = await response.json();
+      if (result?.ok !== true || !result?.profile) return route.fulfill({ response });
+      return route.fulfill({
+        response,
+        json:{ ...result, profile:{ ...result.profile, preferred_locale:activeTrialLocale } },
+      });
+    });
     let currentGate = Promise.resolve();
     let signalRequest = () => {};
     const fixture = {
@@ -182,7 +197,11 @@ test('Cold-open history hydrate: first Profile entry and full reopen, RU/EN, no 
       await waitForRelease;
       await route.fulfill({
         response,
-        json:{ ...result, history:{ ...(result.history || {}), matches:[fixture] } },
+        json:{
+          ...result,
+          profile:{ ...result.profile, preferred_locale:activeTrialLocale },
+          history:{ ...(result.history || {}), matches:[fixture] },
+        },
       });
     });
 
@@ -193,6 +212,7 @@ test('Cold-open history hydrate: first Profile entry and full reopen, RU/EN, no 
       { locale:'ru', result:'Победа' },
     ];
     for (const trial of trials) {
+      activeTrialLocale = trial.locale;
       let release;
       currentGate = new Promise(resolve => { release = resolve; });
       const requested = new Promise(resolve => { signalRequest = resolve; });
