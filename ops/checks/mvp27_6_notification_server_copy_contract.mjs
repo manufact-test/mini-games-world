@@ -33,5 +33,20 @@ for (const type of ['task_due', 'admin', 'invite_received']) {
 assert.match(source, /invalidateNotificationReads\(\);[\s\S]*?const prior = refreshPromise;/);
 assert.match(source, /latestByIdentity\.get\(notificationIdentity\(item\)\)/);
 assert.match(source, /sheetState\.pinned\.set\(key, freshSystemPresentation/);
-assert.match(manifest, /mvp27_6=notification-locale-copy-v1/);
+const reminder = {
+  ...old, type:'system_message', source_type:'system',
+  created_by:'system:admin-task-reminder', title:'⏰ Срок задачи наступил',
+  message:'Наступил срок задачи «Тест».',
+};
+const fromReminderServer = {
+  ...reminder, title:'⏰ Task deadline reached',
+  message:'Task “Тест” is due.',
+};
+const localizedReminder = helper(reminder, fromReminderServer);
+assert.equal(localizedReminder.title, '⏰ Task deadline reached');
+assert.equal(localizedReminder.message, 'Task “Тест” is due.');
+assert.equal(localizedReminder.read, true);
+assert.equal(helper({ ...reminder, created_by:'system:other' }, fromReminderServer).title,
+  '⏰ Срок задачи наступил', 'Other system events retain custom copy');
+assert.match(manifest, /mvp27_6=notification-locale-copy-v2-task/);
 console.log('MVP-27.6 notification RU/EN latest server copy, safe pinned state and custom message isolation PASS');
