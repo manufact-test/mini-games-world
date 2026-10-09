@@ -41,6 +41,8 @@ let nameColorSaving = false;
 let gameCosmeticSaving = false;
 let activeCollectionGame = 'tictactoe';
 let lastProfileRenderSignature = '';
+let lastRenderedHistorySignature = '';
+let profileHistoryReadFailed = false;
 let hiddenProfileRenderPending = false;
 let lastFullProfileSnapshotAt = 0;
 let avatarSelectionSyncBound = false;
@@ -83,8 +85,20 @@ function warmProfileSnapshot(){
   profileLoading = true;
   void api.profileV2()
     .then(result => applyProfileResponse(result, { deferWhileActive:true, deferWhileHidden:true }))
-    .catch(() => {})
-    .finally(() => { profileLoading = false; });
+    .catch(() => {
+      // A failed warm read is not proof that the account has no matches.
+      profileHistoryReadFailed = true;
+      syncVisibleProfileHistory();
+    })
+    .finally(() => {
+      profileLoading = false;
+      // An on-entry read must not be lost just because warm-up was in flight
+      // when the user opened Profile. One ordinary on-entry read follows a
+      // failed warm read; no polling or silent retry loop.
+      if (currentScreen() === 'profile' && !Array.isArray(state.profileHistory?.matches)) {
+        scheduleProfileRefreshAfterEntry();
+      }
+    });
 }
 
 export function openProfile(){
@@ -109,6 +123,8 @@ function scheduleProfileRefreshAfterEntry(){
     void api.profileV2()
       .then(result => applyProfileResponse(result, { deferWhileActive:true }))
       .catch(error => {
+        if (!Array.isArray(state.profileHistory?.matches)) profileHistoryReadFailed = true;
+        syncVisibleProfileHistory();
         if (currentScreen() === 'profile') toast(error?.message || t('profile.load_error'));
       })
       .finally(() => { profileLoading = false; });
@@ -139,6 +155,7 @@ function applyProfileResponse(result, options = {}){
   state.profileRatingArchive = result.rating_archive || state.profileRatingArchive || null;
   state.profileTournamentRewards = result.tournament_rewards || state.profileTournamentRewards || null;
   state.profileHistory = result.history || state.profileHistory || null;
+  if (Array.isArray(result?.history?.matches)) profileHistoryReadFailed = false;
   state.profileAuth = result.auth || state.profileAuth || null;
   if (hasProfileStats(state.profileStats)) saveCachedProfileStats(state.profileStats);
 
@@ -156,6 +173,10 @@ function applyProfileResponse(result, options = {}){
     // quiet, requestIdleCallback replaced #profileV2Root and the game-parity
     // repair chain changed heights again. Keep the fresh state in memory and
     // converge the hidden DOM after the user leaves Profile instead.
+    // Unlike the long cosmetics/identity tree, Recent matches is a small,
+    // self-contained projection. Hydrate it immediately without remounting
+    // the visible Profile or changing the user's scroll position.
+    syncVisibleProfileHistory();
     hiddenProfileRenderPending = true;
     return;
   }
@@ -197,6 +218,28 @@ function shouldDeferHiddenProfileRender(){
   return currentScreen() !== 'profile'
     && root instanceof HTMLElement
     && root.childElementCount > 0;
+}
+
+function profileHistorySignature(history){
+  const matches = Array.isArray(history?.matches) ? history.matches.slice(0, 6) : null;
+  return JSON.stringify([matches, profileHistoryReadFailed]);
+}
+
+function profileHistoryMarkup(history){
+  const matches = Array.isArray(history?.matches) ? history.matches.slice(0, 6) : null;
+  if (matches === null) return emptyState(profileHistoryReadFailed ? 'profile.load_error' : 'common.loading');
+  return matches.length ? matches.map(historyRow).join('') : emptyState('profile.history_empty');
+}
+
+function syncVisibleProfileHistory(){
+  if (currentScreen() !== 'profile') return;
+  const panel = document.querySelector('#profileV2Root .profile-v2-history');
+  if (!(panel instanceof HTMLElement)) return;
+  const history = state.profileHistory;
+  const signature = profileHistorySignature(history);
+  if (signature === lastRenderedHistorySignature) return;
+  panel.innerHTML = profileHistoryMarkup(history);
+  lastRenderedHistorySignature = signature;
 }
 
 function bindProfileRenderLifecycle(){
@@ -273,7 +316,12 @@ function showProfileImmediately(){
   // Profile is pre-rendered while hidden. Paint that existing DOM first so the
   // navigation tap never waits on the long render signature / collection build.
   showScreen('profile');
-  if (hasCachedProfileDom) return;
+  if (hasCachedProfileDom) {
+    // The hidden warm read may have completed while its full remount was
+    // deferred. Reconcile the small history region on first entry.
+    syncVisibleProfileHistory();
+    return;
+  }
 
   if (state.mgwProfile) state.user = mergeCanonicalMgwUser(state.user, {}, state.mgwProfile);
   currentAvatarItemId();
@@ -685,7 +733,6 @@ function renderProfileV2(){
   const mgwId = publicMgwId(profile.public_mgw_id || profile.mgw_id || user.public_mgw_id || user.mgw_id);
   const balance = Number(user.balance || 0);
   const registeredAt = profile.created_at || user.registered_at || null;
-  const matches = Array.isArray(history.matches) ? history.matches.slice(0, 6) : [];
   const activeAvatar = currentAvatarItemId();
   const ownedAvatars = ownedAvatarItems(activeAvatar);
   const activeNameColor = currentNameColorItemId();
@@ -733,9 +780,10 @@ function renderProfileV2(){
     ${renderYearlyMedalSection(yearlyMedals)}
     <section class="profile-v2-section">${sectionHead('profile.stats_title','profile.stats_note')}<div class="profile-v2-summary-grid">${summaryStat(stats?.games_played,'profile.games_played')}${summaryStat(stats?.wins,'profile.wins')}${summaryStat(stats?.losses,'profile.losses')}${summaryStat(stats?.draws,'profile.draws')}</div></section>
     <section class="profile-v2-section">${sectionHead('profile.by_game_title','profile.by_game_note')}<div class="profile-v2-games-grid">${GAME_TYPES.map(gameType => gameStatCard(gameType, stats?.by_game?.[gameType])).join('')}</div></section>
-    <section class="profile-v2-section">${sectionHead('profile.history_title')}<div class="profile-v2-history">${matches.length ? matches.map(historyRow).join('') : emptyState('profile.history_empty')}</div></section>
+    <section class="profile-v2-section">${sectionHead('profile.history_title')}<div class="profile-v2-history">${profileHistoryMarkup(history)}</div></section>
   `;
   lastProfileRenderSignature = profileRenderSignature(profile, user, stats, history, rating, yearlyMedals, ratingArchive, tournamentRewards);
+  lastRenderedHistorySignature = profileHistorySignature(history);
   restoreProfileScrollState(profileScrollState);
 }
 
