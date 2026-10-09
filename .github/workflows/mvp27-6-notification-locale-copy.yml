@@ -5,6 +5,10 @@ on:
     branches: [agent/mvp-13-2-staging]
     paths:
       - 'app/assets/js/screens/notifications-screen-v110r13.js'
+      - 'bot/services/NotificationService.php'
+      - 'bot/tests/Mvp27_6AdminTaskReminderLocaleTest.php'
+      - 'app/locales/ru.json'
+      - 'app/locales/en.json'
       - 'app/runtime/client/version-manifest.php'
       - 'ops/checks/mvp27_6_notification_server_copy_contract.mjs'
       - '.github/workflows/mvp27-6-notification-locale-copy.yml'
@@ -12,6 +16,10 @@ on:
     branches: [agent/mvp-13-2-staging]
     paths:
       - 'app/assets/js/screens/notifications-screen-v110r13.js'
+      - 'bot/services/NotificationService.php'
+      - 'bot/tests/Mvp27_6AdminTaskReminderLocaleTest.php'
+      - 'app/locales/ru.json'
+      - 'app/locales/en.json'
       - 'app/runtime/client/version-manifest.php'
       - 'ops/checks/mvp27_6_notification_server_copy_contract.mjs'
       - '.github/workflows/mvp27-6-notification-locale-copy.yml'
@@ -32,6 +40,9 @@ jobs:
           set -euo pipefail
           node --check app/assets/js/screens/notifications-screen-v110r13.js
           php -l app/runtime/client/version-manifest.php
+          php -l bot/services/NotificationService.php
+          php -l bot/tests/Mvp27_6AdminTaskReminderLocaleTest.php
+          php bot/tests/Mvp27_6AdminTaskReminderLocaleTest.php
           node ops/checks/mvp27_6_notification_server_copy_contract.mjs
           php bot/tests/Mvp27_3ManualLocaleCorrectiveTest.php
           node scripts/ci/check-secrets.mjs
