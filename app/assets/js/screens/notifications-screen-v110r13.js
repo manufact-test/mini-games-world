@@ -460,8 +460,14 @@ function notificationCenterBlockedByMatch(){
 const LOCALE_OWNED_NOTIFICATION_TYPES = new Set([
   'weekly_match_bonus', 'first_game_bonus', 'welcome_match_grant',
 ]);
+function isLocaleOwnedSystemCopy(item){
+  if (LOCALE_OWNED_NOTIFICATION_TYPES.has(String(item?.type || ''))) return true;
+  return String(item?.type || '') === 'system_message'
+    && String(item?.source_type || '') === 'system'
+    && String(item?.created_by || '') === 'system:admin-task-reminder';
+}
 function freshSystemPresentation(existing, serverItem){
-  if (!serverItem || !LOCALE_OWNED_NOTIFICATION_TYPES.has(String(existing?.type || ''))) return existing;
+  if (!serverItem || !isLocaleOwnedSystemCopy(existing) || !isLocaleOwnedSystemCopy(serverItem)) return existing;
   if (String(existing?.type || '') !== String(serverItem.type || '')) return existing;
   return {
     ...existing,
