@@ -82,7 +82,21 @@ function diagnostics(page, slot) {
     if (path === '/bot/presence.php') value.presenceStatuses.push(status);
 
     if (status >= 500) {
-      value.serverErrors.push({ path, status, recovered:false });
+      const failure = { path, status, recovered:false };
+      value.serverErrors.push(failure);
+      // Staging API intentionally exposes a bounded *stage name* on 500.
+      // Collect that non-sensitive diagnostic so a transient failed request
+      // can be correlated with PHP logs without logging cookies or response data.
+      if (path === '/bot/profile-v2.php') {
+        void response.json().then(payload => {
+          const stage = String(payload?.diagnostic_stage || '');
+          if (/^[a-z0-9_]{1,80}$/i.test(stage)) failure.diagnostic_stage = stage;
+          const elapsed = Number(payload?.diagnostic_elapsed_ms);
+          if (Number.isFinite(elapsed) && elapsed >= 0) {
+            failure.diagnostic_elapsed_ms = Math.min(Math.round(elapsed), 3_600_000);
+          }
+        }).catch(() => {});
+      }
       return;
     }
 
