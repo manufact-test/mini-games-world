@@ -11,7 +11,7 @@ $assert = static function (bool $ok, string $message) use (&$assertions): void {
 
 $api = file_get_contents(dirname(__DIR__) . '/api.php');
 $source = file_get_contents(dirname(__DIR__) . '/storage/JsonDatabase.php');
-$assert(is_string($api) && str_contains($api, "'environment' ?? '') === 'staging'"),
+$assert(is_string($api) && str_contains($api, "'environment'] ?? ''))) === 'staging'"),
     'Gameplay timing must only be enabled by staging API routing.');
 $assert(is_string($source) && str_contains($source, 'writer_wait_ms=%.1f'),
     'Measure the writer lock rather than only total HTTP latency.');
