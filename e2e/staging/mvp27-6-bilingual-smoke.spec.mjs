@@ -51,6 +51,25 @@ test('RU/EN renders real Home + Settings on 320px and 390px mobile staging', asy
     expect(cookie?.httpOnly).toBe(true);
 
     const page = await context.newPage();
+    // This is a read-only locale preview, NOT a saved account preference.
+    // A delayed authenticated Profile read is allowed to restore the account's
+    // real preferred_locale; isolate that owner within this browser-only smoke
+    // instead of racing it or writing to the staging test account.
+    let activeTrialLocale = 'ru';
+    const keepTrialLocale = async route => {
+      const payload = (() => { try { return route.request().postDataJSON(); } catch { return {}; } })();
+      if (payload?.profile_update) return route.continue();
+      const response = await route.fetch();
+      if (!response.ok()) return route.fulfill({ response });
+      const result = await response.json();
+      if (result?.ok !== true || !result?.profile) return route.fulfill({ response });
+      return route.fulfill({
+        response,
+        json:{ ...result, profile:{ ...result.profile, preferred_locale:activeTrialLocale } },
+      });
+    };
+    await page.route('**/bot/profile.php', keepTrialLocale);
+    await page.route('**/bot/profile-v2.php', keepTrialLocale);
     const bootstrap = page.waitForResponse(entry => (
       entry.url() === ORIGIN + '/bot/api.php'
       && entry.request().method() === 'POST'
@@ -69,6 +88,7 @@ test('RU/EN renders real Home + Settings on 320px and 390px mobile staging', asy
     for (const width of [390, 320]) {
       await page.setViewportSize({ width, height: 844 });
       for (const locale of locales) {
+        activeTrialLocale = locale.code;
         const selected = await page.evaluate(async code => {
           // Import-map-resolved active i18n owner, not a second module instance.
           const localeOwner = await import('@mgw/i18n');
@@ -76,6 +96,7 @@ test('RU/EN renders real Home + Settings on 320px and 390px mobile staging', asy
         }, locale.code);
         expect(selected).toBe(locale.code);
         await expect(page.locator('html')).toHaveAttribute('lang', locale.code);
+        await expect.poll(() => page.evaluate(async () => (await import('@mgw/i18n')).getI18n().locale)).toBe(locale.code);
         await expect(page.locator('#screen-home .hero-title')).toHaveText(locale.hero);
         const gameActions = page.locator('#screen-home .game-card .btn.primary');
         expect(await gameActions.count()).toBeGreaterThan(0);
