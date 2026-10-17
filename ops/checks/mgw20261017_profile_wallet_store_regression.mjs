@@ -46,6 +46,8 @@ assert.match(victory, /addEventListener\('mgw:store-surface-rendered', scheduleD
 assert.match(victory, /snapshotAttempted = false; return state\.profileInventory/,
   'A failed first Profile V2 catalog fetch must be retriable after route reentry.');
 const manifest = read('app/runtime/client/version-manifest.php');
+assert.match(manifest, /wallet=entry-canonical-refresh-v1/,
+  'The accepted Profile base-module import must be cache-busted for wallet refresh.');
 assert.match(manifest, /store-screen\.js\?v=73&intent_base=1/,
   'Active Store import mapping must invalidate cached old DOM owner.');
 assert.match(manifest, /mgw-profile-victory-effects-card-parity\.js\?v=14&/,
