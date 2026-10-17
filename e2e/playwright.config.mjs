@@ -10,6 +10,9 @@ const currentTests = [
   'checkers-layout-diagnostic.spec.mjs',
   'go-store-live-catalog.spec.mjs',
   'mvp27-6-bilingual-smoke.spec.mjs',
+  // Same authorized staging-push OIDC context as the accepted 9 core checks.
+  // Complete a long two-human Battleship battle before release acceptance.
+  'battleship-two-human-long-match.spec.mjs',
 ];
 if (runLiveTournamentMutation) currentTests.push('tournament-registration-live.spec.mjs');
 
