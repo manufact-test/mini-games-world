@@ -9,6 +9,10 @@ import { initMgwProfileVictoryEffects } from './profile/mgw-profile-victory-effe
 
 const WATCH_URL = `${window.location.origin}/bot/game-watch.php`;
 const WATCH_INTERVAL_MS = 250;
+// Two human Battleship clients already run a 250ms watcher AND a writable
+// game_state heartbeat. Bound their shared PHP/FPM and reaction DB load while
+// preserving quick opponent turns and all other games' accepted intervals.
+const HUMAN_BATTLESHIP_WATCH_INTERVAL_MS = 500;
 const FALLBACK_GAME_POLL_MS = 1500;
 const VOLATILE_KEYS = new Set([
   'time_left',
@@ -33,6 +37,8 @@ const runtime = window.__MGW_V110_READONLY_GAME_SYNC__ ||= {
   timer:null,
   busy:false,
   reactionSeqByGame:new Map(),
+  battleshipPollGameId:'',
+  battleshipPollCount:0,
 };
 if (!(runtime.reactionSeqByGame instanceof Map)) runtime.reactionSeqByGame = new Map();
 
@@ -54,11 +60,25 @@ export function initV110ReadonlyGameSync(){
   scheduleWatch(0);
 }
 
-function scheduleWatch(delay = WATCH_INTERVAL_MS){
+function isOrdinaryHumanBattleshipBattle(game){
+  return String(game?.game_type || game?.type || '') === 'battleship'
+    && String(game?.status || '') === 'active'
+    && String(game?.phase || '') === 'battle'
+    && game?.is_bot_game === false
+    && String(game?.match_source || '') !== 'tournament';
+}
+
+function currentWatchInterval(){
+  return isOrdinaryHumanBattleshipBattle(state.activeGame)
+    ? HUMAN_BATTLESHIP_WATCH_INTERVAL_MS
+    : WATCH_INTERVAL_MS;
+}
+
+function scheduleWatch(delay = currentWatchInterval()){
   window.clearTimeout(runtime.timer);
   runtime.timer = window.setTimeout(async () => {
     await watchCurrentGame();
-    scheduleWatch(WATCH_INTERVAL_MS);
+    scheduleWatch(currentWatchInterval());
   }, Math.max(0, Number(delay || 0)));
 }
 
@@ -78,10 +98,22 @@ async function watchCurrentGame(){
     const fetcher = typeof speed?.rawFetch === 'function'
       ? speed.rawFetch
       : window.fetch.bind(window);
+    // Every second Battleship watch can skip the unrelated reaction DB query.
+    // Keep the regular watch at least once per second to deliver reactions and
+    // preserve existing reaction sequence/deduplication behavior.
+    const humanBattle = isOrdinaryHumanBattleshipBattle(local);
+    if (runtime.battleshipPollGameId !== gameId) {
+      runtime.battleshipPollGameId = gameId;
+      runtime.battleshipPollCount = 0;
+    }
+    if (!humanBattle) runtime.battleshipPollCount = 0;
+    const leanBattleRead = humanBattle && (++runtime.battleshipPollCount % 2 === 0);
+    const watchBody = { initData:getInitData(), sessionId:getSessionId(), gameId };
+    if (leanBattleRead) watchBody.mode = 'battle_poll';
     const response = await fetcher(WATCH_URL, {
       method:'POST',
       headers:{ 'Content-Type':'application/json' },
-      body:JSON.stringify({ initData:getInitData(), sessionId:getSessionId(), gameId }),
+      body:JSON.stringify(watchBody),
       priority:'high',
       cache:'no-store',
     });
