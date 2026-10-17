@@ -18,6 +18,7 @@ on:
       - 'bot/realtime/RuntimeRealtimeDatabaseTrait.php'
       - 'bot/tests/Mvp20_2HiddenSkillModelTest.php'
       - 'bot/tests/Mvp20_2HiddenSkillIntegrationContractTest.php'
+      - 'bot/tests/Mgw20261017HiddenSkillMatchOnlyTest.php'
       - 'bot/tests/Mvp17_1MatchmakingIntegrationContractTest.php'
       - 'bot/tests/Mvp17ReliabilityRegressionTest.php'
       - 'bot/tests/RealtimeDatabaseStoreTest.php'
@@ -88,6 +89,9 @@ jobs:
 
       - name: Run MVP-20.2 runtime/privacy contract
         run: php bot/tests/Mvp20_2HiddenSkillIntegrationContractTest.php
+
+      - name: Guard 30-shot human game against hidden skill DB work
+        run: php bot/tests/Mgw20261017HiddenSkillMatchOnlyTest.php
 
       - name: Preserve MVP-17.1 queue contract
         run: |
