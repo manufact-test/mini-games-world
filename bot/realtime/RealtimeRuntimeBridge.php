@@ -75,6 +75,12 @@ final class RealtimeRuntimeBridge
             // Defer JSON→DB catch-up so cold startup is never held behind external DB
             // projection; the next ordinary non-critical API boundary resumes it.
             'bootstrap',
+            // Passive Profile/History API read responses are authoritative from
+            // their own JSON snapshot (and DB display read). Whole-dataset
+            // JSON->DB projection is unrelated and can block unrelated users
+            // for 15-20 seconds while a different match is being played.
+            'profile',
+            'history',
             'start_search',
             'leave_search',
             'game_state',

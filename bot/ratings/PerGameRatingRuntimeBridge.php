@@ -44,6 +44,12 @@ final class PerGameRatingRuntimeBridge
             // Cold bootstrap must not wait for rating catch-up. Profile/leaderboard
             // owners and the next non-critical API request reconcile projected matches.
             'bootstrap',
+            // Passive Profile/History API read responses are authoritative from
+            // their own JSON snapshot (and DB display read). Whole-dataset
+            // JSON->DB projection is unrelated and can block unrelated users
+            // for 15-20 seconds while a different match is being played.
+            'profile',
+            'history',
             'start_search',
             'leave_search',
             'game_state',
