@@ -27,3 +27,6 @@ jobs:
           node --check app/assets/js/api/client.js
           node --check ops/checks/mgw20261017_human_battleship_fast_watch_contract.mjs
           node ops/checks/mgw20261017_human_battleship_fast_watch_contract.mjs
+          node bot/tests/Mvp19_12BattleshipFireReliabilityTest.mjs
+          php bot/tests/ProductionV102BattleshipServerActionRuntimeTest.php
+          php bot/tests/Mvp155NormalMatchEconomyTest.php
