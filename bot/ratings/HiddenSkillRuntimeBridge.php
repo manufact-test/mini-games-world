@@ -34,13 +34,15 @@ final class HiddenSkillRuntimeBridge
     public function shouldProcessApiAction(string $action): bool
     {
         if (!$this->enabled()) return false;
-        return in_array(strtolower(trim($action)), [
-            'game_action',
-            'make_move',
-            'leave_game',
-            'game_state',
-            'start_search',
-        ], true);
+        // The hidden model is a matchmaking input, never a move/shot reader.
+        // A 30-shot human Battleship match used to execute MySQL pending-match
+        // reconciliation after *every* fire and every game_state heartbeat;
+        // a single 6.8s fire response was observed with the hook still active.
+        // Only the next explicit search may perform this catch-up. The existing
+        // skillBandForUser() also processes pending terminal matches immediately
+        // before assigning the next server-owned matchmaking band, retaining
+        // match-result idempotency and the accepted quality-based pairing.
+        return strtolower(trim($action)) === 'start_search';
     }
 
     public function processProjectedMatches(int $limit = 100): ?array
