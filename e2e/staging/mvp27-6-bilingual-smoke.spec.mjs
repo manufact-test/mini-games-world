@@ -27,6 +27,62 @@ async function oidc() {
   return data.value;
 }
 
+
+/**
+ * Playwright's page.route() disables Chromium's regular HTTP cache for the
+ * entire page. Cold-open Profile QA deliberately intercepts both Profile APIs
+ * for a response-only history fixture; four reloads then download hundreds of
+ * identical game assets and can trigger Hostinger's browser challenge (403
+ * HTML for unrelated /bot/*.php). Restore the browser-cache behavior for
+ * immutable static asset URLs within this one test only.
+ *
+ * Every /bot request, PHP route, auth response and v110 entrypoint still hits
+ * the real staging server on every navigation. Cached bytes come from the
+ * first real HTTP 200 at this exact URL, never from a mock or another build.
+ * Any asset non-200 is returned as-is and is NEVER cached.
+ */
+async function restoreStaticCacheForRoutedColdOpens(page) {
+  const cache = new Map();
+  await page.route('**/app/assets/**', async route => {
+    const request = route.request();
+    if (request.method() !== 'GET') return route.continue();
+    const url = new URL(request.url());
+    const isStatic = url.origin === ORIGIN
+      && /^\/app\/assets\/(?:css|js|media|icons)\/.+\.(?:css|js|svg|webp|png|jpe?g|gif|woff2?|ttf)$/.test(url.pathname);
+    if (!isStatic) return route.continue();
+
+    const key = url.href;
+    let pending = cache.get(key);
+    if (!pending) {
+      pending = (async () => {
+        const response = await route.fetch();
+        if (response.status() !== 200) return { response };
+        return {
+          status: response.status(),
+          contentType: response.headers()['content-type'] || 'application/octet-stream',
+          body: await response.body(),
+        };
+      })();
+      cache.set(key, pending);
+    }
+    try {
+      const cached = await pending;
+      if (cached.response) {
+        if (cache.get(key) === pending) cache.delete(key);
+        return route.fulfill({ response: cached.response });
+      }
+      return route.fulfill({
+        status: cached.status,
+        contentType: cached.contentType,
+        body: cached.body,
+      });
+    } catch (error) {
+      if (cache.get(key) === pending) cache.delete(key);
+      throw error;
+    }
+  });
+}
+
 test('RU/EN renders real Home + Settings on 320px and 390px mobile staging', async ({ browser }) => {
   const context = await browser.newContext({
     locale: 'ru-RU',
@@ -165,6 +221,7 @@ test('Cold-open history hydrate: first Profile entry and full reopen, RU/EN, no 
     expect((await auth.json()).ok).toBe(true);
 
     const page = await context.newPage();
+    await restoreStaticCacheForRoutedColdOpens(page);
     let activeTrialLocale = 'en';
     // Profile bootstrap may finish after the temporary locale preview. Serve
     // the same trial locale in the browser-only canonical account read, so a
