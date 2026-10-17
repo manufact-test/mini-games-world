@@ -92,7 +92,6 @@ assert(owner.includes('if (!unread.length && unreadHint === 0) return;')
   && owner.includes('const hasUnread = unreadHint > 0 ||')
   && owner.includes('if (isNotificationsSheetOpen()) syncSheetHead(visibleSheetItems());'),
   'Server-unread positive with no visible unread cards must retain an actionable mark-all recovery path.');
-  'Canonical manifest must publish the active-shell localized Notification Center successor.');
 
 assert(Number(baseline.cyrillic_lines_total) <= 3373 && Number(baseline.by_scope?.client) <= 1692,
   'Notification Center localization debt must never regress above the accepted post-slice baseline.');
