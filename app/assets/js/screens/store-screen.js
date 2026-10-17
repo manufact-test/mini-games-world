@@ -204,6 +204,9 @@ function renderStore(){
   `);
   bindStoreEvents();
   scheduleBundlePreviewFit(currentRoot());
+  // Profile cosmetic sections decorate the Store after its root is replaced.
+  // Notify them only after the new panel exists, not before renderStore().
+  document.dispatchEvent(new CustomEvent('mgw:store-surface-rendered'));
 }
 
 function renderBalanceHero(){
@@ -911,6 +914,9 @@ function activateStoreTab(nextTab){
   panel.innerHTML = storeState ? renderActiveTab() : '<div class="store-v2-skeleton-grid" aria-hidden="true"><span></span><span></span><span></span><span></span></div>';
   bindPanelEvents(panel);
   scheduleBundlePreviewFit(panel);
+  // Switching back to Profile destroys prior injected cosmetic sections.
+  // Give the canonical decorators an exact post-panel-replacement signal.
+  document.dispatchEvent(new CustomEvent('mgw:store-surface-rendered'));
 }
 
 function activateGameCatalog(gameType){

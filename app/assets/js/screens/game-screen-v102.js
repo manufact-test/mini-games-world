@@ -24,6 +24,10 @@ import { t, formatNumber as formatLocalizedNumber } from '@mgw/i18n';
 
 const GAME_TYPES = new Set(['tictactoe','four_in_a_row','battleship','checkers','reversi','chess','go','domino']);
 const LAUNCH_GAME_POLL_INTERVAL_MS = 300;
+// A dedicated read-only v110 watcher already tracks normal human game changes.
+// Keep authoritative lifecycle/timeout/session heartbeat, but do less heavy
+// JSON-wide game_state work during the two-human Battleship battle itself.
+const HUMAN_BATTLESHIP_AUTHORITATIVE_POLL_MS = 3000;
 const gameText = (key, params = {}) => t(`game_screen.${key}`, params);
 
 const runtime = window.__MGW_V100_GAME_RUNTIME__ ||= {
@@ -140,10 +144,21 @@ export function startGamePolling(gameId){
   window.setTimeout(() => refreshGame(id), Math.min(180, Math.max(60, Number(APP_CONFIG.gameIntervalMs || 450) / 3)));
 }
 
+function isOrdinaryHumanBattleshipBattle(game){
+  return gameTypeOf(game) === 'battleship'
+    && String(game?.status || '') === 'active'
+    && String(game?.phase || '') === 'battle'
+    && game?.is_bot_game === false
+    && String(game?.match_source || '') !== 'tournament';
+}
+
 function gamePollIntervalFor(game){
   const phase = String(game?.launch_phase || '');
   if (phase === 'preparing' || phase === 'countdown') {
     return Math.min(Number(APP_CONFIG.gameIntervalMs || 1500), LAUNCH_GAME_POLL_INTERVAL_MS);
+  }
+  if (isOrdinaryHumanBattleshipBattle(game)) {
+    return Math.max(HUMAN_BATTLESHIP_AUTHORITATIVE_POLL_MS, Number(APP_CONFIG.gameIntervalMs || 1500));
   }
   return Number(APP_CONFIG.gameIntervalMs || 1500);
 }

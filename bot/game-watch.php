@@ -104,9 +104,16 @@ try {
     $payload = json_decode(file_get_contents('php://input') ?: '{}', true);
     if (!is_array($payload)) api_error(ServerLocalization::copy('server.invites.invalid_request', 'Invalid request.'));
 
+    // Cross-device diagnostic only on staging. The authenticated account and
+    // game IDs stay out of logs; timings attribute slow watches to auth,
+    // games.json read/public projection, or the optional reaction DB lookup.
+    $traceWatch = strtolower(trim((string)($config['environment'] ?? ''))) === 'staging';
+    $watchStartedAt = $traceWatch ? microtime(true) : 0.0;
     $tgUser = (new AuthService($config))->getUserFromRequest($payload, false);
+    $authDoneAt = $traceWatch ? microtime(true) : 0.0;
     $userId = trim((string)($tgUser['id'] ?? ''));
     $gameId = clean_string($payload['gameId'] ?? '', 80);
+    $watchMode = clean_string($payload['mode'] ?? '', 24);
     if ($userId === '' || $gameId === '') throw new RuntimeException(ServerLocalization::copy('server.game_runtime.common.game_not_found', 'Game not found.'));
 
     if (clean_string($payload['mode'] ?? '', 24) === 'result') {
@@ -118,18 +125,40 @@ try {
     $catalog = new GameCatalogService($config);
     $games = new ChessRuntimeService($config, $catalog, new GameService($config));
     $storedGames = mgw_game_watch_load_games($config);
+    $snapshotDoneAt = $traceWatch ? microtime(true) : 0.0;
     $candidate = $storedGames[$gameId] ?? null;
 
     $game = null;
     $reaction = null;
+    $reactionStartedAt = 0.0;
+    $reactionElapsedMs = 0.0;
     if (is_array($candidate)) {
         $participants = array_map('strval', $candidate['player_ids'] ?? []);
         if (in_array($userId, $participants, true)) {
             $game = $games->publicGame($candidate, $userId);
-            $reaction = mgw_game_watch_latest_reaction($config, $gameId);
+            // Alternating Battleship fast watches can avoid unnecessary SQL reaction reads.
+            if ($watchMode !== 'battle_poll') {
+                $reactionStartedAt = $traceWatch ? microtime(true) : 0.0;
+                $reaction = mgw_game_watch_latest_reaction($config, $gameId);
+                if ($traceWatch) $reactionElapsedMs = (microtime(true) - $reactionStartedAt) * 1000;
+            }
         }
     }
 
+    if ($traceWatch) {
+        $completedAt = microtime(true);
+        $totalMs = ($completedAt - $watchStartedAt) * 1000;
+        if ($totalMs >= 250 || $reactionElapsedMs >= 100) {
+            error_log(sprintf(
+                '[MGW staging game-watch latency] total_ms=%.1f auth_ms=%.1f snapshot_ms=%.1f projection_ms=%.1f reaction_ms=%.1f',
+                $totalMs,
+                ($authDoneAt - $watchStartedAt) * 1000,
+                ($snapshotDoneAt - $authDoneAt) * 1000,
+                ($completedAt - $snapshotDoneAt) * 1000 - $reactionElapsedMs,
+                $reactionElapsedMs
+            ));
+        }
+    }
     api_ok([
         'game' => $game,
         'reaction' => $reaction,

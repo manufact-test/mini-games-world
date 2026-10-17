@@ -330,7 +330,10 @@ async function refreshNotifications({ announce = false } = {}){
 async function markAllNotificationsRead(){
   invalidateNotificationReads();
   const unread = currentItems().filter(item => !item.read);
-  if (!unread.length) return;
+  // The bell count is server-authoritative and may cover an older item outside
+  // the bounded visible list. Still send mark-all when that count is positive;
+  // otherwise the bell can remain stuck forever with an empty sheet.
+  if (!unread.length && unreadHint === 0) return;
   markAllReadLocally();
   setUnreadCount(0);
   if (isNotificationsSheetOpen()) renderNotifications(visibleSheetItems());
@@ -692,7 +695,9 @@ async function consumeInviteNotification(detail){
 }
 
 function renderSheetHead(values = []){
-  const hasUnread = normalizeItems(values).some(item => !item.read);
+  // The backend can count an older unread notification beyond the displayed
+  // 30 items. Keep the recovery control reachable even on an empty sheet.
+  const hasUnread = unreadHint > 0 || normalizeItems(values).some(item => !item.read);
   return `
     <div class="sheet-head notification-center-head">
       <div><h2>${escapeHtml(t('notifications.title'))}</h2></div>
@@ -706,7 +711,7 @@ function renderSheetHead(values = []){
 
 function syncSheetHead(values){
   const button = document.querySelector('#sheet [data-notifications-mark-all]');
-  if (button instanceof HTMLButtonElement) button.hidden = !normalizeItems(values).some(item => !item.read);
+  if (button instanceof HTMLButtonElement) button.hidden = !(unreadHint > 0 || normalizeItems(values).some(item => !item.read);
 }
 
 function renderLoading(){
@@ -1129,6 +1134,9 @@ function setUnreadCount(value){
   button.setAttribute('aria-label', safe > 0
     ? t('notifications.unread_count', { count:safe })
     : t('notifications.title'));
+  // The server count may arrive after the empty panel has rendered. Update the
+  // recovery action then, instead of leaving its hidden state stale.
+  if (isNotificationsSheetOpen()) syncSheetHead(visibleSheetItems());
 }
 
 function isNotificationsSheetOpen(){

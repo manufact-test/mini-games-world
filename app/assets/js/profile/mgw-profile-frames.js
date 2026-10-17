@@ -76,15 +76,12 @@ function refreshFrameSnapshot(){
     .then(result => {
       if (result?.inventory && typeof result.inventory === 'object') state.profileInventory = result.inventory;
       if (result?.profile && typeof result.profile === 'object') state.mgwProfile = result.profile;
-      if (result?.user && state.user && typeof state.user === 'object') {
-        const balance = Number(result.user.balance ?? state.user.balance ?? 0);
-        state.user = { ...state.user, balance };
-        renderBalances(state.user);
-      }
+      // Profile V2 is a passive inventory read, not the canonical wallet owner.
+      // A delayed response must never roll back the balance already shown by Home.
       scheduleDecorate();
       return state.profileInventory;
     })
-    .catch(() => state.profileInventory)
+    .catch(() => { initialSnapshotAttempted = false; return state.profileInventory; })
     .finally(() => { refreshPromise = null; });
   return refreshPromise;
 }

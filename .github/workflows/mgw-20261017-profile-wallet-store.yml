@@ -1,0 +1,24 @@
+name: MGW 2026-10-17 Profile wallet and Store lifecycle
+on:
+  pull_request:
+    paths:
+      - 'app/assets/js/profile/**'
+      - 'app/assets/js/screens/store-screen.js'
+      - 'app/assets/js/ui.js'
+      - 'app/runtime/client/version-manifest.php'
+      - 'ops/checks/mgw20261017_profile_wallet_store_regression.mjs'
+      - '.github/workflows/mgw-20261017-profile-wallet-store.yml'
+  workflow_dispatch:
+jobs:
+  current_ownership:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 6
+    steps:
+      - uses: actions/checkout@v4
+      - name: Focused wallet and cosmetics invariants
+        run: |
+          node --check ops/checks/mgw20261017_profile_wallet_store_regression.mjs
+          node ops/checks/mgw20261017_profile_wallet_store_regression.mjs
+          node --check app/assets/js/ui.js
+          node --check app/assets/js/screens/store-screen.js
+          node --check app/assets/js/profile/mgw-profile-victory-effects-v4.js
