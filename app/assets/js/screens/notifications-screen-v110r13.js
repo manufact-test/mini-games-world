@@ -1134,6 +1134,9 @@ function setUnreadCount(value){
   button.setAttribute('aria-label', safe > 0
     ? t('notifications.unread_count', { count:safe })
     : t('notifications.title'));
+  // The server count may arrive after the empty panel has rendered. Update the
+  // recovery action then, instead of leaving its hidden state stale.
+  if (isNotificationsSheetOpen()) syncSheetHead(visibleSheetItems());
 }
 
 function isNotificationsSheetOpen(){
