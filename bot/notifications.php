@@ -356,8 +356,12 @@ try {
 
     if ($legacyBridgeAllowed
         && $router->routeFor('notifications') === RuntimeStorageRouter::DRIVER_DATABASE) {
-        if (!$db instanceof ExclusiveSnapshotStorageInterface) {
-            throw new RuntimeException('Notification bridge requires exclusive JSON snapshots.');
+        // The mirror must get a consistent JSON snapshot without freezing all
+        // gameplay writers while MySQL waits on its advisory lock/transaction.
+        // JsonStorageAdapter has a separate projection lock and releases app.lock
+        // before invoking DB I/O; never fall back to an exclusive writer barrier.
+        if (!$db instanceof ProjectionSnapshotStorageInterface) {
+            throw new RuntimeException('Notification bridge requires isolated JSON projection snapshots.');
         }
 
         if ($commands === 1) {
@@ -382,7 +386,8 @@ try {
         }
 
         $runtimeNotifications = new RuntimeNotificationBridgeCoordinator($config, $router);
-        $result = $db->exclusiveReadOnlySections(
+        $notificationProjectionStarted = microtime(true);
+        $result = $db->projectionReadOnlySections(
             ['invites', 'notifications'],
             function (array $snapshot) use (
                 $runtimeNotifications,
@@ -403,6 +408,13 @@ try {
                 ];
             }
         );
+        if (strtolower(trim((string)($config['environment'] ?? ''))) === 'staging') {
+            $projectionMs = (microtime(true) - $notificationProjectionStarted) * 1000;
+            if ($projectionMs >= 250) {
+                // Anonymous latency measurement only. Neither users nor invite tokens are logged.
+                error_log(sprintf('[MGW staging notification DB projection] elapsed_ms=%.1f game_writer_barrier_held=0', $projectionMs));
+            }
+        }
     } elseif ($commands === 1) {
         $result = $db->transaction(function (array &$data) use (
             $notifications,
