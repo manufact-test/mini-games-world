@@ -33,7 +33,7 @@ jobs:
         run: |
           set -euo pipefail
           expected="$(python3 scripts/ci/staging-runtime-fingerprint.py)"
-          curl --fail-with-body -fsS --connect-timeout 10 --max-time 30 \
+          curl --fail-with-body --silent --show-error --connect-timeout 10 --max-time 30 \
             "https://seashell-okapi-889488.hostingersite.com/bot/staging-e2e-readiness.php" > /tmp/mgw-battle-readiness.json
           python3 - "$expected" <<'PY'
           import json,sys
