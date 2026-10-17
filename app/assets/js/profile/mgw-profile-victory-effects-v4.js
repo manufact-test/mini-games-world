@@ -53,6 +53,9 @@ export function initMgwProfileVictoryEffects(){
 
   const start = () => {
     document.addEventListener('mgw:locale-changed', scheduleDecorate);
+    // Store can replace its panel after the inventory event. Recreate this
+    // section against the final panel on each Store render / tab return.
+    document.addEventListener('mgw:store-surface-rendered', scheduleDecorate);
     document.addEventListener('mgw:cosmetic-inventory-changed', event => {
       scheduleDecorate();
       if (String(event?.detail?.slot || '').trim() === VICTORY_EFFECT_SLOT) scheduleResultProbeAfterPaint();
