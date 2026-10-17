@@ -11,6 +11,7 @@ $assert = static function (bool $ok, string $message) use (&$assertions): void {
 
 $api = file_get_contents(dirname(__DIR__) . '/api.php');
 $source = file_get_contents(dirname(__DIR__) . '/storage/JsonDatabase.php');
+$watch = file_get_contents(dirname(__DIR__) . '/game-watch.php');
 $assert(is_string($api) && str_contains($api, "'environment'] ?? ''))) === 'staging'"),
     'Gameplay timing must only be enabled by staging API routing.');
 $assert(is_string($source) && str_contains($source, 'writer_wait_ms=%.1f')
@@ -20,6 +21,12 @@ $assert(strpos($source, "fclose(\$writeBarrierHandle);\n            // Never per
     'Timing log must run after both gameplay locks have been closed.');
 $assert(!str_contains($source, 'mgw_staging_json_latency_trace_user_id'),
     'No account identifiers may be added to anonymous timing logs.');
+$assert(is_string($watch) && str_contains($watch, '[MGW staging game-watch latency]')
+    && str_contains($watch, 'reaction_ms=%.1f')
+    && str_contains($watch, 'snapshot_ms=%.1f'),
+    'Stage trace must distinguish expensive watch projection and reaction SQL time.');
+$assert(str_contains($watch, "\$traceWatch = strtolower(trim((string)(\$config['environment'] ?? ''))) === 'staging'"),
+    'Staging watch diagnostics must not turn on in production.');
 
 $directory = sys_get_temp_dir() . '/mgw-json-latency-'.bin2hex(random_bytes(8));
 try {
