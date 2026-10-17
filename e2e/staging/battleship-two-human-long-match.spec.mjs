@@ -361,13 +361,15 @@ test('BATTLESHIP LONG HUMAN A/B: thirty confirmed shots, watch propagation, sett
     const gameId = String(started.game?.id || started.invite?.game_id || '');
     expect(gameId).toMatch(/^[A-Za-z0-9_-]{8,120}$/);
     expect(started.game?.game_type).toBe('battleship');
-    expect(started.game?.is_bot_game).toBe(false);
+    // The invite start DTO deliberately omits is_bot_game. The participant-
+    // scoped game_state response below owns the authoritative gameplay flag.
     const readiness = await Promise.all([A,B].map(p => testProbePost(p,'/bot/api.php',{
       action:'game_state',gameId,
     })));
     for(const r of readiness){
       expect(r.status).toBe(200);
       expect(r.payload?.ok).toBe(true);
+      expect(r.payload?.game?.is_bot_game).toBe(false);
     }
     await Promise.all([reload(A),reload(B)]);
     await expect.poll(async () => {
