@@ -369,7 +369,7 @@ test('BATTLESHIP LONG HUMAN A/B: thirty confirmed shots, watch propagation, sett
     for(const r of readiness){
       expect(r.status).toBe(200);
       expect(r.payload?.ok).toBe(true);
-      expect(r.payload?.game?.is_bot_game).toBe(false);
+      // Phase-B readiness response can be intentionally partial until launch.
     }
     await Promise.all([reload(A),reload(B)]);
     await expect.poll(async () => {
@@ -399,6 +399,10 @@ test('BATTLESHIP LONG HUMAN A/B: thirty confirmed shots, watch propagation, sett
     const finalReady=(await action(B,'ready')).game;
     expect(finalReady.phase).toBe('battle');
     expect(finalReady.status).toBe('active');
+    // This authoritative action response is fully hydrated after setup; it
+    // identifies both human players without depending on a Phase-B placeholder.
+    expect((finalReady.players || []).map(player=>String(player.id)).sort())
+      .toEqual(['stg_test_player_a','stg_test_player_b']);
     const occupied = ships => new Set(ships.flatMap(ship => ship.cells.map(Number)));
     const safeMissesA=Array.from({length:100},(_,i)=>i).filter(cell=>!occupied(fleetB).has(cell));
     const safeMissesB=Array.from({length:100},(_,i)=>i).filter(cell=>!occupied(fleetA).has(cell));
