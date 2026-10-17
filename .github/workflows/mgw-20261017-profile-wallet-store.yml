@@ -4,6 +4,7 @@ on:
     paths:
       - 'app/assets/js/profile/**'
       - 'app/assets/js/screens/store-screen.js'
+      - 'app/assets/js/screens/profile-screen-v110.js'
       - 'app/assets/js/ui.js'
       - 'app/runtime/client/version-manifest.php'
       - 'ops/checks/mgw20261017_profile_wallet_store_regression.mjs'
@@ -20,5 +21,6 @@ jobs:
           node --check ops/checks/mgw20261017_profile_wallet_store_regression.mjs
           node ops/checks/mgw20261017_profile_wallet_store_regression.mjs
           node --check app/assets/js/ui.js
+          node --check app/assets/js/screens/profile-screen-v110.js
           node --check app/assets/js/screens/store-screen.js
           node --check app/assets/js/profile/mgw-profile-victory-effects-v4.js
