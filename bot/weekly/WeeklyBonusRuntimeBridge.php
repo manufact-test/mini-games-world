@@ -40,6 +40,10 @@ final class WeeklyBonusRuntimeBridge
         // DB parity catches up on the next non-latency-critical API action instead
         // of keeping the player's HTTP response behind external DB I/O.
         return !in_array(strtolower(trim($action)), [
+            // History already merges current JSON transactions/game settlement
+            // with the DB read model; do not run whole-system projections under
+            // a passive history poll during active two-human matches.
+            'history',
             // Bootstrap already returns the canonical weekly JSON state produced
             // inside its transaction. DB projection may catch up on the next
             // ordinary non-critical request instead of blocking first paint.
