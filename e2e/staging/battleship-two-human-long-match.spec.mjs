@@ -417,6 +417,10 @@ test('BATTLESHIP LONG HUMAN A/B: thirty confirmed shots, watch propagation, sett
       const shooter=byId[turn];
       const defender=turn==='stg_test_player_a' ? B : A;
       const cell=misses[turn][fired[turn]++];
+      // The accepted Phase-B clock deliberately inserts a short authoritative
+      // turn handoff. A server fire before turn_starts_at_ms is correctly denied;
+      // measure network/lock latency only for actions after that legal boundary.
+      await waitTurn(shooter,gameId);
       const result=await action(shooter,'fire',{cell});
       expect(result.game.phase).toBe('battle');
       expect(result.game.status).toBe('active');
