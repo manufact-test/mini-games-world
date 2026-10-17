@@ -1,0 +1,42 @@
+name: MGW 2026-10-17 Passive Profile/History no projector stall
+on:
+  pull_request:
+    branches:
+      - agent/mvp-13-2-staging
+    paths:
+      - 'bot/realtime/RealtimeRuntimeBridge.php'
+      - 'bot/ledger/EconomyRuntimeBridge.php'
+      - 'bot/weekly/WeeklyBonusRuntimeBridge.php'
+      - 'bot/ratings/PerGameRatingRuntimeBridge.php'
+      - 'bot/tests/Mgw20261017PassiveProfileHistoryProjectionContractTest.php'
+      - '.github/workflows/mgw-20261017-passive-history-read.yml'
+  push:
+    branches:
+      - agent/mvp-13-2-staging
+    paths:
+      - 'bot/realtime/RealtimeRuntimeBridge.php'
+      - 'bot/ledger/EconomyRuntimeBridge.php'
+      - 'bot/weekly/WeeklyBonusRuntimeBridge.php'
+      - 'bot/ratings/PerGameRatingRuntimeBridge.php'
+      - 'bot/tests/Mgw20261017PassiveProfileHistoryProjectionContractTest.php'
+      - '.github/workflows/mgw-20261017-passive-history-read.yml'
+permissions:
+  contents: read
+jobs:
+  passive-history:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+      - name: Passive read performance and canonical wallet/history regressions
+        run: |
+          set -euo pipefail
+          php -l bot/realtime/RealtimeRuntimeBridge.php
+          php -l bot/ledger/EconomyRuntimeBridge.php
+          php -l bot/weekly/WeeklyBonusRuntimeBridge.php
+          php -l bot/ratings/PerGameRatingRuntimeBridge.php
+          php -l bot/tests/Mgw20261017PassiveProfileHistoryProjectionContractTest.php
+          php bot/tests/Mgw20261017PassiveProfileHistoryProjectionContractTest.php
+          php bot/tests/Mvp17_5HistoryChronologyRegressionTest.php
+          php bot/tests/Mvp17_5ResultHistoryEconomyPresentationTest.php
+          php bot/tests/Mvp155NormalMatchEconomyTest.php
