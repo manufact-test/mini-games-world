@@ -256,9 +256,6 @@ export const api = {
   startSearch: (boardSize, gameType = 'tictactoe') => request('start_search', { boardSize, gameType }),
   leaveSearch: () => request('leave_search'),
   gameState: (gameId = null) => request('game_state', { gameId }),
-  // Lightweight participant-scoped snapshot; use only for active two-human
-  // Battleship between regular game_state heartbeat/cleanup requests.
-  battleWatch: gameId => requestUrl(RESULT_WATCH_URL, { gameId, mode:'battle_poll' }),
   gameAction: (gameId, gameAction) => request('game_action', { gameId, gameAction }),
   makeMove: (gameId, cell) => request('make_move', { gameId, cell }),
   leaveGame: (gameId) => request('leave_game', { gameId }),
