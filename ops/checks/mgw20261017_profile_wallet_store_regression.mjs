@@ -17,6 +17,20 @@ for (const file of files) {
   assert.match(source, /api\.profileV2\(\)/,
     file + ': inventory still must be hydrated from Profile V2.');
 }
+const profile = read('app/assets/js/screens/profile-screen-v110.js');
+assert.match(profile, /refreshWalletAfterProfileEntry\(\);/,
+  'Actual Profile entry must refresh the wallet after an external Admin grant.');
+assert.match(profile, /api\.bootstrap\(\)/,
+  'Only existing canonical runtime bootstrap can confirm the current spendable balance.');
+assert.match(profile, /state\.user\?\.balance !== initialBalance/,
+  'Late wallet reads must not roll back a newer in-flight game/store mutation.');
+assert.match(profile, /String\(authoritative\.id \|\| ''\) !== userId/,
+  'Wallet refresh may not attach to a different authenticated player.');
+assert.match(profile, /Number\.isSafeInteger\(nextBalance\) \|\| nextBalance < 0/,
+  'Unexpected, negative or noninteger balances must never paint a fabricated value.');
+assert.match(profile, /renderBalances\(state\.user\)/,
+  'Refresh must update the Home/Profile shared balance without remounting Profile.');
+
 const ui = read('app/assets/js/ui.js');
 assert.match(ui, /#screen-profile \.profile-v2-balance strong/,
   'Shared wallet writer must also refresh already-rendered Profile coin balance.');
