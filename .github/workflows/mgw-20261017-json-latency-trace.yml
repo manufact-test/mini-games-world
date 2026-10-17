@@ -1,0 +1,25 @@
+name: MGW 2026-10-17 staging JSON gameplay latency trace
+on:
+  pull_request:
+    paths:
+      - 'bot/api.php'
+      - 'bot/storage/JsonDatabase.php'
+      - 'bot/tests/Mgw20261017StagingJsonLatencyContractTest.php'
+      - '.github/workflows/mgw-20261017-json-latency-trace.yml'
+  workflow_dispatch:
+jobs:
+  trace_contract:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 6
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          coverage: none
+      - name: Syntax and traced/untraced transaction regression
+        run: |
+          php -l bot/api.php
+          php -l bot/storage/JsonDatabase.php
+          php -l bot/tests/Mgw20261017StagingJsonLatencyContractTest.php
+          php bot/tests/Mgw20261017StagingJsonLatencyContractTest.php
