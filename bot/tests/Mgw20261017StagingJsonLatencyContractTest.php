@@ -13,8 +13,9 @@ $api = file_get_contents(dirname(__DIR__) . '/api.php');
 $source = file_get_contents(dirname(__DIR__) . '/storage/JsonDatabase.php');
 $assert(is_string($api) && str_contains($api, "'environment'] ?? ''))) === 'staging'"),
     'Gameplay timing must only be enabled by staging API routing.');
-$assert(is_string($source) && str_contains($source, 'writer_wait_ms=%.1f'),
-    'Measure the writer lock rather than only total HTTP latency.');
+$assert(is_string($source) && str_contains($source, 'writer_wait_ms=%.1f')
+    && str_contains($source, 'cleanup_ms=%.1f'),
+    'Measure both writer lock wait and periodic cross-engine cleanup, not only HTTP time.');
 $assert(strpos($source, "fclose(\$writeBarrierHandle);\n            // Never perform filesystem logging") !== false,
     'Timing log must run after both gameplay locks have been closed.');
 $assert(!str_contains($source, 'mgw_staging_json_latency_trace_user_id'),
