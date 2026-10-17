@@ -1,0 +1,32 @@
+name: MGW 2026-10-17 two-human Battleship read-only poll
+on:
+  pull_request:
+    paths:
+      - 'app/assets/js/screens/game-screen-v102.js'
+      - 'app/assets/js/api/client.js'
+      - 'bot/game-watch.php'
+      - 'app/runtime/client/version-manifest.php'
+      - 'ops/checks/mgw20261017_human_battleship_fast_watch_contract.mjs'
+      - '.github/workflows/mgw-20261017-battleship-human-readonly-poll.yml'
+  workflow_dispatch:
+jobs:
+  battle_poll_policy:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 6
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          coverage: none
+      - name: Two-human polling cadence, security and fallback contracts
+        run: |
+          php -l bot/game-watch.php
+          php -l app/runtime/client/version-manifest.php
+          node --check app/assets/js/screens/game-screen-v102.js
+          node --check app/assets/js/api/client.js
+          node --check ops/checks/mgw20261017_human_battleship_fast_watch_contract.mjs
+          node ops/checks/mgw20261017_human_battleship_fast_watch_contract.mjs
+          node bot/tests/Mvp19_12BattleshipFireReliabilityTest.mjs
+          php bot/tests/ProductionV102BattleshipServerActionRuntimeTest.php
+          php bot/tests/Mvp155NormalMatchEconomyTest.php

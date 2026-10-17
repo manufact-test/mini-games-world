@@ -53,6 +53,9 @@ export function initMgwProfileVictoryEffects(){
 
   const start = () => {
     document.addEventListener('mgw:locale-changed', scheduleDecorate);
+    // Store can replace its panel after the inventory event. Recreate this
+    // section against the final panel on each Store render / tab return.
+    document.addEventListener('mgw:store-surface-rendered', scheduleDecorate);
     document.addEventListener('mgw:cosmetic-inventory-changed', event => {
       scheduleDecorate();
       if (String(event?.detail?.slot || '').trim() === VICTORY_EFFECT_SLOT) scheduleResultProbeAfterPaint();
@@ -252,15 +255,12 @@ function refreshSnapshot(){
     .then(result => {
       if (result?.inventory && typeof result.inventory === 'object') state.profileInventory = result.inventory;
       if (result?.profile && typeof result.profile === 'object') state.mgwProfile = result.profile;
-      if (result?.user && state.user && typeof state.user === 'object') {
-        const balance = Number(result.user.balance ?? state.user.balance ?? 0);
-        state.user = { ...state.user, balance };
-        renderBalances(state.user);
-      }
+      // Profile V2 is a passive inventory read, not the canonical wallet owner.
+      // A delayed response must never roll back the balance already shown by Home.
       scheduleDecorate();
       return state.profileInventory;
     })
-    .catch(() => state.profileInventory)
+    .catch(() => { snapshotAttempted = false; return state.profileInventory; })
     .finally(() => { refreshPromise = null; });
   return refreshPromise;
 }

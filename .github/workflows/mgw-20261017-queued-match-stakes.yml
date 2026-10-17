@@ -1,0 +1,24 @@
+name: MGW 2026-10-17 queued human match stake guard
+on:
+  pull_request:
+    paths:
+      - 'bot/services/GameService.php'
+      - 'bot/tests/Mgw20261017QueuedMatchStakeInvariantTest.php'
+      - '.github/workflows/mgw-20261017-queued-match-stakes.yml'
+  workflow_dispatch:
+jobs:
+  queued_stake_safety:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 7
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          coverage: none
+      - name: Syntax, stale-funded queue, canonical ledger
+        run: |
+          php -l bot/services/GameService.php
+          php -l bot/tests/Mgw20261017QueuedMatchStakeInvariantTest.php
+          php bot/tests/Mgw20261017QueuedMatchStakeInvariantTest.php
+          php bot/tests/Mvp155NormalMatchEconomyTest.php

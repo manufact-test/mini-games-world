@@ -21,7 +21,13 @@ function mgw_cleanup_games_if_due(array &$data, ChessRuntimeService $games, bool
         return;
     }
 
+    $cleanupStartedAt = (string)($GLOBALS['mgw_staging_json_latency_trace'] ?? '') === 'game_state'
+        ? microtime(true)
+        : 0.0;
     $games->cleanup($data);
+    if ($cleanupStartedAt > 0.0) {
+        $GLOBALS['mgw_staging_json_cleanup_ms'] = (microtime(true) - $cleanupStartedAt) * 1000;
+    }
     $data['system']['game_cleanup_at'] = now_iso();
 }
 
@@ -188,6 +194,18 @@ try {
         } catch (Throwable $presenceError) {
             error_log('Mini Games World bootstrap presence failed: ' . $presenceError->getMessage());
         }
+    }
+
+    // Staging-only, privacy-safe lock timing: identify gameplay request shape
+    // before the JSON transaction, without persisting any user/game IDs.
+    // Successful Battleship fires are always logged; normal state polls only
+    // when their JSON transaction exceeds 250ms. Production stays uninstrumented.
+    if (strtolower(trim((string)($config['environment'] ?? ''))) === 'staging') {
+        $requestGameAction = is_array($payload['gameAction'] ?? null) ? $payload['gameAction'] : [];
+        $requestActionType = trim((string)($requestGameAction['type'] ?? $payload['actionType'] ?? ''));
+        $GLOBALS['mgw_staging_json_latency_trace'] = $action === 'game_state'
+            ? 'game_state'
+            : ($action === 'game_action' && $requestActionType === 'fire' ? 'battleship_fire' : '');
     }
 
     $result = $db->transaction(function (array &$data) use ($action, $payload, $tgUser, $users, $games, $gameCatalog, $gameActions, $matchPreparationRuntime, $shop, $payments, $sessions, $statsService, $history, $weeklyMatch, $runtimeHiddenSkillBridge, $sessionId, $deviceId, $config) {

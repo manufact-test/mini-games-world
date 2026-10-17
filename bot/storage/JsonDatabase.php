@@ -56,6 +56,10 @@ final class JsonDatabase
 
     public function transaction(callable $callback): mixed
     {
+        // Enabled only for staging game requests by bot/api.php. No user IDs logged.
+        $trace = (string)($GLOBALS['mgw_staging_json_latency_trace'] ?? '');
+        $traced = in_array($trace, ['battleship_fire', 'game_state'], true);
+        $startedAt = $traced ? microtime(true) : 0.0;
         $writeBarrierHandle = fopen($this->writeBarrierFile, 'c+');
         if (!$writeBarrierHandle) {
             throw new RuntimeException('Не удалось открыть writer barrier-файл.');
@@ -74,15 +78,19 @@ final class JsonDatabase
             if (!flock($writeBarrierHandle, LOCK_SH)) {
                 throw new RuntimeException('Не удалось открыть writer barrier.');
             }
+            $barrierAcquiredAt = $traced ? microtime(true) : 0.0;
             if (!flock($lockHandle, LOCK_EX)) {
                 throw new RuntimeException('Не удалось заблокировать хранилище.');
             }
+            $writerAcquiredAt = $traced ? microtime(true) : 0.0;
             if (is_file($this->writeBlockFile)) {
                 throw new RuntimeException('Хранилище временно доступно только для чтения. Повторите действие после завершения технической проверки.');
             }
             $db = $this->loadAll();
+            $loadedAt = $traced ? microtime(true) : 0.0;
             $before = $db;
             $result = $callback($db);
+            $callbackFinishedAt = $traced ? microtime(true) : 0.0;
 
             // Each published projection-relevant mutation owns a unique marker.
             // A projector may clear only the exact generation it snapped; a
@@ -92,10 +100,28 @@ final class JsonDatabase
             }
 
             $this->saveChanged($before, $db);
+            $finishedAt = $traced ? microtime(true) : 0.0;
             flock($lockHandle, LOCK_UN);
             flock($writeBarrierHandle, LOCK_UN);
             fclose($lockHandle);
             fclose($writeBarrierHandle);
+            // Never perform filesystem logging while gameplay's writer lock is held.
+            if ($traced) {
+                $totalMs = ($finishedAt - $startedAt) * 1000;
+                if ($trace === 'battleship_fire' || $totalMs >= 250) {
+                    error_log(sprintf(
+                        '[MGW staging JSON latency] action=%s total_ms=%.1f barrier_wait_ms=%.1f writer_wait_ms=%.1f load_ms=%.1f callback_ms=%.1f persist_ms=%.1f cleanup_ms=%.1f',
+                        $trace,
+                        $totalMs,
+                        ($barrierAcquiredAt - $startedAt) * 1000,
+                        ($writerAcquiredAt - $barrierAcquiredAt) * 1000,
+                        ($loadedAt - $writerAcquiredAt) * 1000,
+                        ($callbackFinishedAt - $loadedAt) * 1000,
+                        ($finishedAt - $callbackFinishedAt) * 1000,
+                        (float)($GLOBALS['mgw_staging_json_cleanup_ms'] ?? 0)
+                    ));
+                }
+            }
             return $result;
         } catch (Throwable $e) {
             flock($lockHandle, LOCK_UN);

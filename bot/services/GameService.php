@@ -140,20 +140,43 @@ final class GameService
         $bet = (int)($queueItem['bet'] ?? ($this->config['match_bet'] ?? 10));
         $boardSize = (int)($queueItem['board_size'] ?? 3);
 
+        // The queue is an intention to play, not a frozen coin reservation.
+        // Revalidate spendable coins after waiting: a purchase/compensation
+        // can change the balance while a queued player waits for an opponent.
+        $balanceKey = UnifiedBalanceRuntimeState::FIELD;
+        if ($bet < 0 || (int)($user[$balanceKey] ?? 0) < $bet) {
+            unset($db['queue'][$queueIndex]);
+            $db['queue'] = array_values($db['queue']);
+            $user['status'] = 'idle';
+            $user['current_game_id'] = null;
+            return null;
+        }
+
         // Before falling back to a bot, try once more to find a human opponent with the same terms.
         $opponentIndex = $this->findHumanOpponentIndex($db, $userId, $room, $bet, $boardSize);
         if ($opponentIndex !== null) {
             $opponentItem = $db['queue'][$opponentIndex];
             $opponentId = (string)$opponentItem['user_id'];
-            $opponent =& $db['users'][$opponentId];
+            if (!isset($db['users'][$opponentId])
+                || (int)($db['users'][$opponentId][$balanceKey] ?? 0) < $bet) {
+                // A queued opponent no longer able to pay must not cause a
+                // negative balance. Leave the funded caller eligible for its
+                // normal bot fallback, without charging either player twice.
+                unset($db['queue'][$opponentIndex]);
+                if (isset($db['users'][$opponentId])) {
+                    $db['users'][$opponentId]['status'] = 'idle';
+                    $db['users'][$opponentId]['current_game_id'] = null;
+                }
+            } else {
+                $opponent =& $db['users'][$opponentId];
+                foreach ([$queueIndex, $opponentIndex] as $idx) {
+                    unset($db['queue'][$idx]);
+                }
+                $db['queue'] = array_values($db['queue']);
 
-            foreach ([$queueIndex, $opponentIndex] as $idx) {
-                unset($db['queue'][$idx]);
+                $game = $this->createGame($db, $user, $opponent, $room, $bet, $boardSize);
+                return $game;
             }
-            $db['queue'] = array_values($db['queue']);
-
-            $game = $this->createGame($db, $user, $opponent, $room, $bet, $boardSize);
-            return $game;
         }
 
         unset($db['queue'][$queueIndex]);
@@ -522,6 +545,16 @@ final class GameService
     private function createGame(array &$db, array &$a, array &$b, string $room, int $bet, int $boardSize): array
     {
         $balanceKey = UnifiedBalanceRuntimeState::FIELD;
+
+        // Final invariant at the debit owner (also protects future callers).
+        // Never create a game or debit either balance with an unfunded stake.
+        if ($bet < 0 || (int)($a[$balanceKey] ?? 0) < $bet
+            || (int)($b[$balanceKey] ?? 0) < $bet) {
+            throw new RuntimeException(ServerLocalization::copy(
+                'server.game_runtime.common.insufficient_entry',
+                'Not enough coins to enter.'
+            ));
+        }
 
         $a[$balanceKey] = (int)($a[$balanceKey] ?? 0) - $bet;
         $b[$balanceKey] = (int)($b[$balanceKey] ?? 0) - $bet;
