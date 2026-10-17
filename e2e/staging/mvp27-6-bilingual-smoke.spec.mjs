@@ -91,6 +91,7 @@ test('RU/EN renders real Home + Settings on 320px and 390px mobile staging', asy
     isMobile: true,
     hasTouch: true,
   });
+  let page = null;
   try {
     const response = await context.request.post(AUTH_URL, {
       headers: {
@@ -106,7 +107,7 @@ test('RU/EN renders real Home + Settings on 320px and 390px mobile staging', asy
     const cookie = (await context.cookies(ORIGIN)).find(entry => entry.name === 'mgw_staging_test_session');
     expect(cookie?.httpOnly).toBe(true);
 
-    const page = await context.newPage();
+    page = await context.newPage();
     // This is a read-only locale preview, NOT a saved account preference.
     // A delayed authenticated Profile read is allowed to restore the account's
     // real preferred_locale; isolate that owner within this browser-only smoke
@@ -193,6 +194,12 @@ test('RU/EN renders real Home + Settings on 320px and 390px mobile staging', asy
       }
     }
   } finally {
+    // A late background Profile V2 read may still be intercepted after UI
+    // assertions complete. Detach the route handlers before context teardown:
+    // Playwright must not report a successful UI trial as failed solely because
+    // route.fetch() lost its browser context during cleanup.
+    // All in-test HTTP responses and assertions remain strict and unchanged.
+    if (page) await page.unrouteAll({ behavior:'ignoreErrors' });
     await context.close();
   }
 });
@@ -207,6 +214,7 @@ test('Cold-open history hydrate: first Profile entry and full reopen, RU/EN, no 
     locale:'en-US',
     timezoneId:'Europe/Vilnius',
   });
+  let page = null;
   try {
     const auth = await context.request.post(AUTH_URL, {
       headers: {
@@ -220,7 +228,7 @@ test('Cold-open history hydrate: first Profile entry and full reopen, RU/EN, no 
     expect(auth.status()).toBe(200);
     expect((await auth.json()).ok).toBe(true);
 
-    const page = await context.newPage();
+    page = await context.newPage();
     await restoreStaticCacheForRoutedColdOpens(page);
     let activeTrialLocale = 'en';
     // Profile bootstrap may finish after the temporary locale preview. Serve
@@ -332,6 +340,12 @@ test('Cold-open history hydrate: first Profile entry and full reopen, RU/EN, no 
       await expect(page.locator('html')).toHaveAttribute('lang', trial.locale);
     }
   } finally {
+    // A late background Profile V2 read may still be intercepted after UI
+    // assertions complete. Detach the route handlers before context teardown:
+    // Playwright must not report a successful UI trial as failed solely because
+    // route.fetch() lost its browser context during cleanup.
+    // All in-test HTTP responses and assertions remain strict and unchanged.
+    if (page) await page.unrouteAll({ behavior:'ignoreErrors' });
     await context.close();
   }
 });
