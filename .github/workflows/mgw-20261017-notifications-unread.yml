@@ -5,6 +5,9 @@ on:
       - 'app/assets/js/screens/notifications-screen-v110r13.js'
       - 'app/runtime/client/version-manifest.php'
       - 'ops/checks/mgw20261017_notifications_unread_recovery_contract.mjs'
+      - 'bot/notifications.php'
+      - 'bot/services/NotificationVisibleSelection.php'
+      - 'bot/tests/NotificationVisibleSelectionTest.php'
       - '.github/workflows/mgw-20261017-notifications-unread.yml'
   workflow_dispatch:
 jobs:
@@ -19,3 +22,7 @@ jobs:
           node --check ops/checks/mgw20261017_notifications_unread_recovery_contract.mjs
           node ops/checks/mgw20261017_notifications_unread_recovery_contract.mjs
           node ops/checks/mvp27_1_notification_center_localization_contract.mjs
+          php -l bot/notifications.php
+          php -l bot/services/NotificationVisibleSelection.php
+          php -l bot/tests/NotificationVisibleSelectionTest.php
+          php bot/tests/NotificationVisibleSelectionTest.php
