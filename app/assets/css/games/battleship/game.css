@@ -53,7 +53,8 @@
 /* A fire stays pending until the authoritative server response. On touch
    devices a wait cursor does not exist, so give the selected cell a visible,
    non-committal acknowledgement without pretending it was a hit or a miss. */
-.battleship-cell.mgw-pending-shot{
+.battleship-cell.mgw-pending-shot,
+#gameBoard[data-game-type="battleship"][data-battleship-map] .battleship-cell.unknown.mgw-pending-shot{
   cursor:wait;
   position:relative;
   border-color:rgba(206,227,255,.95);
@@ -79,7 +80,8 @@
   to{box-shadow:inset 0 0 0 2px rgba(232,247,255,1),0 0 0 3px rgba(118,174,255,.65),0 0 18px rgba(108,164,255,.68)}
 }
 @media (prefers-reduced-motion:reduce){
-  .battleship-cell.mgw-pending-shot{animation:none}
+  .battleship-cell.mgw-pending-shot,
+  #gameBoard[data-game-type="battleship"][data-battleship-map] .battleship-cell.unknown.mgw-pending-shot{animation:none}
 }
 .battleship-cell.ship{background:linear-gradient(145deg,rgba(166,183,209,.96),rgba(87,105,136,.96));box-shadow:inset 0 0 0 1px rgba(255,255,255,.2)}
 .battleship-cell.pending{background:linear-gradient(145deg,rgba(151,121,255,.98),rgba(91,63,210,.98));box-shadow:0 0 0 2px rgba(184,166,255,.52),0 0 16px rgba(124,92,255,.48);animation:battleship-pending-pulse .75s ease-in-out infinite alternate}
