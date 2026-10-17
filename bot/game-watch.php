@@ -116,15 +116,6 @@ try {
         ]);
     }
 
-    // The fast-path reads a separate snapshot outside the canonical writable
-    // transaction. Only enable it when the configured reader is explicitly
-    // the same JSON backend; mixed/DB-primary rehearsals must use the normal
-    // game_state route instead of risking projection lag or missing lifecycle.
-    $driver = strtolower(trim((string)($config['storage_driver'] ?? 'json')));
-    if ($watchMode === 'battle_poll' && $driver !== 'json' && $driver !== '') {
-        throw new RuntimeException(ServerLocalization::copy('server.game_runtime.common.state_updating', 'The game state is updating.'));
-    }
-
     $catalog = new GameCatalogService($config);
     $games = new ChessRuntimeService($config, $catalog, new GameService($config));
     $storedGames = mgw_game_watch_load_games($config);
