@@ -330,7 +330,10 @@ async function refreshNotifications({ announce = false } = {}){
 async function markAllNotificationsRead(){
   invalidateNotificationReads();
   const unread = currentItems().filter(item => !item.read);
-  if (!unread.length) return;
+  // The bell count is server-authoritative and may cover an older item outside
+  // the bounded visible list. Still send mark-all when that count is positive;
+  // otherwise the bell can remain stuck forever with an empty sheet.
+  if (!unread.length && unreadHint === 0) return;
   markAllReadLocally();
   setUnreadCount(0);
   if (isNotificationsSheetOpen()) renderNotifications(visibleSheetItems());
