@@ -1,0 +1,32 @@
+name: MGW 2026-10-17 Notification DB projection gameplay isolation
+on:
+  pull_request:
+    branches:
+      - agent/mvp-13-2-staging
+    paths:
+      - 'bot/notifications.php'
+      - 'bot/tests/ProductionMvp14NotificationBridgeSerializedSnapshotTest.php'
+      - '.github/workflows/mgw-20261017-notification-gameplay-lock-isolation.yml'
+  push:
+    branches:
+      - agent/mvp-13-2-staging
+    paths:
+      - 'bot/notifications.php'
+      - 'bot/tests/ProductionMvp14NotificationBridgeSerializedSnapshotTest.php'
+      - '.github/workflows/mgw-20261017-notification-gameplay-lock-isolation.yml'
+permissions:
+  contents: read
+jobs:
+  notification-projection:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - name: Verify isolated notification projection and DB atomicity
+        run: |
+          set -euo pipefail
+          php -l bot/notifications.php
+          php -l bot/tests/ProductionMvp14NotificationBridgeSerializedSnapshotTest.php
+          php bot/tests/ProductionMvp14NotificationBridgeSerializedSnapshotTest.php
+          php bot/tests/RuntimeNotificationBridgeCoordinatorTest.php
+          php bot/tests/NotificationRuntimeAuditSourceTest.php
