@@ -14,8 +14,10 @@ assert.match(gameScreen, /node\.classList\.add\(descriptor\.className\)/,
   'Pending shot must be projected onto the actual tapped cell.');
 assert.match(optimistic, /className:'mgw-pending-shot'/,
   'Battleship must retain the dedicated pending-shot marker.');
-assert.match(css, /\.battleship-cell\.mgw-pending-shot\s*\{[^}]*background:/s,
+assert.match(css, /\.battleship-cell\.unknown\.mgw-pending-shot\s*\{[^}]*background:/s,
   'Pending shot must have a visible background independent of hover or cursor.');
+assert.match(css, /#gameBoard\[data-game-type="battleship"\]\[data-battleship-map\] \.battleship-cell\.unknown\.mgw-pending-shot/,
+  'Feedback must outrank every paid map theme on iPhone as well.');
 assert.match(css, /\.battleship-cell\.mgw-pending-shot::after\s*\{[^}]*content:'…'/s,
   'Touch users must see a neutral pending acknowledgment, not a fake hit/miss.');
 assert.match(css, /prefers-reduced-motion:reduce/,
