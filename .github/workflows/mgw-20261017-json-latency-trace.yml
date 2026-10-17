@@ -3,6 +3,7 @@ on:
   pull_request:
     paths:
       - 'bot/api.php'
+      - 'bot/game-watch.php'
       - 'bot/storage/JsonDatabase.php'
       - 'bot/tests/Mgw20261017StagingJsonLatencyContractTest.php'
       - '.github/workflows/mgw-20261017-json-latency-trace.yml'
@@ -20,6 +21,7 @@ jobs:
       - name: Syntax and traced/untraced transaction regression
         run: |
           php -l bot/api.php
+          php -l bot/game-watch.php
           php -l bot/storage/JsonDatabase.php
           php -l bot/tests/Mgw20261017StagingJsonLatencyContractTest.php
           php bot/tests/Mgw20261017StagingJsonLatencyContractTest.php
