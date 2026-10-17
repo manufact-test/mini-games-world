@@ -32,10 +32,10 @@ $assert(str_contains($history, '$repository->read($userId, $limit)')
     && str_contains($history, '$this->mergeCurrentMatchPresentation($history, $db, $userId)'),
     'History continues to read the DB projection while preserving current JSON match overlay.');
 $assert(str_contains($history, "['game_entry', 'game_win', 'game_refund']")
-    && str_contains($history, "'ledger_delta' => $ledgerDelta"),
+    && str_contains($history, "'ledger_delta' => \$ledgerDelta"),
     'History economy remains based on actual JSON balance-change entries, never synthetic credits.');
 $assert(str_contains($api, "'__history_snapshot' => [")
-    && str_contains($api, "$result['history'] = $history->userHistory("),
+    && str_contains($api, "\$result['history'] = \$history->userHistory("),
     'History snapshot and asynchronous-from-game-writer presentation remain unchanged.');
 $assert(str_contains($read('core/bootstrap.php'), '$runtimeRealtimeBridge->synchronizeCurrentJson();'),
     'The explicit realtime bridge remains available for authorized non-passive API work.');
