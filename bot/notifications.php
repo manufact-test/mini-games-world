@@ -3,6 +3,7 @@ declare(strict_types=1);
 
 require __DIR__ . '/core/bootstrap.php';
 require_once dirname(__DIR__) . '/app/runtime/localization/LocalizationCatalog.php';
+require_once __DIR__ . '/services/NotificationVisibleSelection.php';
 
 function mgw_notification_copy(string $key, array $params = [], string $emergencyFallback = ''): string
 {
@@ -196,8 +197,13 @@ function mgw_visible_notifications(
 ): array {
     $invites = mgw_notification_invites_by_token($data);
     $rawById = mgw_notification_raw_by_id($data, $userId);
-    $items = $notifications->userNotifications($data, $userId, max(60, $limit * 3));
-    $visible = [];
+    // The bell counts *all* eligible unread events. Restricting the source
+    // to the latest 60 before applying delivery/invite filters can hide an
+    // older unread event while the bell still truthfully displays "1".
+    // Read every active event for this user, then enforce the visible limit.
+    $sourceLimit = max(60, count($data['notifications'] ?? []));
+    $items = $notifications->userNotifications($data, $userId, $sourceLimit);
+    $eligible = [];
 
     foreach ($items as $item) {
         $raw = $rawById[(string)($item['id'] ?? '')] ?? $item;
@@ -207,9 +213,18 @@ function mgw_visible_notifications(
         if (NotificationCenterV2Policy::isExpired($raw, $invite)) continue;
         if (!mgw_notification_is_visible($item, $invite, $userId)) continue;
 
-        $item = mgw_notification_decorate($item, $invite, $userId);
-        $item = mgw_notification_apply_v2_contract($item, $raw, $invite);
-        $item['actions'] = mgw_notification_actions($item, $invite, $userId);
+        $eligible[] = ['item' => $item, 'raw' => $raw, 'invite' => $invite];
+    }
+
+    // Show unread first (newest-first within each group), then recent read
+    // events. With a limited sheet, a server-counted unread item must never be
+    // hidden behind dozens of already-read or expired items.
+    $visible = [];
+    foreach (NotificationVisibleSelection::select($eligible, $limit) as $entry) {
+        $item = mgw_notification_decorate($entry['item'], $entry['invite'], $userId);
+        $item = mgw_notification_apply_v2_contract($item, $entry['raw'], $entry['invite']);
+        $item['actions'] = mgw_notification_actions($item, $entry['invite'], $userId);
+        $invite = $entry['invite'];
         if (is_array($invite)) {
             $item['invite_status'] = (string)($invite['status'] ?? '');
             $item['game_title'] = (string)($invite['game_title'] ?? '');
@@ -219,7 +234,6 @@ function mgw_visible_notifications(
             $item['invite_snapshot'] = $inviteViews->notificationSnapshot($invite, $userId);
         }
         $visible[] = $item;
-        if (count($visible) >= $limit) break;
     }
 
     return $visible;
