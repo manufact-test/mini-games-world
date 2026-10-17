@@ -55,7 +55,7 @@ $result = $service->maybeCreateBotGameForSearchingUser($db,$db['users']['a']);
 $assert($result === null,'Underfunded caller cannot enter another match.');
 $assert($db['users']['a']['balance'] === $entry-1,'No coins deducted from underfunded caller.');
 $assert($db['users']['a']['status'] === 'idle','Unfunded search is ended.');
-$assert(count($db['queue']) === 1 && $db['queue'][0]['user_id'] === 'b','Other funded player's queue survives.');
+$assert(count($db['queue']) === 1 && $db['queue'][0]['user_id'] === 'b',"Other funded player queue survives.");
 $assert($db['games'] === [] && $db['transactions'] === [],'Unfunded caller creates neither game nor ledger entry.');
 
 // When only the opponent became underfunded, remove their stale offer and
@@ -75,9 +75,6 @@ $result = $service->maybeCreateBotGameForSearchingUser($db,$db['users']['a']);
 $assert(is_array($result) && empty($result['is_bot_game']),'Two funded peers create a human match.');
 $assert($db['users']['a']['balance'] === 200,'Human A debited exactly once.');
 $assert($db['users']['b']['balance'] === 200,'Human B debited exactly once.');
-$changes = array_values(array_filter($db['transactions'], static fn(array $t): bool =>
-    ($t['type'] ?? '') === 'balance_change' && ($t['reason'] ?? '') === 'game_entry'
-));
 $entries = array_values(array_filter($db['transactions'],static fn(array $t): bool =>
     ($t['type'] ?? '') === 'balance_change'
 ));
