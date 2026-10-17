@@ -711,7 +711,7 @@ function renderSheetHead(values = []){
 
 function syncSheetHead(values){
   const button = document.querySelector('#sheet [data-notifications-mark-all]');
-  if (button instanceof HTMLButtonElement) button.hidden = !(unreadHint > 0 || normalizeItems(values).some(item => !item.read);
+  if (button instanceof HTMLButtonElement) button.hidden = !(unreadHint > 0 || normalizeItems(values).some(item => !item.read));
 }
 
 function renderLoading(){
