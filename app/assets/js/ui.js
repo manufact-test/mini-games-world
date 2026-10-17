@@ -1,5 +1,5 @@
 import { state } from './state.js?v=27';
-import { t, formatDate as formatLocalizedDate } from '@mgw/i18n';
+import { t, formatDate as formatLocalizedDate, formatNumber } from '@mgw/i18n';
 
 const PROFILE_NAME_COLOR_IDS = new Set([
   'profile-name-color-sky',
@@ -79,6 +79,16 @@ export function renderUser(user){
 export function renderBalances(user){
   const unified = document.getElementById('balanceUnified');
   if (unified) unified.textContent = user?.balance ?? '—';
+
+  // Profile keeps its accepted cached DOM on navigation. Keep that visible
+  // balance projection in sync with the same canonical shared wallet writer;
+  // a passive Profile V2 read must not become a second balance owner.
+  const profileBalance = document.querySelector('#screen-profile .profile-v2-balance strong');
+  const balance = Number(user?.balance);
+  if (profileBalance && Number.isFinite(balance)) {
+    const label = formatNumber(balance);
+    if (profileBalance.textContent !== label) profileBalance.textContent = label;
+  }
 }
 export function clearTimer(timer){ if (timer) clearInterval(timer); return null; }
 
