@@ -695,7 +695,9 @@ async function consumeInviteNotification(detail){
 }
 
 function renderSheetHead(values = []){
-  const hasUnread = normalizeItems(values).some(item => !item.read);
+  // The backend can count an older unread notification beyond the displayed
+  // 30 items. Keep the recovery control reachable even on an empty sheet.
+  const hasUnread = unreadHint > 0 || normalizeItems(values).some(item => !item.read);
   return `
     <div class="sheet-head notification-center-head">
       <div><h2>${escapeHtml(t('notifications.title'))}</h2></div>
@@ -709,7 +711,7 @@ function renderSheetHead(values = []){
 
 function syncSheetHead(values){
   const button = document.querySelector('#sheet [data-notifications-mark-all]');
-  if (button instanceof HTMLButtonElement) button.hidden = !normalizeItems(values).some(item => !item.read);
+  if (button instanceof HTMLButtonElement) button.hidden = !(unreadHint > 0 || normalizeItems(values).some(item => !item.read);
 }
 
 function renderLoading(){
