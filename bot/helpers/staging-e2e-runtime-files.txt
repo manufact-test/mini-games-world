@@ -183,6 +183,7 @@ bot/services/ShopService.php
 bot/services/UserService.php
 bot/services/WeeklyMatchEconomyService.php
 bot/services/NotificationService.php
+bot/services/NotificationVisibleSelection.php
 
 # MVP-15.5 canonical normal-match activation. The adapter projects the current
 # versioned server economy config into the accepted legacy executors; the real
