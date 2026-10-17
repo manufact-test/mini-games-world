@@ -263,14 +263,30 @@ try {
                     'user' => $users->publicUser($user),
                     'stats' => $users->profileStats($user, $data),
                     'shop' => $shop->status($user),
-                    'history' => $history->userHistory($data, $userId, 8),
+                    // Capture JSON-authoritative history without DB I/O while
+                    // the global gameplay writer lock is held. The caller reads
+                    // the DB history projection only AFTER this transaction ends.
+                    '__history_snapshot' => [
+                        'users' => $data['users'] ?? [],
+                        'games' => $data['games'] ?? [],
+                        'transactions' => $data['transactions'] ?? [],
+                    ],
+                    '__history_user_id' => $userId,
                     'session' => $sessions->publicState($user, $sessionId),
                 ];
 
             case 'history':
                 return [
                     'user' => $users->publicUser($user),
-                    'history' => $history->userHistory($data, $userId, 24),
+                    // Capture JSON-authoritative history without DB I/O while
+                    // the global gameplay writer lock is held. The caller reads
+                    // the DB history projection only AFTER this transaction ends.
+                    '__history_snapshot' => [
+                        'users' => $data['users'] ?? [],
+                        'games' => $data['games'] ?? [],
+                        'transactions' => $data['transactions'] ?? [],
+                    ],
+                    '__history_user_id' => $userId,
                     'topups' => $payments->userTopupHistory($data, $userId, 20),
                     'shop' => $shop->status($user),
                     'session' => $sessions->publicState($user, $sessionId),
@@ -1019,6 +1035,34 @@ try {
                 throw new RuntimeException(ServerLocalization::copy('server.api.unknown_action', 'Unknown action.'));
         }
     });
+
+    // The legacy Profile/History endpoints are intentionally JSON-mutation
+    // participants (user ensure, weekly credit, session state, game cleanup).
+    // Retain those owners, but never run HistoryService's DB read/projection
+    // while JsonDatabase::transaction holds app.lock: a delayed MySQL query
+    // otherwise freezes unrelated game turns across Android and iPhone.
+    if (in_array($action, ['profile', 'history'], true)) {
+        $historySnapshot = $result['__history_snapshot'] ?? null;
+        $historyUserId = trim((string)($result['__history_user_id'] ?? ''));
+        if (!is_array($historySnapshot) || $historyUserId === '') {
+            throw new RuntimeException('Profile history snapshot is unavailable.');
+        }
+        unset($result['__history_snapshot'], $result['__history_user_id']);
+        $historyReadStartedAt = microtime(true);
+        $result['history'] = $history->userHistory(
+            $historySnapshot,
+            $historyUserId,
+            $action === 'profile' ? 8 : 24
+        );
+        if (strtolower(trim((string)($config['environment'] ?? ''))) === 'staging') {
+            $historyReadMs = (microtime(true) - $historyReadStartedAt) * 1000;
+            if ($historyReadMs >= 250) {
+                // Staging-only latency bucket: never record account or match IDs.
+                error_log(sprintf('[MGW staging API history read] action=%s elapsed_ms=%.1f json_lock_released=1',
+                    $action, $historyReadMs));
+            }
+        }
+    }
 
     if (in_array($action, ['tournament_register', 'tournament_registration_publish'], true)
         && !empty($result['snapshot']['transition']['registration_closed_now'])) {
