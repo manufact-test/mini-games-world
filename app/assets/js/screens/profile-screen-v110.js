@@ -47,6 +47,7 @@ let hiddenProfileRenderPending = false;
 let lastFullProfileSnapshotAt = 0;
 let avatarSelectionSyncBound = false;
 let profileRenderLifecycleBound = false;
+let profileWalletReadEpoch = 0;
 let pendingGameTabScrollState = null;
 let pendingGameTabScrollCapturedAt = 0;
 
@@ -110,6 +111,43 @@ export function openProfile(){
   // profileV2 start/response path could steal the first route frame.
   showProfileImmediately();
   scheduleProfileRefreshAfterEntry();
+  // Admin credits and results on another session can advance the wallet after
+  // Home was last bootstrapped. Refresh from the established *canonical JSON*
+  // bootstrap owner once per actual Profile entry. Profile V2 remains display
+  // only and is never allowed to overwrite this wallet.
+  refreshWalletAfterProfileEntry();
+}
+
+function refreshWalletAfterProfileEntry(){
+  const epoch = ++profileWalletReadEpoch;
+  const userId = String(state.user?.id || '');
+  const initialBalance = state.user?.balance;
+  if (!userId || initialBalance === undefined) return;
+
+  // Never steal the first mobile transition frame; this request is neither
+  // necessary for immediate Profile paint nor part of its cosmetic hydration.
+  window.setTimeout(() => {
+    if (epoch !== profileWalletReadEpoch || currentScreen() !== 'profile') return;
+    void api.bootstrap()
+      .then(result => {
+        const authoritative = result?.user;
+        if (epoch !== profileWalletReadEpoch || currentScreen() !== 'profile') return;
+        if (!authoritative || String(authoritative.id || '') !== userId) return;
+        if (String(state.user?.id || '') !== userId) return;
+        // A separate real game/store mutation may already have delivered a
+        // newer balance while the bootstrap request was in flight.
+        if (state.user?.balance !== initialBalance) return;
+        const nextBalance = Number(authoritative.balance);
+        if (!Number.isSafeInteger(nextBalance) || nextBalance < 0) return;
+        if (Number(state.user.balance) === nextBalance) return;
+        state.user = { ...state.user, balance:nextBalance };
+        renderBalances(state.user);
+      })
+      .catch(() => {
+        // Keep last confirmed wallet on a transport failure, never show zero
+        // or mutate money because one background read was unavailable.
+      });
+  }, isMobileProfilePresentation() ? PROFILE_MOBILE_REFRESH_DELAY_MS : 0);
 }
 
 function scheduleProfileRefreshAfterEntry(){
