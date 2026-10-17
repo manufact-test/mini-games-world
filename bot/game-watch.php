@@ -107,6 +107,7 @@ try {
     $tgUser = (new AuthService($config))->getUserFromRequest($payload, false);
     $userId = trim((string)($tgUser['id'] ?? ''));
     $gameId = clean_string($payload['gameId'] ?? '', 80);
+    $watchMode = clean_string($payload['mode'] ?? '', 24);
     if ($userId === '' || $gameId === '') throw new RuntimeException(ServerLocalization::copy('server.game_runtime.common.game_not_found', 'Game not found.'));
 
     if (clean_string($payload['mode'] ?? '', 24) === 'result') {
@@ -126,7 +127,12 @@ try {
         $participants = array_map('strval', $candidate['player_ids'] ?? []);
         if (in_array($userId, $participants, true)) {
             $game = $games->publicGame($candidate, $userId);
-            $reaction = mgw_game_watch_latest_reaction($config, $gameId);
+            // Active two-human Battleship board refreshes do not need the
+            // latest reaction. Avoid an unrelated SQL lookup on each read-only
+            // poll while the authoritative game_state heartbeat stays active.
+            if ($watchMode !== 'battle_poll') {
+                $reaction = mgw_game_watch_latest_reaction($config, $gameId);
+            }
         }
     }
 
