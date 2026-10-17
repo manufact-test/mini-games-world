@@ -21,7 +21,13 @@ function mgw_cleanup_games_if_due(array &$data, ChessRuntimeService $games, bool
         return;
     }
 
+    $cleanupStartedAt = (string)($GLOBALS['mgw_staging_json_latency_trace'] ?? '') === 'game_state'
+        ? microtime(true)
+        : 0.0;
     $games->cleanup($data);
+    if ($cleanupStartedAt > 0.0) {
+        $GLOBALS['mgw_staging_json_cleanup_ms'] = (microtime(true) - $cleanupStartedAt) * 1000;
+    }
     $data['system']['game_cleanup_at'] = now_iso();
 }
 
