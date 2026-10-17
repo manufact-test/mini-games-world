@@ -20,14 +20,20 @@ $e2e = $read('e2e/staging/d2-d3-d5-integration.spec.mjs');
 
 $detachedRead = '$db->readOnly(static fn(array $data): array => $data)';
 $assert(!str_contains($endpoint, $detachedRead)
-    && str_contains($endpoint, '$db->exclusiveReadOnlySections(')
+    && str_contains($endpoint, '$db->projectionReadOnlySections(')
     && str_contains($endpoint, "['invites', 'notifications']")
     && str_contains($endpoint, '$runtimeNotifications->synchronizeAndList('),
-    'Notification DB synchronization must consume a fresh snapshot while the exclusive JSON lock is held.');
+    'Notification DB synchronization must consume a fresh, serialized projection snapshot without freezing game writers.');
 $assert(str_contains($endpoint, 'if ($markRead) {')
     && str_contains($endpoint, '$notifications->markAllRead($data, $userId);')
-    && str_contains($endpoint, 'Notification bridge requires exclusive JSON snapshots.'),
-    'markRead must finish before the fresh exclusive snapshot and the bridge must fail closed without lock support.');
+    && str_contains($endpoint, 'Notification bridge requires isolated JSON projection snapshots.'),
+    'markRead must finish before the isolated projection snapshot and the bridge must fail closed without projection support.');
+$storage = $read('bot/storage/JsonDatabase.php');
+$assert(str_contains($storage, 'public function projectionReadOnlySections(')
+    && str_contains($storage, 'flock($lockHandle, LOCK_UN);')
+    && str_contains($storage, 'return $callback($snapshot);')
+    && !str_contains($endpoint, '$db->exclusiveReadOnlySections('),
+    'Projection must release the global app.lock before MySQL and must never use the old writer-barrier freeze.');
 $assert(str_contains($coordinator, "SELECT GET_LOCK(:lock_name, 10)")
     && str_contains($coordinator, "SELECT RELEASE_LOCK(:lock_name)")
     && str_contains($coordinator, 'return $database->transaction(')
