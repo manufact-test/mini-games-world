@@ -100,8 +100,13 @@ final class JsonDatabase
             }
 
             $this->saveChanged($before, $db);
+            $finishedAt = $traced ? microtime(true) : 0.0;
+            flock($lockHandle, LOCK_UN);
+            flock($writeBarrierHandle, LOCK_UN);
+            fclose($lockHandle);
+            fclose($writeBarrierHandle);
+            // Never perform filesystem logging while gameplay's writer lock is held.
             if ($traced) {
-                $finishedAt = microtime(true);
                 $totalMs = ($finishedAt - $startedAt) * 1000;
                 if ($trace === 'battleship_fire' || $totalMs >= 250) {
                     error_log(sprintf(
@@ -116,10 +121,6 @@ final class JsonDatabase
                     ));
                 }
             }
-            flock($lockHandle, LOCK_UN);
-            flock($writeBarrierHandle, LOCK_UN);
-            fclose($lockHandle);
-            fclose($writeBarrierHandle);
             return $result;
         } catch (Throwable $e) {
             flock($lockHandle, LOCK_UN);
