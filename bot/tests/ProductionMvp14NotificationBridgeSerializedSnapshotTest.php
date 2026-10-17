@@ -24,7 +24,7 @@ $assert(!str_contains($endpoint, $detachedRead)
     && str_contains($endpoint, "['invites', 'notifications']")
     && str_contains($endpoint, '$runtimeNotifications->synchronizeAndList('),
     'Notification DB synchronization must consume a fresh, serialized projection snapshot without freezing game writers.');
-$assert(str_contains($endpoint, 'if ($markRead) {')
+$assert(str_contains($endpoint, 'if ($markAll) {')
     && str_contains($endpoint, '$notifications->markAllRead($data, $userId);')
     && str_contains($endpoint, 'Notification bridge requires isolated JSON projection snapshots.'),
     'markRead must finish before the isolated projection snapshot and the bridge must fail closed without projection support.');
