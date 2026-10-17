@@ -24,6 +24,9 @@ import { t, formatNumber as formatLocalizedNumber } from '@mgw/i18n';
 
 const GAME_TYPES = new Set(['tictactoe','four_in_a_row','battleship','checkers','reversi','chess','go','domino']);
 const LAUNCH_GAME_POLL_INTERVAL_MS = 300;
+// Three lightweight read-only polls between each authoritative heartbeat.
+// The heartbeat still owns timeout/reconnect/settlement checks and session touch.
+const HUMAN_BATTLESHIP_AUTH_POLL_EVERY = 4;
 const gameText = (key, params = {}) => t(`game_screen.${key}`, params);
 
 const runtime = window.__MGW_V100_GAME_RUNTIME__ ||= {
@@ -176,6 +179,14 @@ export function clearGameView(){
   if (timer) timer.textContent = '—';
 }
 
+function canUseHumanBattleshipWatch(game){
+  return gameTypeOf(game) === 'battleship'
+    && String(game?.status || '') === 'active'
+    && String(game?.phase || '') === 'battle'
+    && game?.is_bot_game === false
+    && String(game?.match_source || '') !== 'tournament';
+}
+
 async function refreshGame(gameId){
   const item = gameRuntime(gameId);
   if (item.pollBusy || item.running || item.queue.length || item.surrenderPending) return;
@@ -184,12 +195,24 @@ async function refreshGame(gameId){
 
   item.pollBusy = true;
   const generation = item.generation;
+  const mayWatch = canUseHumanBattleshipWatch(item.authoritative || state.activeGame);
+  item.battleshipPollSequence = mayWatch ? (item.battleshipPollSequence || 0) + 1 : 0;
+  // The first poll stays authoritative. Read-only snapshots handle the next
+  // three turns of the polling loop, reducing JSON-wide writer contention.
+  const useWatch = mayWatch && item.battleshipPollSequence % HUMAN_BATTLESHIP_AUTH_POLL_EVERY !== 1;
   try {
-    const result = await api.gameState(gameId);
+    const result = useWatch ? await api.battleWatch(gameId) : await api.gameState(gameId);
     if (!pollResultIsCurrent(generation, item.generation, item.running || item.queue.length || item.surrenderPending)) return;
     rememberUserAndSession(result);
 
     if (!result?.game) {
+      if (useWatch) {
+        // Nonblocking games.json reads can race a writer. Do not interpret a
+        // transient empty snapshot as match termination: force a canonical
+        // game_state heartbeat next tick instead.
+        item.battleshipPollSequence = 0;
+        return;
+      }
       state.timers.game = clearTimer(state.timers.game);
       state.activeGame = null;
       clearGameView();
@@ -210,6 +233,12 @@ async function refreshGame(gameId){
     setGamePollingCadence(gameId, gamePollIntervalFor(game));
     if (String(game.status || '') === 'finished') finishGame(game, viewer);
   } catch (error) {
+    if (useWatch) {
+      // A stale/nonblocking read must not break an active game or toast as a
+      // failed move. The next tick retries via the authoritative API owner.
+      item.battleshipPollSequence = 0;
+      return;
+    }
     // Background game-state polling is best-effort. The active read-only watcher
     // and the next poll will reconcile state, so an Android/WebView transport
     // blip must not surface a false "server unavailable" toast while the match
@@ -806,6 +835,7 @@ function gameRuntime(gameId){
       running:false,
       pollBusy:false,
       pollIntervalMs:0,
+      battleshipPollSequence:0,
       surrenderPending:false,
       generation:0,
       interactionGeneration:0,
