@@ -177,6 +177,7 @@ jobs:
               bot/realtime/RuntimeRealtimeDatabaseTrait.php|\
               bot/tests/Mvp20_2HiddenSkillModelTest.php|\
               bot/tests/Mvp20_2HiddenSkillIntegrationContractTest.php|\
+              bot/tests/Mgw20261017HiddenSkillMatchOnlyTest.php|\
               bot/tests/Mvp17_1MatchmakingIntegrationContractTest.php|\
               bot/tests/Mvp17ReliabilityRegressionTest.php|\
               bot/tests/RealtimeDatabaseStoreTest.php|\
