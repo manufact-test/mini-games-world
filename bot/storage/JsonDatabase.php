@@ -110,14 +110,15 @@ final class JsonDatabase
                 $totalMs = ($finishedAt - $startedAt) * 1000;
                 if ($trace === 'battleship_fire' || $totalMs >= 250) {
                     error_log(sprintf(
-                        '[MGW staging JSON latency] action=%s total_ms=%.1f barrier_wait_ms=%.1f writer_wait_ms=%.1f load_ms=%.1f callback_ms=%.1f persist_ms=%.1f',
+                        '[MGW staging JSON latency] action=%s total_ms=%.1f barrier_wait_ms=%.1f writer_wait_ms=%.1f load_ms=%.1f callback_ms=%.1f persist_ms=%.1f cleanup_ms=%.1f',
                         $trace,
                         $totalMs,
                         ($barrierAcquiredAt - $startedAt) * 1000,
                         ($writerAcquiredAt - $barrierAcquiredAt) * 1000,
                         ($loadedAt - $writerAcquiredAt) * 1000,
                         ($callbackFinishedAt - $loadedAt) * 1000,
-                        ($finishedAt - $callbackFinishedAt) * 1000
+                        ($finishedAt - $callbackFinishedAt) * 1000,
+                        (float)($GLOBALS['mgw_staging_json_cleanup_ms'] ?? 0)
                     ));
                 }
             }
