@@ -1,0 +1,20 @@
+name: MGW 2026-10-17 Battleship pending-shot touch acknowledgement
+on:
+  pull_request:
+    paths:
+      - 'app/assets/css/games/battleship/game.css'
+      - 'app/assets/css/main.css'
+      - 'app/index.html'
+      - 'ops/checks/mgw20261017_battleship_pending_ack_contract.mjs'
+      - '.github/workflows/mgw-20261017-battleship-pending-ack.yml'
+  workflow_dispatch:
+jobs:
+  pending_touch_ack:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - name: Verify touch feedback without premature shot result
+        run: |
+          node --check ops/checks/mgw20261017_battleship_pending_ack_contract.mjs
+          node ops/checks/mgw20261017_battleship_pending_ack_contract.mjs
