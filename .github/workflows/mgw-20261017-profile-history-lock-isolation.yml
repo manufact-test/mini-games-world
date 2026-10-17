@@ -1,0 +1,37 @@
+name: MGW 2026-10-17 Profile/History lock isolation
+on:
+  pull_request:
+    branches:
+      - agent/mvp-13-2-staging
+    paths:
+      - 'bot/api.php'
+      - 'bot/tests/Mgw20261017HistoryLockIsolationContractTest.php'
+      - '.github/workflows/mgw-20261017-profile-history-lock-isolation.yml'
+  push:
+    branches:
+      - agent/mvp-13-2-staging
+    paths:
+      - 'bot/api.php'
+      - 'bot/tests/Mgw20261017HistoryLockIsolationContractTest.php'
+      - '.github/workflows/mgw-20261017-profile-history-lock-isolation.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  history-lock:
+    name: history_snapshot_outside_game_lock
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - name: PHP syntax, lock isolation and economy/history regression
+        run: |
+          set -euo pipefail
+          php -l bot/api.php
+          php -l bot/tests/Mgw20261017HistoryLockIsolationContractTest.php
+          php bot/tests/Mgw20261017HistoryLockIsolationContractTest.php
+          php bot/tests/Mvp17_5HistoryChronologyRegressionTest.php
+          php bot/tests/Mvp17_5ResultHistoryEconomyPresentationTest.php
+          php bot/tests/Mvp155NormalMatchEconomyTest.php
